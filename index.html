@@ -166,6 +166,10 @@
   .skip-btn:hover { background: var(--c-border); }
   .progress-bar { width: 100%; height: 6px; background: var(--c-border); border-radius: 6px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: var(--c-accent-blue); transition: width .25s; }
+  .history-list { width: 100%; margin-top: 22px; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+  .history-item { background: var(--c-surface); border-radius: 10px; padding: 10px 12px; font-size: 0.82rem; }
+  .history-item .cat { color: var(--c-text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+  .history-item.current { border: 1px solid var(--c-accent-blue); }
 
   /* ===== Central de Contas (overlay) ===== */
   .overlay { position: fixed; inset: 0; background: var(--c-bg); z-index: 100; display: none; overflow-y: auto; }
@@ -240,6 +244,8 @@
         <button class="skip-btn" id="next-btn">⏭</button>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+      <div id="history-list" class="history-list"></div>
     </div>
   </section>
 
@@ -1114,11 +1120,24 @@ const playCircle = document.getElementById('play-circle');
 const briefingLabel = document.getElementById('briefing-label');
 const briefingSub = document.getElementById('briefing-sub');
 const progressFill = document.getElementById('progress-fill');
+const historyListEl = document.getElementById('history-list');
 
 function setPlayingVisual(playing) {
   isPlaying = playing;
   playCircle.classList.toggle('playing', playing);
   playCircle.textContent = playing ? '⏹' : '▶';
+}
+
+function renderHistory(currentIndex) {
+  historyListEl.innerHTML = '';
+  for (let i = 0; i <= currentIndex && i < currentQueue.length; i++) {
+    const item = currentQueue[i];
+    const div = document.createElement('div');
+    div.className = 'history-item' + (i === currentIndex ? ' current' : '');
+    div.innerHTML = `<div class="cat">${item.category}${item.sub ? ' · ' + item.sub : ''}</div>${item.title}`;
+    historyListEl.appendChild(div);
+  }
+  historyListEl.scrollTop = historyListEl.scrollHeight;
 }
 
 function speakQueueItem(i) {
@@ -1133,6 +1152,7 @@ function speakQueueItem(i) {
   briefingLabel.textContent = item.title;
   briefingSub.textContent = `${item.category} · ${i + 1} de ${currentQueue.length}`;
   progressFill.style.width = `${Math.round((i / currentQueue.length) * 100)}%`;
+  renderHistory(i);
 
   const text = state.quickMode ? (item.quick || item.title) : (item.full || item.title);
   const utter = new SpeechSynthesisUtterance(text);
@@ -1163,6 +1183,7 @@ playCircle.addEventListener('click', async () => {
   briefingLabel.textContent = 'Buscando suas informações...';
   briefingSub.textContent = '';
   progressFill.style.width = '0%';
+  historyListEl.innerHTML = '';
   currentQueue = await buildQueue();
   if (currentQueue.length === 0) {
     setPlayingVisual(false);
