@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>InfoHub — Briefing por voz</title>
+<title>InfoHub — Meu Dia por voz</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔊</text></svg>">
 <link rel="manifest" href="manifest.json">
 <style>
@@ -126,6 +126,10 @@
   .briefing-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 14px; }
   .briefing-row label { font-size: 0.8rem; color: #9aa0a6; white-space: nowrap; }
   .briefing-row input[type=range] { flex: 1; }
+  .briefing-row select {
+    flex: 1; background: #1a1d24; border: 1px solid #2a2d35; color: #e8e8e8;
+    border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; font-family: inherit;
+  }
   .limit-row { display: flex; gap: 8px; width: 100%; justify-content: center; margin-bottom: 6px; }
   .limit-btn { background: #1a1d24; color: #9aa0a6; padding: 8px 14px; border-radius: 10px; font-size: 0.82rem; }
   .limit-btn.active { background: #8ab4f8; color: #0f1115; }
@@ -135,8 +139,41 @@
 <body>
 <div id="app">
 
+  <!-- ============ TAB: BRIEFING ============ -->
+  <section class="tab active" id="tab-briefing">
+    <h1>▶ Meu Dia</h1>
+    <div class="briefing-wrap">
+      <div id="briefing-label">Configure suas categorias na aba Grátis</div>
+      <div id="briefing-sub"></div>
+
+      <div class="play-circle" id="play-circle">▶</div>
+
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+      <div class="chips" id="sequence-chips"></div>
+
+      <div class="briefing-row">
+        <label>Voz</label>
+        <select id="voice-select"></select>
+      </div>
+
+      <div class="briefing-row">
+        <label>Velocidade</label>
+        <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
+      </div>
+
+      <div class="limit-row" id="limit-row">
+        <button class="limit-btn" data-limit="1">1</button>
+        <button class="limit-btn" data-limit="3">3</button>
+        <button class="limit-btn active" data-limit="5">5</button>
+        <button class="limit-btn" data-limit="10">10</button>
+        <button class="limit-btn" data-limit="all">Todos</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ TAB: GRATIS ============ -->
-  <section class="tab active" id="tab-gratis">
+  <section class="tab" id="tab-gratis">
     <h1>🔊 InfoHub</h1>
     <div class="sub">Seu briefing pessoal, lido em voz alta.</div>
 
@@ -167,7 +204,7 @@
       <li><span class="ic">🚗</span><div><b>Trânsito em tempo real</b><br>Localização exata via GPS (Google Maps)</div></li>
       <li><span class="ic">📦</span><div><b>Rastreio de encomenda</b><br>Status de entregas automaticamente</div></li>
       <li><span class="ic">🧾</span><div><b>Alertas de boleto</b><br>Detecta boletos a vencer no seu Gmail</div></li>
-      <li><span class="ic">⏰</span><div><b>Briefing automático</b><br>Toca sozinho ao ligar o PC (PWA)</div></li>
+      <li><span class="ic">⏰</span><div><b>Meu Dia automático</b><br>Toca sozinho ao ligar o PC (PWA)</div></li>
       <li><span class="ic">👥</span><div><b>Múltiplos perfis</b><br>Configurações separadas por pessoa</div></li>
     </ul>
 
@@ -175,48 +212,23 @@
     <div class="premium-note">Pagamento via Mercado Pago. Em breve.</div>
   </section>
 
-  <!-- ============ TAB: BRIEFING ============ -->
-  <section class="tab" id="tab-briefing">
-    <h1>▶ Briefing</h1>
-    <div class="briefing-wrap">
-      <div id="briefing-label">Configure suas categorias na aba Grátis</div>
-      <div id="briefing-sub"></div>
-
-      <div class="play-circle" id="play-circle">▶</div>
-
-      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-      <div class="chips" id="sequence-chips"></div>
-
-      <div class="briefing-row">
-        <label>Velocidade</label>
-        <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
-      </div>
-
-      <div class="limit-row" id="limit-row">
-        <button class="limit-btn" data-limit="1">1</button>
-        <button class="limit-btn" data-limit="3">3</button>
-        <button class="limit-btn active" data-limit="5">5</button>
-        <button class="limit-btn" data-limit="10">10</button>
-        <button class="limit-btn" data-limit="all">Todos</button>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ NAV BAR ============ -->
   <nav class="navbar">
     <div class="navbar-inner">
-      <button class="nav-btn active" data-tab="gratis"><span class="ic">🆓</span>Grátis</button>
+      <button class="nav-btn active" data-tab="briefing"><span class="ic">▶</span>Meu Dia</button>
+      <button class="nav-btn" data-tab="gratis"><span class="ic">🆓</span>Grátis</button>
       <button class="nav-btn" data-tab="premium"><span class="ic">⭐</span>Premium</button>
-      <button class="nav-btn" data-tab="briefing"><span class="ic">▶</span>Briefing</button>
     </div>
   </nav>
 </div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
 <script>
 /* =========================================================================
-   CONFIGURAÇÃO — preencha as chaves conforme for criando as contas
+   CONFIGURAÇÃO — chaves sensíveis vêm de config.js (gitignored, não vai
+   pro git/Pages automaticamente). Veja config.example.js pro formato.
+   CLIENT_ID não é segredo (client id OAuth é público por design).
    ========================================================================= */
 const CLIENT_ID = '614074980827-7k3u0ugpmk8100chp5m1998b36peajo9.apps.googleusercontent.com';
 const GOOGLE_SCOPES = [
@@ -225,16 +237,17 @@ const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/contacts.readonly',
 ].join(' ');
 
-const OPENWEATHER_API_KEY = '';   // https://openweathermap.org/api
-const RAWG_API_KEY = '';          // https://rawg.io/apidocs
-const APIFOOTBALL_API_KEY = '';   // https://www.api-football.com/
+const CFG = window.INFOHUB_CONFIG || {};
+const OPENWEATHER_API_KEY = CFG.OPENWEATHER_API_KEY || '';
+const RAWG_API_KEY = CFG.RAWG_API_KEY || '';
+const APIFOOTBALL_API_KEY = CFG.APIFOOTBALL_API_KEY || '';
 
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Premium / backend (stub até existirem credenciais reais)
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
-const MERCADOPAGO_SUBSCRIBE_LINK = '';
+const SUPABASE_URL = CFG.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = CFG.SUPABASE_ANON_KEY || '';
+const MERCADOPAGO_SUBSCRIBE_LINK = CFG.MERCADOPAGO_SUBSCRIBE_LINK || '';
 
 /* =========================================================================
    MODELO DE CATEGORIAS / FEATURES
@@ -251,11 +264,9 @@ const CATEGORY_DEFS = [
   {
     id: 'clima', icon: '🌤️', title: 'Clima',
     features: [
-      { id: 'previsao', label: 'Temperatura e previsão', fields: [
-        { id: 'cidade', placeholder: 'Cidade, ex: Sao Paulo,BR' },
-      ], hint: 'Usa OpenWeatherMap' },
-      { id: 'uv', label: 'Índice UV', fields: [], hint: 'Usa a mesma cidade configurada acima' },
-      { id: 'ar', label: 'Qualidade do ar (AQI)', fields: [], hint: 'Usa a mesma cidade configurada acima' },
+      { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', fields: [
+        { id: 'cidade', placeholder: 'Cidade (Sao Paulo,BR) ou CEP (01310-100)' },
+      ], hint: 'Usa OpenWeatherMap — UV e qualidade do ar vêm automaticamente', testable: true },
     ],
   },
   {
@@ -284,7 +295,6 @@ const CATEGORY_DEFS = [
       { id: 'esportes', label: 'Esportes (resultado/próximo jogo)', fields: [
         { id: 'time', placeholder: 'Nome do time, ex: Flamengo' },
       ], hint: 'API-Football (free tier)' },
-      { id: 'jogos', label: 'Lançamentos de jogos', fields: [], hint: 'RAWG API' },
       { id: 'podcasts', label: 'Podcasts (novos episódios)', fields: [
         { id: 'rss', placeholder: 'URL do RSS do podcast' },
       ], hint: '' },
@@ -309,6 +319,7 @@ function loadState() {
     features: saved.features || {}, // { 'pessoal.email': { enabled, fields: {} } }
     briefingLimit: saved.briefingLimit || 5,
     briefingRate: saved.briefingRate || 1,
+    voiceName: saved.voiceName || null,
   };
 }
 
@@ -403,6 +414,48 @@ function renderCategories() {
           if (!accessToken) tokenClient.requestAccessToken();
         });
         fieldsEl.appendChild(signinBtn);
+      }
+
+      if (feat.testable) {
+        const testBtn = document.createElement('button');
+        testBtn.textContent = '🔊 Testar agora';
+        testBtn.style.background = '#2a2d35';
+        testBtn.style.color = '#e8e8e8';
+        testBtn.style.padding = '9px 12px';
+        testBtn.style.fontSize = '0.85rem';
+        const resultEl = document.createElement('div');
+        resultEl.className = 'hint';
+        testBtn.addEventListener('click', async () => {
+          testBtn.textContent = 'Buscando...';
+          testBtn.disabled = true;
+          resultEl.style.color = '#9aa0a6';
+          resultEl.textContent = '';
+          try {
+            if (cat.id === 'clima' && feat.id === 'previsao') {
+              const { items, error } = await fetchWeatherItems(fs.fields.cidade);
+              if (error) {
+                resultEl.style.color = '#ea4335';
+                resultEl.textContent = error;
+              } else {
+                resultEl.style.color = '#8ee6a8';
+                resultEl.textContent = items.map(i => i.title).join(' · ');
+                const utter = new SpeechSynthesisUtterance(items.map(i => i.full).join(' '));
+                const voice = getSelectedVoice();
+                if (voice) utter.voice = voice;
+                utter.lang = voice ? voice.lang : 'pt-BR';
+                speechSynthesis.speak(utter);
+              }
+            }
+          } catch (e) {
+            resultEl.style.color = '#ea4335';
+            resultEl.textContent = 'Erro: ' + e.message;
+          } finally {
+            testBtn.textContent = '🔊 Testar agora';
+            testBtn.disabled = false;
+          }
+        });
+        fieldsEl.appendChild(testBtn);
+        fieldsEl.appendChild(resultEl);
       }
 
       if (feat.hint) {
@@ -566,39 +619,52 @@ async function fetchAniversariosItems(limit) {
 /* =========================================================================
    CLIMA — OpenWeatherMap
    ========================================================================= */
-async function fetchWeatherItems(cidade) {
-  if (!OPENWEATHER_API_KEY || !cidade) return [];
+function isCepLike(value) {
+  return /^\d{5}-?\d{3}$/.test(value.trim());
+}
+
+async function fetchWeatherItems(local) {
+  if (!OPENWEATHER_API_KEY || !local) return { items: [], error: 'Configure a chave OpenWeatherMap e a cidade/CEP.' };
   const items = [];
-  const geoUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cidade)}&units=metric&lang=pt_br&appid=${OPENWEATHER_API_KEY}`;
-  const weather = await fetch(geoUrl).then(r => r.json());
-  if (weather.cod && weather.cod !== 200) return [];
+  const cleaned = local.trim();
+  const geoUrl = isCepLike(cleaned)
+    ? `https://api.openweathermap.org/data/2.5/weather?zip=${encodeURIComponent(cleaned.replace('-', ''))},BR&units=metric&lang=pt_br&appid=${OPENWEATHER_API_KEY}`
+    : `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cleaned)}&units=metric&lang=pt_br&appid=${OPENWEATHER_API_KEY}`;
+
+  let weather;
+  try {
+    weather = await fetch(geoUrl).then(r => r.json());
+  } catch (e) {
+    return { items: [], error: 'Falha de rede ao consultar o clima.' };
+  }
+  if (weather.cod && weather.cod !== 200) {
+    return { items: [], error: `OpenWeatherMap: ${weather.message || weather.cod} (verifique cidade/CEP e a chave de API)` };
+  }
+
+  const nomeLocal = weather.name || cleaned;
   const temp = Math.round(weather.main.temp);
   const desc = weather.weather[0].description;
   items.push({
     category: 'Clima', sub: 'Previsão',
-    title: `${cidade}: ${temp}°C, ${desc}`,
-    full: `O clima em ${cidade} agora: ${temp} graus, ${desc}.`,
-    quick: `${cidade}: ${temp}°C, ${desc}`,
+    title: `${nomeLocal}: ${temp}°C, ${desc}`,
+    full: `O clima em ${nomeLocal} agora: ${temp} graus, ${desc}.`,
+    quick: `${nomeLocal}: ${temp}°C, ${desc}`,
   });
 
-  const fsUuid = getFeatureState('clima', 'uv');
-  if (fsUuid.enabled && weather.coord) {
+  if (weather.coord) {
     const uvResp = await fetch(`https://api.openweathermap.org/data/2.5/uvi?lat=${weather.coord.lat}&lon=${weather.coord.lon}&appid=${OPENWEATHER_API_KEY}`).then(r => r.json()).catch(() => null);
     if (uvResp && uvResp.value !== undefined) {
-      items.push({ category: 'Clima', sub: 'UV', title: `Índice UV: ${uvResp.value}`, full: `O índice de UV em ${cidade} está em ${uvResp.value}.`, quick: `UV: ${uvResp.value}` });
+      items.push({ category: 'Clima', sub: 'UV', title: `Índice UV: ${uvResp.value}`, full: `O índice de UV em ${nomeLocal} está em ${uvResp.value}.`, quick: `UV: ${uvResp.value}` });
     }
-  }
 
-  const fsAr = getFeatureState('clima', 'ar');
-  if (fsAr.enabled && weather.coord) {
     const aqResp = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${weather.coord.lat}&lon=${weather.coord.lon}&appid=${OPENWEATHER_API_KEY}`).then(r => r.json()).catch(() => null);
     if (aqResp && aqResp.list && aqResp.list[0]) {
       const aqi = aqResp.list[0].main.aqi;
       const labels = ['', 'Boa', 'Razoável', 'Moderada', 'Ruim', 'Muito ruim'];
-      items.push({ category: 'Clima', sub: 'Qualidade do ar', title: `AQI: ${labels[aqi] || aqi}`, full: `A qualidade do ar em ${cidade} está classificada como ${labels[aqi] || aqi}.`, quick: `Ar: ${labels[aqi] || aqi}` });
+      items.push({ category: 'Clima', sub: 'Qualidade do ar', title: `AQI: ${labels[aqi] || aqi}`, full: `A qualidade do ar em ${nomeLocal} está classificada como ${labels[aqi] || aqi}.`, quick: `Ar: ${labels[aqi] || aqi}` });
     }
   }
-  return items;
+  return { items, error: null };
 }
 
 /* =========================================================================
@@ -750,7 +816,7 @@ function renderSequenceChips() {
     document.getElementById('briefing-label').textContent = 'Nenhuma categoria ativa. Vá na aba Grátis e ative algo.';
     return;
   }
-  document.getElementById('briefing-label').textContent = 'Pronto para ler seu briefing';
+  document.getElementById('briefing-label').textContent = 'Pronto para ler o seu dia';
   summaries.forEach(s => {
     const chip = document.createElement('span');
     chip.className = 'chip';
@@ -777,6 +843,52 @@ briefingRateInput.addEventListener('input', () => {
   saveState();
 });
 
+/* =========================================================================
+   SELETOR DE VOZ — prioriza vozes "Online Natural" (Edge/Chrome)
+   ========================================================================= */
+let voices = [];
+const voiceSelect = document.getElementById('voice-select');
+
+function voiceRank(v) {
+  const isBr = v.lang.toLowerCase().startsWith('pt-br');
+  const isNatural = /Online.*Natural/i.test(v.name);
+  if (isBr && isNatural) return 0;
+  if (isBr) return 1;
+  if (v.lang.toLowerCase().startsWith('en')) return 2;
+  return 3;
+}
+
+const CONFIRMED_ONLINE_VOICES = /Francisca|Antonio|Aria|Guy/i;
+
+function populateVoices() {
+  voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('pt') || v.lang.startsWith('en'));
+  voices = voices.filter(v => !/Online.*Natural/i.test(v.name) || CONFIRMED_ONLINE_VOICES.test(v.name));
+  if (voices.length === 0) voices = speechSynthesis.getVoices();
+  voices.sort((a, b) => voiceRank(a) - voiceRank(b));
+  voiceSelect.innerHTML = voices
+    .map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`)
+    .join('');
+  const savedVoiceName = state.voiceName;
+  const savedIndex = savedVoiceName ? voices.findIndex(v => v.name === savedVoiceName) : -1;
+  if (savedIndex !== -1) {
+    voiceSelect.value = savedIndex;
+  } else {
+    const preferredIndex = voices.findIndex(v => /Francisca.*Online.*Natural/i.test(v.name));
+    if (preferredIndex !== -1) voiceSelect.value = preferredIndex;
+  }
+}
+
+voiceSelect.addEventListener('change', () => {
+  const selected = voices[voiceSelect.value];
+  if (selected) { state.voiceName = selected.name; saveState(); }
+});
+speechSynthesis.onvoiceschanged = populateVoices;
+populateVoices();
+
+function getSelectedVoice() {
+  return voices[voiceSelect.value];
+}
+
 async function buildQueue() {
   const summaries = getEnabledFeatureSummaries();
   const limit = state.briefingLimit === 'all' ? 50 : state.briefingLimit;
@@ -788,7 +900,7 @@ async function buildQueue() {
       if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'agenda') items = await fetchAgendaItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'aniversarios') items = await fetchAniversariosItems(limit);
-      else if (s.catId === 'clima' && s.featId === 'previsao') items = await fetchWeatherItems(s.fields.cidade);
+      else if (s.catId === 'clima' && s.featId === 'previsao') items = (await fetchWeatherItems(s.fields.cidade)).items;
       else if (s.catId === 'noticias' && s.featId === 'keyword') items = await fetchNewsItems(s.fields.termo, limit);
       else if (s.catId === 'noticias' && s.featId === 'reddit') items = await fetchRedditItems(s.fields.subreddit, limit);
       else if (s.catId === 'financeiro' && s.featId === 'dolar') items = await fetchDolarBitcoinItems();
@@ -842,7 +954,9 @@ function speakQueueItem(i) {
 
   const text = state.quickMode ? (item.quick || item.title) : (item.full || item.title);
   const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'pt-BR';
+  const voice = getSelectedVoice();
+  if (voice) utter.voice = voice;
+  utter.lang = voice ? voice.lang : 'pt-BR';
   utter.rate = parseFloat(briefingRateInput.value);
   utter.onend = () => {
     progressFill.style.width = `${Math.round(((i + 1) / currentQueue.length) * 100)}%`;
