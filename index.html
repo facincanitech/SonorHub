@@ -7,12 +7,40 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔊</text></svg>">
 <link rel="manifest" href="manifest.json">
 <style>
+  :root, [data-theme='dark'] {
+    --c-bg: #0f1115; --c-surface: #1a1d24; --c-surface-hover: #1f232b; --c-surface-alt: #20242c;
+    --c-border: #232730; --c-border2: #2a2d35; --c-navbar: #14161b;
+    --c-text: #e8e8e8; --c-text-dim: #9aa0a6; --c-text-faint: #6f7480; --c-text-faint2: #8a8f98;
+    --c-accent-blue: #8ab4f8; --c-green: #34a853; --c-red: #ea4335;
+    --c-green-bg: #1f3a2a; --c-green-text: #8ee6a8;
+    --c-google-blue: #4285f4; --c-google-blue-hover: #3367d6; --c-yellow: #fbbc04;
+    --c-on-accent: #0f1115;
+  }
+  [data-theme='light'] {
+    --c-bg: #f5f5f7; --c-surface: #ffffff; --c-surface-hover: #ececed; --c-surface-alt: #eef0f3;
+    --c-border: #d8d9dc; --c-border2: #cfd1d5; --c-navbar: #ffffff;
+    --c-text: #1a1a1a; --c-text-dim: #5f6368; --c-text-faint: #80868b; --c-text-faint2: #6b7077;
+    --c-accent-blue: #1a73e8; --c-green: #1e8e3e; --c-red: #d33828;
+    --c-green-bg: #d7f0de; --c-green-text: #166f33;
+    --c-google-blue: #1a73e8; --c-google-blue-hover: #1558b0; --c-yellow: #b06000;
+    --c-on-accent: #ffffff;
+  }
+  [data-theme='high-contrast'] {
+    --c-bg: #000000; --c-surface: #000000; --c-surface-hover: #1a1a1a; --c-surface-alt: #000000;
+    --c-border: #ffffff; --c-border2: #ffffff; --c-navbar: #000000;
+    --c-text: #ffffff; --c-text-dim: #ffffff; --c-text-faint: #ffffff; --c-text-faint2: #ffffff;
+    --c-accent-blue: #66b2ff; --c-green: #00ff66; --c-red: #ff5555;
+    --c-green-bg: #003311; --c-green-text: #00ff66;
+    --c-google-blue: #66b2ff; --c-google-blue-hover: #99ccff; --c-yellow: #ffff00;
+    --c-on-accent: #000000;
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: -apple-system, Segoe UI, Roboto, sans-serif;
-    background: #0f1115;
-    color: #e8e8e8;
+    background: var(--c-bg);
+    color: var(--c-text);
     min-height: 100vh;
   }
   #app {
@@ -23,164 +51,197 @@
     position: relative;
   }
   h1 { font-size: 1.3rem; margin: 4px 0 2px; }
-  .sub { color: #9aa0a6; font-size: 0.85rem; margin-bottom: 18px; }
+  .sub { color: var(--c-text-dim); font-size: 0.85rem; margin-bottom: 18px; }
   button { border: none; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 600; font-family: inherit; }
 
-  /* ===== Bottom nav ===== */
-  .navbar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    display: flex; justify-content: center;
-    background: #14161b; border-top: 1px solid #232730;
-    z-index: 50;
-  }
-  .navbar-inner { display: flex; width: 100%; max-width: 420px; }
-  .nav-btn {
-    flex: 1; background: none; color: #8a8f98; padding: 12px 4px;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    font-size: 0.72rem; border-radius: 0;
-  }
-  .nav-btn .ic { font-size: 1.2rem; }
-  .nav-btn.active { color: #8ab4f8; }
+  /* ===== Top bar / gear ===== */
+  .topbar { display: flex; justify-content: flex-end; max-width: 420px; margin: 0 auto; padding: 10px 16px 0; }
+  .gear-btn { background: var(--c-surface); color: var(--c-text); width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; }
+  .gear-btn:hover { background: var(--c-border); }
 
-  /* ===== Tabs ===== */
+  /* ===== Bottom nav ===== */
+  .navbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; background: var(--c-navbar); border-top: 1px solid var(--c-border); z-index: 50; }
+  .navbar-inner { display: flex; width: 100%; max-width: 420px; }
+  .nav-btn { flex: 1; background: none; color: var(--c-text-faint2); padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; border-radius: 0; }
+  .nav-btn .ic { font-size: 1.2rem; }
+  .nav-btn.active { color: var(--c-accent-blue); }
+
+  /* ===== Tabs / screens ===== */
   .tab { display: none; }
   .tab.active { display: block; }
 
   /* ===== Toggle switch ===== */
   .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; inset: 0; background: #2a2d35; border-radius: 24px; transition: .2s; }
-  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #9aa0a6; border-radius: 50%; transition: .2s; }
-  .switch input:checked + .slider { background: #34a853; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: var(--c-border2); border-radius: 24px; transition: .2s; }
+  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: var(--c-text-dim); border-radius: 50%; transition: .2s; }
+  .switch input:checked + .slider { background: var(--c-green); }
   .switch input:checked + .slider:before { transform: translateX(18px); background: #fff; }
 
-  /* ===== Category card ===== */
-  .category { background: #1a1d24; border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
-  .category-head {
-    display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-    cursor: pointer; user-select: none;
+  /* ===== Settings panel (topo da tela Configurar) ===== */
+  .settings-panel { background: var(--c-surface); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+  .settings-row:not(:last-child) { border-bottom: 1px solid var(--c-border); }
+  .settings-row .label { font-weight: 600; font-size: 0.9rem; }
+  .settings-row .desc { color: var(--c-text-dim); font-size: 0.75rem; margin-top: 2px; }
+  .settings-row select, .settings-row input[type=range] { flex: 1; max-width: 160px; }
+  select {
+    background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text);
+    border-radius: 8px; padding: 7px 8px; font-size: 0.82rem; font-family: inherit;
   }
-  .category-head .ic { font-size: 1.3rem; }
-  .category-head .title { flex: 1; font-weight: 600; font-size: 0.98rem; }
-  .category-head .chev { color: #8a8f98; transition: transform .2s; font-size: 0.9rem; }
-  .category.open .chev { transform: rotate(90deg); }
-  .category-body { display: none; padding: 0 16px 14px; }
-  .category.open .category-body { display: block; }
+  .limit-row { display: flex; gap: 6px; }
+  .limit-btn { background: var(--c-bg); color: var(--c-text-dim); padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; }
+  .limit-btn.active { background: var(--c-accent-blue); color: var(--c-on-accent); }
 
-  .feature { border-top: 1px solid #232730; padding: 12px 0; }
-  .feature:first-child { border-top: none; }
+  /* ===== Category cards ===== */
+  .category-card {
+    display: flex; align-items: center; gap: 12px; background: var(--c-surface); border-radius: 14px;
+    padding: 16px; margin-bottom: 12px; cursor: pointer;
+  }
+  .category-card:hover { background: var(--c-surface-hover); }
+  .category-card .ic { font-size: 1.5rem; }
+  .category-card .title { flex: 1; font-weight: 600; font-size: 1rem; }
+  .category-card .count { color: var(--c-green-text); font-size: 0.78rem; }
+  .category-card .chev { color: var(--c-text-faint2); }
+
+  /* ===== Detail screen ===== */
+  .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .back-btn { background: var(--c-surface); color: var(--c-text); width: 38px; height: 38px; border-radius: 50%; font-size: 1.1rem; flex-shrink: 0; }
+  .back-btn:hover { background: var(--c-border); }
+  .detail-header h2 { font-size: 1.1rem; margin: 0; }
+
+  .feature { background: var(--c-surface); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
   .feature-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .feature-row .label { font-size: 0.9rem; }
-  .feature-fields { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .feature-row .label { font-size: 0.92rem; font-weight: 600; }
+  .feature-fields { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
   .feature-fields input {
-    background: #0f1115; border: 1px solid #2a2d35; color: #e8e8e8;
+    background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text);
     border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; width: 100%; font-family: inherit;
   }
-  .feature-fields .hint { color: #6f7480; font-size: 0.72rem; }
+  .feature-fields .hint { color: var(--c-text-faint); font-size: 0.72rem; }
+
+  /* ===== Button-group selector (chips clicáveis) ===== */
+  .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn-opt {
+    background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text-dim);
+    padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+  }
+  .btn-opt.selected { background: var(--c-green-bg); border-color: var(--c-green); color: var(--c-green-text); }
 
   /* ===== Premium tab ===== */
   .price-card {
-    background: linear-gradient(145deg, #1a1d24, #20242c);
-    border: 1px solid #2a2d35; border-radius: 16px; padding: 22px; text-align: center; margin-bottom: 18px;
+    background: linear-gradient(145deg, var(--c-surface), var(--c-surface-alt));
+    border: 1px solid var(--c-border2); border-radius: 16px; padding: 22px; text-align: center; margin-bottom: 18px;
   }
-  .price-card .price { font-size: 2rem; font-weight: 700; color: #fbbc04; }
-  .price-card .price span { font-size: 0.9rem; color: #9aa0a6; font-weight: 400; }
-  .premium-list { list-style: none; padding: 0; margin: 0 0 18px; display: flex; flex-direction: column; gap: 10px; }
-  .premium-list li {
-    background: #1a1d24; border-radius: 12px; padding: 12px 14px; font-size: 0.88rem;
-    display: flex; gap: 10px; align-items: flex-start;
+  .price-card .price { font-size: 2rem; font-weight: 700; color: var(--c-yellow); }
+  .price-card .price span { font-size: 0.9rem; color: var(--c-text-dim); font-weight: 400; }
+  .premium-feature { background: var(--c-surface); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .premium-feature .title { font-weight: 600; font-size: 0.98rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .premium-feature .desc { color: var(--c-text-dim); font-size: 0.82rem; margin-bottom: 10px; }
+  .premium-feature input {
+    background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text);
+    border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; width: 100%; font-family: inherit; margin-bottom: 8px;
   }
-  .premium-list .ic { font-size: 1.1rem; }
-  #subscribe-btn {
-    width: 100%; background: #4285f4; color: #fff; padding: 14px; font-size: 1rem; border-radius: 12px;
-  }
-  #subscribe-btn:hover { background: #3367d6; }
-  .premium-note { color: #6f7480; font-size: 0.75rem; text-align: center; margin-top: 10px; }
+  .premium-feature button { background: var(--c-border2); color: var(--c-text); padding: 9px 14px; font-size: 0.85rem; width: 100%; }
+  .premium-feature .result { color: var(--c-green-text); font-size: 0.78rem; margin-top: 8px; }
+  #subscribe-btn { width: 100%; background: var(--c-google-blue); color: #fff; padding: 14px; font-size: 1rem; border-radius: 12px; margin-top: 6px; }
+  #subscribe-btn:hover { background: var(--c-google-blue-hover); }
+  .premium-note { color: var(--c-text-faint); font-size: 0.75rem; text-align: center; margin-top: 10px; }
 
-  /* ===== Briefing tab ===== */
-  .briefing-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
-  #briefing-label { font-size: 0.95rem; min-height: 1.4em; text-align: center; margin-bottom: 6px; color: #e8e8e8; }
-  #briefing-sub { font-size: 0.78rem; color: #9aa0a6; min-height: 1.2em; margin-bottom: 18px; text-align: center; }
-  .play-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  /* ===== Meu Dia ===== */
+  .briefing-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 30px; }
+  #briefing-label { font-size: 1.05rem; min-height: 1.4em; text-align: center; margin-bottom: 6px; color: var(--c-text); }
+  #briefing-sub { font-size: 0.8rem; color: var(--c-text-dim); min-height: 1.2em; margin-bottom: 24px; text-align: center; }
   .play-circle {
-    width: 110px; height: 110px; border-radius: 50%; background: #34a853; color: #fff;
-    font-size: 2.2rem; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 0 8px rgba(52,168,83,0.12);
+    width: 130px; height: 130px; border-radius: 50%; background: var(--c-green); color: #fff;
+    font-size: 2.5rem; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 22px; box-shadow: 0 0 0 8px rgba(52,168,83,0.12);
   }
-  .play-circle.playing { background: #ea4335; box-shadow: 0 0 0 8px rgba(234,67,53,0.12); }
-  .skip-btn {
-    width: 48px; height: 48px; border-radius: 50%; background: #1a1d24; color: #e8e8e8;
-    font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
-  }
-  .skip-btn:hover { background: #232730; }
-  .skip-btn:disabled { opacity: 0.4; cursor: default; }
-  .progress-bar { width: 100%; height: 6px; background: #232730; border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
-  .progress-fill { height: 100%; width: 0%; background: #8ab4f8; transition: width .25s; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
-  .chip {
-    background: #1a1d24; border: 1px solid #2a2d35; color: #9aa0a6; border-radius: 16px;
-    padding: 5px 12px; font-size: 0.75rem;
-  }
-  .chip.active { background: #1f3a2a; border-color: #34a853; color: #8ee6a8; }
-  .briefing-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 14px; }
-  .briefing-row label { font-size: 0.8rem; color: #9aa0a6; white-space: nowrap; }
-  .briefing-row input[type=range] { flex: 1; }
-  .briefing-row select {
-    flex: 1; background: #1a1d24; border: 1px solid #2a2d35; color: #e8e8e8;
-    border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; font-family: inherit;
-  }
-  .limit-row { display: flex; gap: 8px; width: 100%; justify-content: center; margin-bottom: 6px; }
-  .limit-btn { background: #1a1d24; color: #9aa0a6; padding: 8px 14px; border-radius: 10px; font-size: 0.82rem; }
-  .limit-btn.active { background: #8ab4f8; color: #0f1115; }
-  .empty-briefing { color: #6f7480; font-size: 0.85rem; text-align: center; margin-top: 30px; line-height: 1.6; }
+  .play-circle.playing { background: var(--c-red); box-shadow: 0 0 0 8px rgba(234,67,53,0.12); }
+  .progress-bar { width: 100%; height: 6px; background: var(--c-border); border-radius: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--c-accent-blue); transition: width .25s; }
+
+  /* ===== Central de Contas (overlay) ===== */
+  .overlay { position: fixed; inset: 0; background: var(--c-bg); z-index: 100; display: none; overflow-y: auto; }
+  .overlay.open { display: block; }
+  .overlay-inner { max-width: 420px; margin: 0 auto; padding: 18px 16px 40px; }
+  .overlay-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .overlay-header h2 { font-size: 1.15rem; margin: 0; flex: 1; }
+  .account-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .account-tab-btn { flex: 1; background: var(--c-surface); color: var(--c-text-dim); padding: 10px; border-radius: 10px; font-size: 0.85rem; }
+  .account-tab-btn.active { background: var(--c-accent-blue); color: var(--c-on-accent); }
+  .account-panel { display: none; }
+  .account-panel.active { display: block; }
+  .account-card { background: var(--c-surface); border-radius: 14px; padding: 18px; }
+  .account-card .status { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 0.9rem; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-text-faint); }
+  .status-dot.on { background: var(--c-green); }
+  .account-card .scope-list { color: var(--c-text-dim); font-size: 0.8rem; margin-bottom: 14px; line-height: 1.6; }
+  .account-card button { width: 100%; padding: 12px; font-size: 0.9rem; }
+  .btn-connect { background: var(--c-google-blue); color: #fff; }
+  .btn-disconnect { background: var(--c-border2); color: var(--c-text); }
 </style>
 </head>
 <body>
+
+<div class="topbar">
+  <button class="gear-btn" id="gear-btn">⚙️</button>
+</div>
+
 <div id="app">
 
-  <!-- ============ TAB: BRIEFING ============ -->
+  <!-- ============ TAB: MEU DIA ============ -->
   <section class="tab active" id="tab-briefing">
     <h1>▶ Meu Dia</h1>
     <div class="briefing-wrap">
       <div id="briefing-label">Configure suas categorias na aba Grátis</div>
       <div id="briefing-sub"></div>
-
-      <div class="play-controls">
-        <button class="skip-btn" id="prev-btn">⏮</button>
-        <div class="play-circle" id="play-circle">▶</div>
-        <button class="skip-btn" id="next-btn">⏭</button>
-      </div>
-
+      <div class="play-circle" id="play-circle">▶</div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-      <div class="chips" id="sequence-chips"></div>
-
-      <div class="briefing-row">
-        <label>Voz</label>
-        <select id="voice-select"></select>
-      </div>
-
-      <div class="briefing-row">
-        <label>Velocidade</label>
-        <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
-      </div>
-
-      <div class="limit-row" id="limit-row">
-        <button class="limit-btn" data-limit="1">1</button>
-        <button class="limit-btn" data-limit="3">3</button>
-        <button class="limit-btn active" data-limit="5">5</button>
-        <button class="limit-btn" data-limit="10">10</button>
-        <button class="limit-btn" data-limit="all">Todos</button>
-      </div>
     </div>
   </section>
 
-  <!-- ============ TAB: GRATIS ============ -->
+  <!-- ============ TAB: GRATIS (Configurar) ============ -->
   <section class="tab" id="tab-gratis">
-    <h1>🔊 InfoHub</h1>
-    <div class="sub">Seu briefing pessoal, lido em voz alta.</div>
+    <div id="gratis-list-view">
+      <h1>🔊 InfoHub</h1>
+      <div class="sub">Configure o que você quer ouvir.</div>
 
-    <div id="categories"></div>
+      <div class="settings-panel">
+        <div class="settings-row">
+          <div>
+            <div class="label">⚡ Modo rápido</div>
+            <div class="desc">Lê versões curtas em vez do conteúdo completo</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="quick-mode-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="label">Voz</div>
+          <select id="voice-select"></select>
+        </div>
+        <div class="settings-row">
+          <div class="label">Velocidade</div>
+          <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
+        </div>
+        <div class="settings-row">
+          <div class="label">Itens por categoria</div>
+          <div class="limit-row" id="limit-row">
+            <button class="limit-btn" data-limit="1">1</button>
+            <button class="limit-btn" data-limit="3">3</button>
+            <button class="limit-btn active" data-limit="5">5</button>
+            <button class="limit-btn" data-limit="10">10</button>
+            <button class="limit-btn" data-limit="all">Todos</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="category-cards"></div>
+    </div>
+
+    <div id="gratis-detail-view" style="display:none;"></div>
   </section>
 
   <!-- ============ TAB: PREMIUM ============ -->
@@ -192,16 +253,25 @@
       <div class="price">R$ 9,90 <span>/ mês</span></div>
     </div>
 
-    <ul class="premium-list">
-      <li><span class="ic">🚗</span><div><b>Trânsito em tempo real</b><br>Localização exata via GPS (Google Maps)</div></li>
-      <li><span class="ic">📦</span><div><b>Rastreio de encomenda</b><br>Status de entregas automaticamente</div></li>
-      <li><span class="ic">🧾</span><div><b>Alertas de boleto</b><br>Detecta boletos a vencer no seu Gmail</div></li>
-      <li><span class="ic">⏰</span><div><b>Meu Dia automático</b><br>Toca sozinho ao ligar o PC (PWA)</div></li>
-      <li><span class="ic">👥</span><div><b>Múltiplos perfis</b><br>Configurações separadas por pessoa</div></li>
-    </ul>
+    <div class="premium-feature">
+      <div class="title">🧭 GPS auditivo</div>
+      <div class="desc">Navegação por voz completa — 100% auditivo, sem precisar olhar pra tela.</div>
+      <input type="text" id="gps-origem" placeholder="Origem (endereço ou 'localização atual')">
+      <input type="text" id="gps-destino" placeholder="Destino">
+      <button id="gps-start-btn">🔊 Iniciar navegação por voz</button>
+      <div class="result" id="gps-result"></div>
+    </div>
 
-    <button id="subscribe-btn">Assinar com Google</button>
-    <div class="premium-note">Pagamento via Mercado Pago. Em breve.</div>
+    <div class="premium-feature">
+      <div class="title">📦 Rastreio de encomenda</div>
+      <div class="desc">Cole o código de rastreio e o app lê o status em voz alta.</div>
+      <input type="text" id="rastreio-codigo" placeholder="Código de rastreio, ex: BR123456789BR">
+      <button id="rastreio-btn">🔊 Rastrear</button>
+      <div class="result" id="rastreio-result"></div>
+    </div>
+
+    <button id="subscribe-btn">Assinar com Mercado Pago</button>
+    <div class="premium-note">Pagamento via Mercado Pago.</div>
   </section>
 
   <!-- ============ NAV BAR ============ -->
@@ -214,26 +284,81 @@
   </nav>
 </div>
 
+<!-- ============ CENTRAL DE CONTAS (overlay) ============ -->
+<div class="overlay" id="accounts-overlay">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <button class="back-btn" id="accounts-close-btn">←</button>
+      <h2>Central de Contas</h2>
+    </div>
+
+    <div class="account-tabs">
+      <button class="account-tab-btn active" data-account="google">Google</button>
+      <button class="account-tab-btn" data-account="spotify">Spotify</button>
+      <button class="account-tab-btn" data-account="youtube">YouTube</button>
+      <button class="account-tab-btn" data-account="tema">Tema</button>
+    </div>
+
+    <div class="account-panel active" id="account-google">
+      <div class="account-card">
+        <div class="status"><span class="status-dot" id="google-status-dot"></span><span id="google-status-text">Desconectado</span></div>
+        <div class="scope-list">Acesso a: e-mail, agenda e contatos (aniversários).</div>
+        <button class="btn-connect" id="google-connect-btn">Entrar com Google</button>
+      </div>
+    </div>
+
+    <div class="account-panel" id="account-spotify">
+      <div class="account-card">
+        <div class="status"><span class="status-dot" id="spotify-status-dot"></span><span id="spotify-status-text">Desconectado</span></div>
+        <div class="scope-list">Acesso a: podcasts e músicas salvas.</div>
+        <button class="btn-connect" id="spotify-connect-btn">Entrar com Spotify</button>
+      </div>
+    </div>
+
+    <div class="account-panel" id="account-youtube">
+      <div class="account-card">
+        <div class="status"><span class="status-dot" id="youtube-status-dot"></span><span id="youtube-status-text">Desconectado</span></div>
+        <div class="scope-list">Usa a mesma conta Google. Canais favoritos: em breve.</div>
+        <button class="btn-connect" id="youtube-connect-btn">Entrar com Google</button>
+      </div>
+    </div>
+
+    <div class="account-panel" id="account-tema">
+      <div class="account-card">
+        <div class="btn-group" id="theme-options">
+          <button type="button" class="btn-opt" data-theme="dark">🌙 Escuro (padrão)</button>
+          <button type="button" class="btn-opt" data-theme="light">☀️ Claro</button>
+          <button type="button" class="btn-opt" data-theme="high-contrast">◐ Alto contraste</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* =========================================================================
    CONFIGURAÇÃO
-   CLIENT_ID e SUPABASE_ANON_KEY não são segredos — client id OAuth e a chave
-   "publishable" do Supabase são feitos pra rodar no navegador. As chaves de
-   verdade (OpenWeatherMap, API-Football) ficam só no servidor, como secret
-   das Supabase Edge Functions em supabase/functions/*, nunca aqui.
+   CLIENT_ID, SPOTIFY_CLIENT_ID e SUPABASE_ANON_KEY não são segredos — são
+   feitos pra rodar no navegador (OAuth client id público / chave publishable).
+   Chaves de verdade (OpenWeatherMap, API-Football, Google Maps) ficam só no
+   servidor, como secret das Supabase Edge Functions em supabase/functions/*.
    ========================================================================= */
 const CLIENT_ID = '614074980827-7k3u0ugpmk8100chp5m1998b36peajo9.apps.googleusercontent.com';
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/contacts.readonly',
+  'https://www.googleapis.com/auth/youtube.readonly',
 ].join(' ');
+
+// Preencha quando criar o app em https://developer.spotify.com/dashboard
+const SPOTIFY_CLIENT_ID = '';
+const SPOTIFY_SCOPES = 'user-library-read user-top-read playlist-read-private';
 
 const SUPABASE_URL = 'https://xpscjwcqgdldwtmbbzua.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1bC_g0W2cQ_Sx2b968VFtg_UkeTRUV0';
 
-// Premium (ainda não implementado: checagem de flag fica pra depois)
 const MERCADOPAGO_SUBSCRIBE_LINK = '';
 
 /* =========================================================================
@@ -243,51 +368,58 @@ const CATEGORY_DEFS = [
   {
     id: 'pessoal', icon: '👤', title: 'Pessoal',
     features: [
-      { id: 'email', label: 'E-mails não lidos', fields: [] , hint: 'Requer login com Google (botão aparece ao ativar)'},
-      { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Eventos do Google Calendar de hoje' },
-      { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Contatos do Google com aniversário hoje' },
+      { id: 'email', label: 'Últimos e-mails (resumo)', fields: [], hint: 'Sempre resumo, até 10 mais recentes — conecta em ⚙️ Central de Contas' },
+      { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
+      { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
     ],
   },
   {
     id: 'clima', icon: '🌤️', title: 'Clima',
     features: [
       { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', fields: [
-        { id: 'cidade', placeholder: 'Cidade (Sao Paulo,BR) ou CEP (01310-100)' },
-      ], hint: 'Usa OpenWeatherMap — UV e qualidade do ar vêm automaticamente', testable: true },
+        { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
+        { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2 — opcional' },
+      ], hint: 'Usa OpenWeatherMap' },
     ],
   },
   {
     id: 'noticias', icon: '📰', title: 'Noticias',
     features: [
       { id: 'keyword', label: 'Notícias por palavra-chave', fields: [
-        { id: 'termos', placeholder: 'Até 5, separadas por vírgula. Ex: tecnologia, futebol' },
+        { id: 'termos', kind: 'text', placeholder: 'Até 5, separadas por vírgula. Ex: tecnologia, futebol' },
       ], hint: 'Google News RSS' },
       { id: 'reddit', label: 'Reddit', fields: [
-        { id: 'subreddits', placeholder: 'Até 5, separados por vírgula. Ex: brasil, technology' },
+        { id: 'subreddits', kind: 'text', placeholder: 'Até 5, separados por vírgula. Ex: brasil, technology' },
       ], hint: 'Posts recentes do subreddit (RSS)' },
     ],
   },
   {
     id: 'financeiro', icon: '💰', title: 'Financeiro',
     features: [
-      { id: 'dolar', label: 'Dólar e Bitcoin', fields: [], hint: 'Banco Central + CoinGecko, sem chave' },
-      { id: 'acoes', label: 'Ações por ticker', fields: [
-        { id: 'tickers', placeholder: 'Até 5, separados por vírgula. Ex: PETR4.SA, AAPL' },
-      ], hint: 'Yahoo Finance RSS' },
+      { id: 'cotacoes', label: 'Cotações', fields: [
+        { id: 'moedas', kind: 'buttons', options: ['Dólar', 'Euro', 'Libra', 'Peso'] },
+        { id: 'criptos', kind: 'buttons', options: ['Bitcoin', 'Ethereum', 'Solana', 'BNB'] },
+      ], hint: 'Moedas via Banco Central, criptos via CoinGecko — sem chave' },
     ],
   },
   {
     id: 'entretenimento', icon: '🎮', title: 'Entretenimento',
     features: [
-      { id: 'esportes', label: 'Esportes (resultado/próximo jogo)', fields: [
-        { id: 'times', placeholder: 'Até 5 times, separados por vírgula. Ex: Flamengo, Real Madrid' },
-      ], hint: 'API-Football (free tier)' },
-      { id: 'podcasts', label: 'Podcasts (novos episódios)', fields: [
-        { id: 'nomes', placeholder: 'Até 5 podcasts, separados por vírgula' },
-      ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
-      { id: 'midia', label: 'Filmes e séries (lançamentos)', fields: [
-        { id: 'nomes', placeholder: 'Até 5 títulos, separados por vírgula' },
-      ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
+      { id: 'filmes', label: 'Filmes em cartaz', fields: [], hint: 'Estreias de cinema' },
+      { id: 'series', label: 'Séries lançamentos', fields: [], hint: 'Lançamentos de streaming' },
+      { id: 'musicas', label: 'Músicas por categoria', fields: [
+        { id: 'generos', kind: 'buttons', options: ['Pop', 'Rap', 'Eletrônico', 'Sertanejo', 'Rock'] },
+      ], hint: 'Via Spotify se conectado, senão notícias musicais' },
+      { id: 'jogos', label: 'Jogos (lançamentos)', fields: [], hint: 'IGN Brasil' },
+    ],
+  },
+  {
+    id: 'esportes', icon: '⚽', title: 'Esportes',
+    features: [
+      { id: 'jogo', label: 'Resultado e próximo jogo', fields: [
+        { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
+        { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
+      ], hint: 'API-Football' },
     ],
   },
 ];
@@ -300,83 +432,140 @@ function parseList(value) {
 /* =========================================================================
    ESTADO / PERSISTÊNCIA
    ========================================================================= */
-const STORAGE_KEY = 'infohub_state_v1';
+const STORAGE_KEY = 'infohub_state_v2';
 
 function loadState() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) {}
   return {
-    open: saved.open || {},
+    quickMode: saved.quickMode || false,
     features: saved.features || {}, // { 'pessoal.email': { enabled, fields: {} } }
     briefingLimit: saved.briefingLimit || 5,
     briefingRate: saved.briefingRate || 1,
     voiceName: saved.voiceName || null,
+    activeClimateCity: saved.activeClimateCity || 1,
+    theme: saved.theme || 'dark',
   };
 }
 
 let state = loadState();
+let openCategoryId = null;
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function featureKey(catId, featId) { return `${catId}.${featId}`; }
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.querySelectorAll('#theme-options .btn-opt').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.theme === state.theme);
+  });
+}
+applyTheme();
+
+document.querySelectorAll('#theme-options .btn-opt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.theme = btn.dataset.theme;
+    saveState();
+    applyTheme();
+  });
+});
 
 function getFeatureState(catId, featId) {
-  const key = featureKey(catId, featId);
+  const key = `${catId}.${featId}`;
   if (!state.features[key]) state.features[key] = { enabled: false, fields: {} };
   return state.features[key];
 }
 
 /* =========================================================================
-   RENDER — ABA GRÁTIS
+   RENDER — TELA CONFIGURAR (lista de cards + tela de detalhe)
    ========================================================================= */
-const categoriesEl = document.getElementById('categories');
+const listView = document.getElementById('gratis-list-view');
+const detailView = document.getElementById('gratis-detail-view');
+const categoryCardsEl = document.getElementById('category-cards');
 
-function renderCategories() {
-  categoriesEl.innerHTML = '';
+function countEnabled(cat) {
+  return cat.features.filter(f => getFeatureState(cat.id, f.id).enabled).length;
+}
+
+function renderCategoryCards() {
+  categoryCardsEl.innerHTML = '';
   CATEGORY_DEFS.forEach(cat => {
-    const isOpen = !!state.open[cat.id];
-    const catEl = document.createElement('div');
-    catEl.className = 'category' + (isOpen ? ' open' : '');
+    const card = document.createElement('div');
+    card.className = 'category-card';
+    const enabledCount = countEnabled(cat);
+    card.innerHTML = `
+      <span class="ic">${cat.icon}</span>
+      <span class="title">${cat.title}</span>
+      ${enabledCount > 0 ? `<span class="count">${enabledCount} ativa${enabledCount > 1 ? 's' : ''}</span>` : ''}
+      <span class="chev">›</span>
+    `;
+    card.addEventListener('click', () => openCategoryDetail(cat.id));
+    categoryCardsEl.appendChild(card);
+  });
+}
 
-    const head = document.createElement('div');
-    head.className = 'category-head';
-    head.innerHTML = `<span class="ic">${cat.icon}</span><span class="title">${cat.title}</span><span class="chev">▶</span>`;
-    head.addEventListener('click', () => {
-      state.open[cat.id] = !state.open[cat.id];
+function renderButtonGroup(field, fs, onChange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'btn-group';
+  const selected = new Set(fs.fields[field.id] || []);
+  field.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-opt' + (selected.has(opt) ? ' selected' : '');
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      if (selected.has(opt)) selected.delete(opt); else selected.add(opt);
+      fs.fields[field.id] = Array.from(selected);
       saveState();
-      renderCategories();
+      btn.classList.toggle('selected');
+      if (onChange) onChange();
     });
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
 
-    const body = document.createElement('div');
-    body.className = 'category-body';
+function openCategoryDetail(catId) {
+  openCategoryId = catId;
+  const cat = CATEGORY_DEFS.find(c => c.id === catId);
+  listView.style.display = 'none';
+  detailView.style.display = 'block';
+  detailView.innerHTML = '';
 
-    cat.features.forEach(feat => {
-      const fs = getFeatureState(cat.id, feat.id);
-      const featEl = document.createElement('div');
-      featEl.className = 'feature';
+  const header = document.createElement('div');
+  header.className = 'detail-header';
+  header.innerHTML = `<button class="back-btn" id="detail-back-btn">←</button><h2>${cat.icon} ${cat.title}</h2>`;
+  detailView.appendChild(header);
 
-      const row = document.createElement('div');
-      row.className = 'feature-row';
-      row.innerHTML = `<span class="label">${feat.label}</span>`;
-      const label = document.createElement('label');
-      label.className = 'switch';
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.checked = fs.enabled;
-      const slider = document.createElement('span');
-      slider.className = 'slider';
-      label.appendChild(input);
-      label.appendChild(slider);
-      row.appendChild(label);
-      featEl.appendChild(row);
+  cat.features.forEach(feat => {
+    const fs = getFeatureState(cat.id, feat.id);
+    const featEl = document.createElement('div');
+    featEl.className = 'feature';
 
-      const fieldsEl = document.createElement('div');
-      fieldsEl.className = 'feature-fields';
-      fieldsEl.style.display = fs.enabled ? 'flex' : 'none';
+    const row = document.createElement('div');
+    row.className = 'feature-row';
+    row.innerHTML = `<span class="label">${feat.label}</span>`;
+    const label = document.createElement('label');
+    label.className = 'switch';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = fs.enabled;
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+    label.appendChild(input);
+    label.appendChild(slider);
+    row.appendChild(label);
+    featEl.appendChild(row);
 
-      feat.fields.forEach(field => {
+    const fieldsEl = document.createElement('div');
+    fieldsEl.className = 'feature-fields';
+    fieldsEl.style.display = fs.enabled ? 'flex' : 'none';
+
+    feat.fields.forEach(field => {
+      if (field.kind === 'buttons') {
+        fieldsEl.appendChild(renderButtonGroup(field, fs));
+      } else {
         const fieldInput = document.createElement('input');
         fieldInput.type = 'text';
         fieldInput.placeholder = field.placeholder;
@@ -386,85 +575,34 @@ function renderCategories() {
           saveState();
         });
         fieldsEl.appendChild(fieldInput);
-      });
-
-      if (feat.id === 'email') {
-        const signinBtn = document.createElement('button');
-        signinBtn.textContent = accessToken ? '✅ Conectado ao Google' : '🔑 Entrar com Google';
-        signinBtn.style.background = accessToken ? '#1f3a2a' : '#4285f4';
-        signinBtn.style.color = accessToken ? '#8ee6a8' : '#fff';
-        signinBtn.style.padding = '9px 12px';
-        signinBtn.style.fontSize = '0.85rem';
-        signinBtn.addEventListener('click', () => {
-          if (!accessToken) tokenClient.requestAccessToken();
-        });
-        fieldsEl.appendChild(signinBtn);
       }
-
-      if (feat.testable) {
-        const testBtn = document.createElement('button');
-        testBtn.textContent = '🔊 Testar agora';
-        testBtn.style.background = '#2a2d35';
-        testBtn.style.color = '#e8e8e8';
-        testBtn.style.padding = '9px 12px';
-        testBtn.style.fontSize = '0.85rem';
-        const resultEl = document.createElement('div');
-        resultEl.className = 'hint';
-        testBtn.addEventListener('click', async () => {
-          testBtn.textContent = 'Buscando...';
-          testBtn.disabled = true;
-          resultEl.style.color = '#9aa0a6';
-          resultEl.textContent = '';
-          try {
-            if (cat.id === 'clima' && feat.id === 'previsao') {
-              const { items, error } = await fetchWeatherItems(fs.fields.cidade);
-              if (error) {
-                resultEl.style.color = '#ea4335';
-                resultEl.textContent = error;
-              } else {
-                resultEl.style.color = '#8ee6a8';
-                resultEl.textContent = items.map(i => i.title).join(' · ');
-                const utter = new SpeechSynthesisUtterance(items.map(i => i.full).join(' '));
-                const voice = getSelectedVoice();
-                if (voice) utter.voice = voice;
-                utter.lang = voice ? voice.lang : 'pt-BR';
-                speechSynthesis.speak(utter);
-              }
-            }
-          } catch (e) {
-            resultEl.style.color = '#ea4335';
-            resultEl.textContent = 'Erro: ' + e.message;
-          } finally {
-            testBtn.textContent = '🔊 Testar agora';
-            testBtn.disabled = false;
-          }
-        });
-        fieldsEl.appendChild(testBtn);
-        fieldsEl.appendChild(resultEl);
-      }
-
-      if (feat.hint) {
-        const hint = document.createElement('div');
-        hint.className = 'hint';
-        hint.textContent = feat.hint;
-        fieldsEl.appendChild(hint);
-      }
-
-      featEl.appendChild(fieldsEl);
-      body.appendChild(featEl);
-
-      input.addEventListener('change', () => {
-        fs.enabled = input.checked;
-        fieldsEl.style.display = fs.enabled ? 'flex' : 'none';
-        saveState();
-        renderSequenceChips();
-      });
     });
 
-    catEl.appendChild(head);
-    catEl.appendChild(body);
-    categoriesEl.appendChild(catEl);
+    if (feat.hint) {
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = feat.hint;
+      fieldsEl.appendChild(hint);
+    }
+
+    featEl.appendChild(fieldsEl);
+    detailView.appendChild(featEl);
+
+    input.addEventListener('change', () => {
+      fs.enabled = input.checked;
+      fieldsEl.style.display = fs.enabled ? 'flex' : 'none';
+      saveState();
+    });
   });
+
+  document.getElementById('detail-back-btn').addEventListener('click', closeCategoryDetail);
+}
+
+function closeCategoryDetail() {
+  openCategoryId = null;
+  detailView.style.display = 'none';
+  listView.style.display = 'block';
+  renderCategoryCards();
 }
 
 /* =========================================================================
@@ -476,12 +614,81 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-    if (btn.dataset.tab === 'briefing') renderSequenceChips();
   });
 });
 
 /* =========================================================================
-   GOOGLE OAUTH (Gmail / Calendar / Contacts)
+   MODO RÁPIDO / VOZ / VELOCIDADE / LIMITE (painel de configurações)
+   ========================================================================= */
+const quickModeToggle = document.getElementById('quick-mode-toggle');
+quickModeToggle.checked = state.quickMode;
+quickModeToggle.addEventListener('change', () => {
+  state.quickMode = quickModeToggle.checked;
+  saveState();
+});
+
+document.querySelectorAll('.limit-btn').forEach(btn => {
+  if ((state.briefingLimit === 'all' && btn.dataset.limit === 'all') || state.briefingLimit === parseInt(btn.dataset.limit, 10)) {
+    document.querySelectorAll('.limit-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.limit-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.briefingLimit = btn.dataset.limit === 'all' ? 'all' : parseInt(btn.dataset.limit, 10);
+    saveState();
+  });
+});
+
+const briefingRateInput = document.getElementById('briefing-rate');
+briefingRateInput.value = state.briefingRate;
+briefingRateInput.addEventListener('input', () => {
+  state.briefingRate = parseFloat(briefingRateInput.value);
+  saveState();
+});
+
+let voices = [];
+const voiceSelect = document.getElementById('voice-select');
+
+function voiceRank(v) {
+  const isBr = v.lang.toLowerCase().startsWith('pt-br');
+  const isNatural = /Online.*Natural/i.test(v.name);
+  if (isBr && isNatural) return 0;
+  if (isBr) return 1;
+  if (v.lang.toLowerCase().startsWith('en')) return 2;
+  return 3;
+}
+
+const CONFIRMED_ONLINE_VOICES = /Francisca|Antonio|Aria|Guy/i;
+
+function populateVoices() {
+  voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('pt') || v.lang.startsWith('en'));
+  voices = voices.filter(v => !/Online.*Natural/i.test(v.name) || CONFIRMED_ONLINE_VOICES.test(v.name));
+  if (voices.length === 0) voices = speechSynthesis.getVoices();
+  voices.sort((a, b) => voiceRank(a) - voiceRank(b));
+  voiceSelect.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join('');
+  const savedIndex = state.voiceName ? voices.findIndex(v => v.name === state.voiceName) : -1;
+  if (savedIndex !== -1) {
+    voiceSelect.value = savedIndex;
+  } else {
+    const preferredIndex = voices.findIndex(v => /Francisca.*Online.*Natural/i.test(v.name));
+    if (preferredIndex !== -1) voiceSelect.value = preferredIndex;
+  }
+}
+
+voiceSelect.addEventListener('change', () => {
+  const selected = voices[voiceSelect.value];
+  if (selected) { state.voiceName = selected.name; saveState(); }
+});
+speechSynthesis.onvoiceschanged = populateVoices;
+populateVoices();
+
+function getSelectedVoice() {
+  return voices[voiceSelect.value];
+}
+
+/* =========================================================================
+   CENTRAL DE CONTAS (overlay) + GOOGLE OAUTH
    ========================================================================= */
 let tokenClient;
 let accessToken = null;
@@ -494,7 +701,7 @@ function loadGis() {
     callback: (resp) => {
       if (resp.error) { console.error('Erro no login Google:', resp.error); return; }
       accessToken = resp.access_token;
-      renderCategories();
+      updateAccountsUI();
     },
   });
 }
@@ -506,44 +713,131 @@ async function googleApiFetch(url) {
   return res.json();
 }
 
+const gearBtn = document.getElementById('gear-btn');
+const accountsOverlay = document.getElementById('accounts-overlay');
+gearBtn.addEventListener('click', () => { accountsOverlay.classList.add('open'); updateAccountsUI(); });
+document.getElementById('accounts-close-btn').addEventListener('click', () => accountsOverlay.classList.remove('open'));
+
+document.querySelectorAll('.account-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.account-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.account-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`account-${btn.dataset.account}`).classList.add('active');
+  });
+});
+
+function updateAccountsUI() {
+  const googleOn = !!accessToken;
+  document.getElementById('google-status-dot').classList.toggle('on', googleOn);
+  document.getElementById('google-status-text').textContent = googleOn ? 'Conectado' : 'Desconectado';
+  document.getElementById('google-connect-btn').textContent = googleOn ? 'Desconectar' : 'Entrar com Google';
+  document.getElementById('google-connect-btn').className = googleOn ? 'btn-disconnect' : 'btn-connect';
+
+  document.getElementById('youtube-status-dot').classList.toggle('on', googleOn);
+  document.getElementById('youtube-status-text').textContent = googleOn ? 'Conectado' : 'Desconectado';
+  document.getElementById('youtube-connect-btn').textContent = googleOn ? 'Desconectar' : 'Entrar com Google';
+  document.getElementById('youtube-connect-btn').className = googleOn ? 'btn-disconnect' : 'btn-connect';
+
+  const spotifyToken = localStorage.getItem('infohub_spotify_token');
+  const spotifyOn = !!spotifyToken;
+  document.getElementById('spotify-status-dot').classList.toggle('on', spotifyOn);
+  document.getElementById('spotify-status-text').textContent = spotifyOn ? 'Conectado' : 'Desconectado';
+  document.getElementById('spotify-connect-btn').textContent = spotifyOn ? 'Desconectar' : 'Entrar com Spotify';
+  document.getElementById('spotify-connect-btn').className = spotifyOn ? 'btn-disconnect' : 'btn-connect';
+}
+
+document.getElementById('google-connect-btn').addEventListener('click', () => {
+  if (accessToken) { accessToken = null; updateAccountsUI(); }
+  else tokenClient.requestAccessToken();
+});
+document.getElementById('youtube-connect-btn').addEventListener('click', () => {
+  if (accessToken) { accessToken = null; updateAccountsUI(); }
+  else tokenClient.requestAccessToken();
+});
+
+/* ----- Spotify OAuth (PKCE) ----- */
+function base64UrlEncode(buffer) {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function sha256(plain) {
+  const data = new TextEncoder().encode(plain);
+  return crypto.subtle.digest('SHA-256', data);
+}
+
+function randomString(length) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+async function startSpotifyLogin() {
+  if (!SPOTIFY_CLIENT_ID) {
+    alert('Configure o SPOTIFY_CLIENT_ID no topo do index.html primeiro (crie o app em developer.spotify.com/dashboard).');
+    return;
+  }
+  const verifier = randomString(64);
+  localStorage.setItem('infohub_spotify_verifier', verifier);
+  const challenge = base64UrlEncode(await sha256(verifier));
+  const redirectUri = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+    scope: SPOTIFY_SCOPES,
+  });
+  window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+async function handleSpotifyRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return;
+  const verifier = localStorage.getItem('infohub_spotify_verifier');
+  if (!verifier) return;
+  const redirectUri = window.location.origin + window.location.pathname;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        code_verifier: verifier,
+      }),
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('infohub_spotify_token', data.access_token);
+    }
+  } catch (e) {
+    console.error('Falha no login do Spotify:', e);
+  }
+  window.history.replaceState({}, document.title, redirectUri);
+}
+handleSpotifyRedirect();
+
+document.getElementById('spotify-connect-btn').addEventListener('click', () => {
+  if (localStorage.getItem('infohub_spotify_token')) {
+    localStorage.removeItem('infohub_spotify_token');
+    updateAccountsUI();
+  } else {
+    startSpotifyLogin();
+  }
+});
+
+/* =========================================================================
+   PESSOAL — E-mail (sempre resumo, até 10) / Agenda / Aniversários
+   ========================================================================= */
 function decodeBase64Url(str) {
   str = str.replace(/-/g, '+').replace(/_/g, '/');
   try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); }
-}
-
-function extractBody(payload) {
-  if (!payload) return '';
-  if (payload.body && payload.body.data) return decodeBase64Url(payload.body.data);
-  if (payload.parts) {
-    const plain = payload.parts.find(p => p.mimeType === 'text/plain');
-    if (plain && plain.body && plain.body.data) return decodeBase64Url(plain.body.data);
-    for (const part of payload.parts) {
-      const nested = extractBody(part);
-      if (nested) return nested;
-    }
-  }
-  return '';
-}
-
-function stripHtml(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || div.innerText || '';
-}
-
-function cleanBody(text) {
-  return text
-    .replace(/https?:\/\/\S+/gi, '')
-    .replace(/www\.\S+/gi, '')
-    .replace(/\S+@\S+\.\S+/gi, '')
-    .replace(/clique\s+aqui/gi, '')
-    .replace(/click\s+here/gi, '')
-    .replace(/leia\s+mais/gi, '')
-    .replace(/saiba\s+mais/gi, '')
-    .replace(/cancelar\s+inscri[cç][aã]o/gi, '')
-    .replace(/unsubscribe/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 function getHeader(headers, name) {
@@ -551,33 +845,19 @@ function getHeader(headers, name) {
   return h ? h.value : '';
 }
 
-function truncateAtBoundary(text, maxLen) {
-  if (text.length <= maxLen) return text;
-  const slice = text.slice(0, maxLen);
-  const lastSentenceEnd = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
-  if (lastSentenceEnd > maxLen * 0.4) return slice.slice(0, lastSentenceEnd + 1);
-  const lastSpace = slice.lastIndexOf(' ');
-  return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice) + '.';
-}
-
-async function fetchEmailItems(limit) {
+async function fetchEmailItems() {
   if (!accessToken) return [];
-  const listResp = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=UNREAD&maxResults=${limit}`);
+  const listResp = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=UNREAD&maxResults=10`);
   if (!listResp.messages) return [];
   const items = [];
   for (const m of listResp.messages) {
-    const msg = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`);
+    const msg = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);
     const headers = msg.payload.headers;
     const from = getHeader(headers, 'From').replace(/<.*?>/, '').trim();
     const subject = getHeader(headers, 'Subject') || '(sem assunto)';
     const snippet = msg.snippet || '';
-    const fullBody = truncateAtBoundary(cleanBody(stripHtml(extractBody(msg.payload))), 900);
-    items.push({
-      category: 'Pessoal', sub: 'E-mail',
-      title: `${from} — ${subject}`,
-      full: `E-mail de ${from}, assunto: ${subject}. ${fullBody || snippet}`,
-      quick: `E-mail de ${from}: ${snippet}`,
-    });
+    const text = `E-mail de ${from}, assunto: ${subject}. ${snippet}`;
+    items.push({ category: 'Pessoal', sub: 'E-mail', title: `${from} — ${subject}`, full: text, quick: text });
   }
   return items;
 }
@@ -585,8 +865,8 @@ async function fetchEmailItems(limit) {
 async function fetchAgendaItems(limit) {
   if (!accessToken) return [];
   const now = new Date();
-  const start = new Date(now); start.setHours(0,0,0,0);
-  const end = new Date(now); end.setHours(23,59,59,999);
+  const start = new Date(now); start.setHours(0, 0, 0, 0);
+  const end = new Date(now); end.setHours(23, 59, 59, 999);
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=${limit}`;
   const resp = await googleApiFetch(url);
   if (!resp.items) return [];
@@ -603,7 +883,7 @@ async function fetchAniversariosItems(limit) {
   const resp = await googleApiFetch(url);
   if (!resp.connections) return [];
   const today = new Date();
-  const matches = resp.connections.filter(p => p.birthdays && p.birthdays.some(b => b.date && b.date.month === today.getMonth()+1 && b.date.day === today.getDate()));
+  const matches = resp.connections.filter(p => p.birthdays && p.birthdays.some(b => b.date && b.date.month === today.getMonth() + 1 && b.date.day === today.getDate()));
   return matches.slice(0, limit).map(p => {
     const name = (p.names && p.names[0] && p.names[0].displayName) || 'Alguém';
     return { category: 'Pessoal', sub: 'Aniversário', title: `🎂 ${name}`, full: `Hoje é aniversário de ${name}.`, quick: `Aniversário: ${name}` };
@@ -611,7 +891,7 @@ async function fetchAniversariosItems(limit) {
 }
 
 /* =========================================================================
-   CLIMA — OpenWeatherMap
+   SUPABASE EDGE FUNCTIONS
    ========================================================================= */
 async function callEdgeFunction(name, params) {
   const url = `${SUPABASE_URL}/functions/v1/${name}?${new URLSearchParams(params)}`;
@@ -619,17 +899,28 @@ async function callEdgeFunction(name, params) {
   return res.json();
 }
 
-async function fetchWeatherItems(local) {
-  if (!local) return { items: [], error: 'Configure a cidade ou CEP.' };
-  try {
-    return await callEdgeFunction('weather', { local });
-  } catch (e) {
-    return { items: [], error: 'Falha ao falar com a Edge Function de clima: ' + e.message };
+/* =========================================================================
+   CLIMA — até 2 cidades
+   ========================================================================= */
+async function fetchWeatherItems(cidade1, cidade2) {
+  const cidades = [cidade1, cidade2].filter(Boolean);
+  if (cidades.length === 0) return { items: [], error: 'Configure pelo menos uma cidade.' };
+  let allItems = [];
+  let firstError = null;
+  for (const cidade of cidades) {
+    try {
+      const { items, error } = await callEdgeFunction('weather', { local: cidade });
+      if (error && !firstError) firstError = error;
+      allItems = allItems.concat(items || []);
+    } catch (e) {
+      if (!firstError) firstError = 'Falha ao falar com a Edge Function de clima: ' + e.message;
+    }
   }
+  return { items: allItems, error: allItems.length === 0 ? firstError : null };
 }
 
 /* =========================================================================
-   RSS — via Supabase Edge Function (busca no servidor, sem CORS/proxy)
+   RSS — via Supabase Edge Function
    ========================================================================= */
 async function fetchRssTitles(targetUrl) {
   try {
@@ -662,81 +953,86 @@ async function fetchRedditItems(subredditsStr, limit) {
   return all;
 }
 
-async function fetchPodcastItems(nomesStr, limit) {
-  const nomes = parseList(nomesStr);
+async function fetchFilmesItems(limit) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent('filmes em cartaz cinema Brasil')}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  const titles = await fetchRssTitles(url);
+  return titles.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: 'Filmes', title, full: `Nos cinemas: ${title}.`, quick: title }));
+}
+
+async function fetchSeriesItems(limit) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent('séries lançamento streaming')}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  const titles = await fetchRssTitles(url);
+  return titles.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: 'Séries', title, full: `Lançamento de série: ${title}.`, quick: title }));
+}
+
+async function fetchMusicasItems(generos, limit) {
+  if (!generos || generos.length === 0) return [];
+  const spotifyToken = localStorage.getItem('infohub_spotify_token');
   let all = [];
-  for (const nome of nomes) {
-    try {
-      const { items, error } = await callEdgeFunction('podcast', { name: nome });
-      if (error) continue;
-      all = all.concat((items || []).slice(0, limit).map(title => ({ category: 'Entretenimento', sub: `Podcast: ${nome}`, title, full: `Novo episódio de ${nome}: ${title}.`, quick: title })));
-    } catch (e) {}
+  for (const genero of generos) {
+    if (spotifyToken) {
+      // TODO: trocar por chamada real à Spotify Web API quando SPOTIFY_CLIENT_ID estiver configurado.
+      continue;
+    }
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent('música ' + genero + ' lançamentos')}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+    const titles = await fetchRssTitles(url);
+    all = all.concat(titles.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: `Música ${genero}`, title, full: `Em ${genero}: ${title}.`, quick: title })));
   }
   return all;
 }
 
-async function fetchMidiaItems(nomesStr, limit) {
-  const nomes = parseList(nomesStr);
-  let all = [];
-  for (const nome of nomes) {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(nome + ' lançamento')}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-    const titles = await fetchRssTitles(url);
-    all = all.concat(titles.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: nome, title, full: `Sobre ${nome}: ${title}.`, quick: title })));
-  }
-  return all;
-}
-
-async function fetchStockItems(tickersStr, limit) {
-  const tickers = parseList(tickersStr);
-  let all = [];
-  for (const ticker of tickers) {
-    const url = `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(ticker)}&region=US&lang=en-US`;
-    const titles = await fetchRssTitles(url);
-    all = all.concat(titles.slice(0, limit).map(title => ({ category: 'Financeiro', sub: ticker, title, full: `Sobre ${ticker}: ${title}.`, quick: title })));
-  }
-  return all;
+async function fetchJogosItems(limit) {
+  const titles = await fetchRssTitles('https://br.ign.com/feed.xml');
+  const filtered = titles.filter(t => /lan[çc]amento/i.test(t));
+  return filtered.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: 'Jogos', title, full: `Lançamento: ${title}.`, quick: title }));
 }
 
 /* =========================================================================
-   FINANCEIRO — Dólar / Bitcoin sem chave
+   FINANCEIRO — Moedas (Banco Central) + Criptos (CoinGecko), sem chave
    ========================================================================= */
-async function fetchDolarBitcoinItems() {
+const MOEDA_CODIGOS = { 'Dólar': 'USD', 'Euro': 'EUR', 'Libra': 'GBP', 'Peso': 'ARS' };
+const CRIPTO_IDS = { 'Bitcoin': 'bitcoin', 'Ethereum': 'ethereum', 'Solana': 'solana', 'BNB': 'binancecoin' };
+
+async function fetchCotacoesItems(moedas, criptos) {
   const items = [];
-  try {
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-    const bcbUrl = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao='${mm}-${dd}-${yyyy}')?$format=json`;
-    const bcb = await fetch(bcbUrl).then(r => r.json()).catch(() => null);
-    if (bcb && bcb.value && bcb.value.length) {
-      const cot = bcb.value[bcb.value.length - 1].cotacaoVenda;
-      items.push({ category: 'Financeiro', sub: 'Dólar', title: `Dólar: R$ ${cot.toFixed(2)}`, full: `O dólar está cotado a ${cot.toFixed(2)} reais.`, quick: `Dólar: R$ ${cot.toFixed(2)}` });
-    }
-  } catch (e) {}
-  try {
-    const cg = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl').then(r => r.json());
-    if (cg && cg.bitcoin) {
-      const price = cg.bitcoin.brl;
-      items.push({ category: 'Financeiro', sub: 'Bitcoin', title: `Bitcoin: R$ ${price.toLocaleString('pt-BR')}`, full: `O Bitcoin está cotado a ${price.toLocaleString('pt-BR')} reais.`, quick: `Bitcoin: R$ ${price.toLocaleString('pt-BR')}` });
-    }
-  } catch (e) {}
+  for (const moeda of (moedas || [])) {
+    const codigo = MOEDA_CODIGOS[moeda];
+    if (!codigo) continue;
+    try {
+      const resp = await fetch(`https://economia.awesomeapi.com.br/json/last/${codigo}-BRL`).then(r => r.json());
+      const key = `${codigo}BRL`;
+      if (resp[key]) {
+        const valor = parseFloat(resp[key].bid).toFixed(2);
+        items.push({ category: 'Financeiro', sub: moeda, title: `${moeda}: R$ ${valor}`, full: `${moeda} está cotado a ${valor} reais.`, quick: `${moeda}: R$ ${valor}` });
+      }
+    } catch (e) {}
+  }
+  if ((moedas || []).length === 0) {
+    // sem moedas selecionadas, nada a fazer
+  }
+  for (const cripto of (criptos || [])) {
+    const id = CRIPTO_IDS[cripto];
+    if (!id) continue;
+    try {
+      const cg = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=brl`).then(r => r.json());
+      if (cg && cg[id]) {
+        const price = cg[id].brl.toLocaleString('pt-BR');
+        items.push({ category: 'Financeiro', sub: cripto, title: `${cripto}: R$ ${price}`, full: `${cripto} está cotado a ${price} reais.`, quick: `${cripto}: R$ ${price}` });
+      }
+    } catch (e) {}
+  }
   return items;
 }
 
 /* =========================================================================
-   ENTRETENIMENTO — Esportes / Jogos
+   ESPORTES — competição + time via API-Football
    ========================================================================= */
-async function fetchEsportesItems(timesStr) {
-  const times = parseList(timesStr);
-  let all = [];
-  for (const time of times) {
-    try {
-      const { items } = await callEdgeFunction('sports', { time });
-      all = all.concat(items || []);
-    } catch (e) {}
-  }
-  return all;
+async function fetchEsportesItems(competicao, time) {
+  if (!time) return [];
+  try {
+    const { items } = await callEdgeFunction('sports', { time, competicao: competicao || '' });
+    return items || [];
+  } catch (e) { return []; }
 }
 
 /* =========================================================================
@@ -747,91 +1043,10 @@ function getEnabledFeatureSummaries() {
   CATEGORY_DEFS.forEach(cat => {
     cat.features.forEach(feat => {
       const fs = getFeatureState(cat.id, feat.id);
-      if (fs.enabled) summaries.push({ catId: cat.id, catTitle: cat.title, featId: feat.id, featLabel: feat.label, fields: fs.fields });
+      if (fs.enabled) summaries.push({ catId: cat.id, featId: feat.id, fields: fs.fields });
     });
   });
   return summaries;
-}
-
-function renderSequenceChips() {
-  const chipsEl = document.getElementById('sequence-chips');
-  const summaries = getEnabledFeatureSummaries();
-  chipsEl.innerHTML = '';
-  if (summaries.length === 0) {
-    document.getElementById('briefing-label').textContent = 'Nenhuma categoria ativa. Vá na aba Grátis e ative algo.';
-    return;
-  }
-  document.getElementById('briefing-label').textContent = 'Pronto para ler o seu dia';
-  summaries.forEach(s => {
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.id = `chip-${s.catId}-${s.featId}`;
-    chip.textContent = `${s.catTitle}: ${s.featLabel}`;
-    chipsEl.appendChild(chip);
-  });
-}
-renderSequenceChips();
-
-document.querySelectorAll('.limit-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.limit-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.briefingLimit = btn.dataset.limit === 'all' ? 'all' : parseInt(btn.dataset.limit, 10);
-    saveState();
-  });
-});
-
-const briefingRateInput = document.getElementById('briefing-rate');
-briefingRateInput.value = state.briefingRate;
-briefingRateInput.addEventListener('input', () => {
-  state.briefingRate = parseFloat(briefingRateInput.value);
-  saveState();
-});
-
-/* =========================================================================
-   SELETOR DE VOZ — prioriza vozes "Online Natural" (Edge/Chrome)
-   ========================================================================= */
-let voices = [];
-const voiceSelect = document.getElementById('voice-select');
-
-function voiceRank(v) {
-  const isBr = v.lang.toLowerCase().startsWith('pt-br');
-  const isNatural = /Online.*Natural/i.test(v.name);
-  if (isBr && isNatural) return 0;
-  if (isBr) return 1;
-  if (v.lang.toLowerCase().startsWith('en')) return 2;
-  return 3;
-}
-
-const CONFIRMED_ONLINE_VOICES = /Francisca|Antonio|Aria|Guy/i;
-
-function populateVoices() {
-  voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('pt') || v.lang.startsWith('en'));
-  voices = voices.filter(v => !/Online.*Natural/i.test(v.name) || CONFIRMED_ONLINE_VOICES.test(v.name));
-  if (voices.length === 0) voices = speechSynthesis.getVoices();
-  voices.sort((a, b) => voiceRank(a) - voiceRank(b));
-  voiceSelect.innerHTML = voices
-    .map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`)
-    .join('');
-  const savedVoiceName = state.voiceName;
-  const savedIndex = savedVoiceName ? voices.findIndex(v => v.name === savedVoiceName) : -1;
-  if (savedIndex !== -1) {
-    voiceSelect.value = savedIndex;
-  } else {
-    const preferredIndex = voices.findIndex(v => /Francisca.*Online.*Natural/i.test(v.name));
-    if (preferredIndex !== -1) voiceSelect.value = preferredIndex;
-  }
-}
-
-voiceSelect.addEventListener('change', () => {
-  const selected = voices[voiceSelect.value];
-  if (selected) { state.voiceName = selected.name; saveState(); }
-});
-speechSynthesis.onvoiceschanged = populateVoices;
-populateVoices();
-
-function getSelectedVoice() {
-  return voices[voiceSelect.value];
 }
 
 async function buildQueue() {
@@ -839,24 +1054,23 @@ async function buildQueue() {
   const limit = state.briefingLimit === 'all' ? 50 : state.briefingLimit;
   let queue = [];
   for (const s of summaries) {
-    const chip = document.getElementById(`chip-${s.catId}-${s.featId}`);
     let items = [];
     try {
-      if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems(limit);
+      if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems();
       else if (s.catId === 'pessoal' && s.featId === 'agenda') items = await fetchAgendaItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'aniversarios') items = await fetchAniversariosItems(limit);
-      else if (s.catId === 'clima' && s.featId === 'previsao') items = (await fetchWeatherItems(s.fields.cidade)).items;
+      else if (s.catId === 'clima' && s.featId === 'previsao') items = (await fetchWeatherItems(s.fields.cidade1, s.fields.cidade2)).items;
       else if (s.catId === 'noticias' && s.featId === 'keyword') items = await fetchNewsItems(s.fields.termos, limit);
       else if (s.catId === 'noticias' && s.featId === 'reddit') items = await fetchRedditItems(s.fields.subreddits, limit);
-      else if (s.catId === 'financeiro' && s.featId === 'dolar') items = await fetchDolarBitcoinItems();
-      else if (s.catId === 'financeiro' && s.featId === 'acoes') items = await fetchStockItems(s.fields.tickers, limit);
-      else if (s.catId === 'entretenimento' && s.featId === 'esportes') items = await fetchEsportesItems(s.fields.times);
-      else if (s.catId === 'entretenimento' && s.featId === 'podcasts') items = await fetchPodcastItems(s.fields.nomes, limit);
-      else if (s.catId === 'entretenimento' && s.featId === 'midia') items = await fetchMidiaItems(s.fields.nomes, limit);
+      else if (s.catId === 'financeiro' && s.featId === 'cotacoes') items = await fetchCotacoesItems(s.fields.moedas, s.fields.criptos);
+      else if (s.catId === 'entretenimento' && s.featId === 'filmes') items = await fetchFilmesItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'series') items = await fetchSeriesItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'musicas') items = await fetchMusicasItems(s.fields.generos, limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'jogos') items = await fetchJogosItems(limit);
+      else if (s.catId === 'esportes' && s.featId === 'jogo') items = await fetchEsportesItems(s.fields.competicao, s.fields.time);
     } catch (e) {
       console.error(`Erro ao buscar ${s.catId}.${s.featId}:`, e);
     }
-    items.forEach(it => it._chipId = chip ? chip.id : null);
     queue = queue.concat(items);
   }
   return queue;
@@ -880,23 +1094,17 @@ function setPlayingVisual(playing) {
 function speakQueueItem(i) {
   if (i >= currentQueue.length) {
     setPlayingVisual(false);
-    briefingLabel.textContent = 'Briefing concluído';
+    briefingLabel.textContent = 'Meu Dia concluído';
     briefingSub.textContent = '';
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     return;
   }
   currentQueueIndex = i;
   const item = currentQueue[i];
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  if (item._chipId) {
-    const chip = document.getElementById(item._chipId);
-    if (chip) chip.classList.add('active');
-  }
   briefingLabel.textContent = item.title;
   briefingSub.textContent = `${item.category} · ${i + 1} de ${currentQueue.length}`;
-  progressFill.style.width = `${Math.round(((i) / currentQueue.length) * 100)}%`;
+  progressFill.style.width = `${Math.round((i / currentQueue.length) * 100)}%`;
 
-  const text = item.full || item.title;
+  const text = state.quickMode ? (item.quick || item.title) : (item.full || item.title);
   const utter = new SpeechSynthesisUtterance(text);
   const voice = getSelectedVoice();
   if (voice) utter.voice = voice;
@@ -935,27 +1143,40 @@ playCircle.addEventListener('click', async () => {
   speakQueueItem(0);
 });
 
-document.getElementById('prev-btn').addEventListener('click', () => {
-  if (currentQueue.length === 0) return;
-  isPlaying = false;
-  speechSynthesis.cancel();
-  setPlayingVisual(true);
-  const prevIndex = Math.max(currentQueueIndex - 1, 0);
-  speakQueueItem(prevIndex);
-});
-
-document.getElementById('next-btn').addEventListener('click', () => {
-  if (currentQueue.length === 0) return;
-  isPlaying = false;
-  speechSynthesis.cancel();
-  setPlayingVisual(true);
-  const nextIndex = Math.min(currentQueueIndex + 1, currentQueue.length - 1);
-  speakQueueItem(nextIndex);
-});
-
 /* =========================================================================
-   PREMIUM — stub (placeholder até Supabase/Mercado Pago estarem configurados)
+   PREMIUM — GPS auditivo (via Edge Function "directions") / Rastreio (stub)
    ========================================================================= */
+document.getElementById('gps-start-btn').addEventListener('click', async () => {
+  const origem = document.getElementById('gps-origem').value.trim();
+  const destino = document.getElementById('gps-destino').value.trim();
+  const resultEl = document.getElementById('gps-result');
+  if (!origem || !destino) { resultEl.textContent = 'Preencha origem e destino.'; return; }
+  resultEl.textContent = 'Calculando rota...';
+  try {
+    const { steps, error } = await callEdgeFunction('directions', { origem, destino });
+    if (error) { resultEl.textContent = error; return; }
+    resultEl.textContent = `${steps.length} passos calculados. Lendo em voz alta...`;
+    for (const step of steps) {
+      await new Promise(resolve => {
+        const utter = new SpeechSynthesisUtterance(step);
+        utter.lang = 'pt-BR';
+        utter.onend = resolve;
+        utter.onerror = resolve;
+        speechSynthesis.speak(utter);
+      });
+    }
+  } catch (e) {
+    resultEl.textContent = 'Erro ao calcular rota: ' + e.message;
+  }
+});
+
+document.getElementById('rastreio-btn').addEventListener('click', () => {
+  const codigo = document.getElementById('rastreio-codigo').value.trim();
+  const resultEl = document.getElementById('rastreio-result');
+  if (!codigo) { resultEl.textContent = 'Cole um código de rastreio.'; return; }
+  resultEl.textContent = 'Funcionalidade em construção — aguardando fonte de dados de rastreio dos Correios.';
+});
+
 document.getElementById('subscribe-btn').addEventListener('click', () => {
   if (MERCADOPAGO_SUBSCRIBE_LINK) {
     window.location.href = MERCADOPAGO_SUBSCRIBE_LINK;
@@ -967,7 +1188,7 @@ document.getElementById('subscribe-btn').addEventListener('click', () => {
 /* =========================================================================
    INIT
    ========================================================================= */
-renderCategories();
+renderCategoryCards();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
