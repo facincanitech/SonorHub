@@ -14,6 +14,12 @@ async function tmdbGet(path: string, apiKey: string) {
   return fetch(url).then(r => r.json());
 }
 
+function formatDate(dateStr: string) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
@@ -30,24 +36,38 @@ Deno.serve(async (req: Request) => {
     const items: { title: string; overview: string }[] = [];
 
     if (type === 'filmes') {
-      const nowPlaying = await tmdbGet('/movie/now_playing?region=BR', apiKey);
-      const trending = await tmdbGet('/trending/movie/week', apiKey);
-      for (const m of [...(nowPlaying.results || []), ...(trending.results || [])]) {
+      let nowPlaying = await tmdbGet('/movie/now_playing?region=BR', apiKey);
+      if (!nowPlaying.results || nowPlaying.results.length === 0) {
+        nowPlaying = await tmdbGet('/movie/now_playing', apiKey); // fallback sem filtro de região
+      }
+      let upcoming = await tmdbGet('/movie/upcoming?region=BR', apiKey);
+      if (!upcoming.results || upcoming.results.length === 0) {
+        upcoming = await tmdbGet('/movie/upcoming', apiKey);
+      }
+
+      for (const m of (nowPlaying.results || [])) {
         if (seen.has(m.title)) continue;
         seen.add(m.title);
-        const year = (m.release_date || '').slice(0, 4);
-        const title = year ? `${m.title} (${year})` : m.title;
-        items.push({ title, overview: m.overview || '' });
+        items.push({ title: `${m.title} está em cartaz`, overview: m.overview || '' });
+      }
+      for (const m of (upcoming.results || [])) {
+        if (seen.has(m.title)) continue;
+        seen.add(m.title);
+        const data = formatDate(m.release_date);
+        items.push({ title: `${m.title} chega aos cinemas${data ? ' em ' + data : ' em breve'}`, overview: m.overview || '' });
       }
     } else if (type === 'series') {
       const onTheAir = await tmdbGet('/tv/on_the_air', apiKey);
       const trending = await tmdbGet('/trending/tv/week', apiKey);
-      for (const s of [...(onTheAir.results || []), ...(trending.results || [])]) {
+      for (const s of (onTheAir.results || [])) {
         if (seen.has(s.name)) continue;
         seen.add(s.name);
-        const year = (s.first_air_date || '').slice(0, 4);
-        const title = year ? `${s.name} (${year})` : s.name;
-        items.push({ title, overview: s.overview || '' });
+        items.push({ title: `${s.name} está no ar`, overview: s.overview || '' });
+      }
+      for (const s of (trending.results || [])) {
+        if (seen.has(s.name)) continue;
+        seen.add(s.name);
+        items.push({ title: `${s.name} está em alta`, overview: s.overview || '' });
       }
     } else {
       return Response.json({ items: [], error: 'Tipo inválido, use filmes ou series.' }, { headers: CORS_HEADERS });
