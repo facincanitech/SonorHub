@@ -223,12 +223,13 @@
 </div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="config.js"></script>
 <script>
 /* =========================================================================
-   CONFIGURAÇÃO — chaves sensíveis vêm de config.js (gitignored, não vai
-   pro git/Pages automaticamente). Veja config.example.js pro formato.
-   CLIENT_ID não é segredo (client id OAuth é público por design).
+   CONFIGURAÇÃO
+   CLIENT_ID e SUPABASE_ANON_KEY não são segredos — client id OAuth e a chave
+   "publishable" do Supabase são feitos pra rodar no navegador. As chaves de
+   verdade (OpenWeatherMap, API-Football) ficam só no servidor, como secret
+   das Supabase Edge Functions em supabase/functions/*, nunca aqui.
    ========================================================================= */
 const CLIENT_ID = '614074980827-7k3u0ugpmk8100chp5m1998b36peajo9.apps.googleusercontent.com';
 const GOOGLE_SCOPES = [
@@ -237,17 +238,13 @@ const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/contacts.readonly',
 ].join(' ');
 
-const CFG = window.INFOHUB_CONFIG || {};
-const OPENWEATHER_API_KEY = CFG.OPENWEATHER_API_KEY || '';
-const RAWG_API_KEY = CFG.RAWG_API_KEY || '';
-const APIFOOTBALL_API_KEY = CFG.APIFOOTBALL_API_KEY || '';
+const SUPABASE_URL = 'https://xpscjwcqgdldwtmbbzua.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1bC_g0W2cQ_Sx2b968VFtg_UkeTRUV0';
 
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-// Premium / backend (stub até existirem credenciais reais)
-const SUPABASE_URL = CFG.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = CFG.SUPABASE_ANON_KEY || '';
-const MERCADOPAGO_SUBSCRIBE_LINK = CFG.MERCADOPAGO_SUBSCRIBE_LINK || '';
+// Premium (ainda não implementado: checagem de flag fica pra depois)
+const MERCADOPAGO_SUBSCRIBE_LINK = '';
 
 /* =========================================================================
    MODELO DE CATEGORIAS / FEATURES
@@ -619,52 +616,19 @@ async function fetchAniversariosItems(limit) {
 /* =========================================================================
    CLIMA — OpenWeatherMap
    ========================================================================= */
-function isCepLike(value) {
-  return /^\d{5}-?\d{3}$/.test(value.trim());
+async function callEdgeFunction(name, params) {
+  const url = `${SUPABASE_URL}/functions/v1/${name}?${new URLSearchParams(params)}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+  return res.json();
 }
 
 async function fetchWeatherItems(local) {
-  if (!OPENWEATHER_API_KEY || !local) return { items: [], error: 'Configure a chave OpenWeatherMap e a cidade/CEP.' };
-  const items = [];
-  const cleaned = local.trim();
-  const geoUrl = isCepLike(cleaned)
-    ? `https://api.openweathermap.org/data/2.5/weather?zip=${encodeURIComponent(cleaned.replace('-', ''))},BR&units=metric&lang=pt_br&appid=${OPENWEATHER_API_KEY}`
-    : `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cleaned)}&units=metric&lang=pt_br&appid=${OPENWEATHER_API_KEY}`;
-
-  let weather;
+  if (!local) return { items: [], error: 'Configure a cidade ou CEP.' };
   try {
-    weather = await fetch(geoUrl).then(r => r.json());
+    return await callEdgeFunction('weather', { local });
   } catch (e) {
-    return { items: [], error: 'Falha de rede ao consultar o clima.' };
+    return { items: [], error: 'Falha ao falar com a Edge Function de clima: ' + e.message };
   }
-  if (weather.cod && weather.cod !== 200) {
-    return { items: [], error: `OpenWeatherMap: ${weather.message || weather.cod} (verifique cidade/CEP e a chave de API)` };
-  }
-
-  const nomeLocal = weather.name || cleaned;
-  const temp = Math.round(weather.main.temp);
-  const desc = weather.weather[0].description;
-  items.push({
-    category: 'Clima', sub: 'Previsão',
-    title: `${nomeLocal}: ${temp}°C, ${desc}`,
-    full: `O clima em ${nomeLocal} agora: ${temp} graus, ${desc}.`,
-    quick: `${nomeLocal}: ${temp}°C, ${desc}`,
-  });
-
-  if (weather.coord) {
-    const uvResp = await fetch(`https://api.openweathermap.org/data/2.5/uvi?lat=${weather.coord.lat}&lon=${weather.coord.lon}&appid=${OPENWEATHER_API_KEY}`).then(r => r.json()).catch(() => null);
-    if (uvResp && uvResp.value !== undefined) {
-      items.push({ category: 'Clima', sub: 'UV', title: `Índice UV: ${uvResp.value}`, full: `O índice de UV em ${nomeLocal} está em ${uvResp.value}.`, quick: `UV: ${uvResp.value}` });
-    }
-
-    const aqResp = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${weather.coord.lat}&lon=${weather.coord.lon}&appid=${OPENWEATHER_API_KEY}`).then(r => r.json()).catch(() => null);
-    if (aqResp && aqResp.list && aqResp.list[0]) {
-      const aqi = aqResp.list[0].main.aqi;
-      const labels = ['', 'Boa', 'Razoável', 'Moderada', 'Ruim', 'Muito ruim'];
-      items.push({ category: 'Clima', sub: 'Qualidade do ar', title: `AQI: ${labels[aqi] || aqi}`, full: `A qualidade do ar em ${nomeLocal} está classificada como ${labels[aqi] || aqi}.`, quick: `Ar: ${labels[aqi] || aqi}` });
-    }
-  }
-  return { items, error: null };
 }
 
 /* =========================================================================
@@ -761,36 +725,10 @@ async function fetchDolarBitcoinItems() {
    ENTRETENIMENTO — Esportes / Jogos
    ========================================================================= */
 async function fetchEsportesItems(time) {
-  if (!APIFOOTBALL_API_KEY || !time) return [];
+  if (!time) return [];
   try {
-    const searchUrl = `https://v3.football.api-sports.io/teams?search=${encodeURIComponent(time)}`;
-    const search = await fetch(searchUrl, { headers: { 'x-apisports-key': APIFOOTBALL_API_KEY } }).then(r => r.json());
-    const teamId = search.response && search.response[0] && search.response[0].team.id;
-    if (!teamId) return [];
-    const fixturesUrl = `https://v3.football.api-sports.io/fixtures?team=${teamId}&next=1`;
-    const fixtures = await fetch(fixturesUrl, { headers: { 'x-apisports-key': APIFOOTBALL_API_KEY } }).then(r => r.json());
-    const next = fixtures.response && fixtures.response[0];
-    if (!next) return [];
-    const date = new Date(next.fixture.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    const text = `${next.teams.home.name} x ${next.teams.away.name}, em ${date}`;
-    return [{ category: 'Entretenimento', sub: 'Esportes', title: text, full: `Próximo jogo de ${time}: ${text}.`, quick: text }];
-  } catch (e) { return []; }
-}
-
-async function fetchJogosItems(limit) {
-  if (!RAWG_API_KEY) return [];
-  try {
-    const today = new Date();
-    const future = new Date(); future.setDate(future.getDate() + 30);
-    const fmt = d => d.toISOString().slice(0, 10);
-    const url = `https://api.rawg.io/api/games?dates=${fmt(today)},${fmt(future)}&ordering=-added&key=${RAWG_API_KEY}`;
-    const resp = await fetch(url).then(r => r.json());
-    return (resp.results || []).slice(0, limit).map(g => ({
-      category: 'Entretenimento', sub: 'Jogos',
-      title: `${g.name} (${g.released || 'em breve'})`,
-      full: `Lançamento de jogo: ${g.name}, previsto para ${g.released || 'em breve'}.`,
-      quick: g.name,
-    }));
+    const { items } = await callEdgeFunction('sports', { time });
+    return items || [];
   } catch (e) { return []; }
 }
 
@@ -906,7 +844,6 @@ async function buildQueue() {
       else if (s.catId === 'financeiro' && s.featId === 'dolar') items = await fetchDolarBitcoinItems();
       else if (s.catId === 'financeiro' && s.featId === 'acoes') items = await fetchStockItems(s.fields.ticker, limit);
       else if (s.catId === 'entretenimento' && s.featId === 'esportes') items = await fetchEsportesItems(s.fields.time);
-      else if (s.catId === 'entretenimento' && s.featId === 'jogos') items = await fetchJogosItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'podcasts') items = await fetchPodcastItems(s.fields.rss, limit);
       else if (s.catId === 'entretenimento' && s.featId === 'midia') items = await fetchMidiaItems(s.fields.rss, limit);
     } catch (e) {
