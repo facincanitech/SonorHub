@@ -55,7 +55,7 @@
   button { border: none; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 600; font-family: inherit; }
 
   /* ===== Top bar / gear ===== */
-  .topbar { display: flex; justify-content: flex-end; max-width: 420px; margin: 0 auto; padding: 10px 16px 0; }
+  .topbar { display: flex; justify-content: flex-end; gap: 10px; max-width: 420px; margin: 0 auto; padding: 10px 16px 0; }
   .gear-btn { background: var(--c-surface); color: var(--c-text); width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; }
   .gear-btn:hover { background: var(--c-border); }
 
@@ -191,6 +191,7 @@
 <body>
 
 <div class="topbar">
+  <button class="gear-btn" id="help-btn">❓</button>
   <button class="gear-btn" id="gear-btn">⚙️</button>
 </div>
 
@@ -355,6 +356,71 @@
           <button type="button" class="btn-opt" data-theme="light">☀️ Claro</button>
           <button type="button" class="btn-opt" data-theme="high-contrast">◐ Alto contraste</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AJUDA (overlay) ============ -->
+<div class="overlay" id="help-overlay">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <button class="back-btn" id="help-close-btn">←</button>
+      <h2>Como usar o InfoHub</h2>
+    </div>
+
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="scope-list">
+        🧪 O InfoHub está em <b>beta aberto</b> — algumas coisas podem mudar ou dar erro
+        enquanto a gente ajusta. Qualquer problema, é só avisar.
+      </div>
+    </div>
+
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">1. Conecte suas contas</div>
+      <div class="scope-list">
+        Primeiro, vá em ⚙️ no canto superior direito e conecte as contas que for usar
+        (Google, Spotify, YouTube). É por ali que o app acessa e-mail, agenda,
+        aniversários, música e canais favoritos.
+      </div>
+    </div>
+
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">⚠️ "O Google não verificou este app"</div>
+      <div class="scope-list">
+        Como o app ainda está em teste, o Google mostra um aviso de segurança ao
+        entrar com a conta Google. É esperado — clica em <b>Avançar</b>
+        (ou "Acessar [nome do app] (não seguro)") e depois em <b>Continuar</b> pra
+        seguir com o login normalmente. Isso não significa que o app é perigoso, é
+        só porque ele ainda não passou pela revisão oficial do Google.
+      </div>
+    </div>
+
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">2. Configure suas categorias (aba Guia)</div>
+      <div class="scope-list">
+        Na aba Guia, clica em cada categoria (Pessoal, Clima, Notícias, Financeiro,
+        Entretenimento, Esportes) e ativa só o que você quer ouvir. Cada feature tem
+        um toggle — quando ligado, aparecem os campos pra configurar (cidade, time,
+        palavras-chave, etc).
+      </div>
+    </div>
+
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">3. Ouça o seu briefing (aba Meu Dia)</div>
+      <div class="scope-list">
+        Aperte o play central pra ouvir tudo que você configurou, em sequência. Dá
+        pra ajustar voz, velocidade e modo rápido ali mesmo, usar ⏮/⏭ pra navegar
+        entre os itens, e acompanhar pela lista que vai aparecendo embaixo.
+      </div>
+    </div>
+
+    <div class="account-card">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">⭐ Premium</div>
+      <div class="scope-list">
+        Na aba Premium você vê o que vem na assinatura (GPS auditivo e rastreio de
+        encomenda) antes de assinar. Depois de pagar, conecte sua conta Google e
+        clique em "Já assinei, verificar" pra desbloquear as features.
       </div>
     </div>
   </div>
@@ -757,6 +823,10 @@ const gearBtn = document.getElementById('gear-btn');
 const accountsOverlay = document.getElementById('accounts-overlay');
 gearBtn.addEventListener('click', () => { accountsOverlay.classList.add('open'); updateAccountsUI(); });
 document.getElementById('accounts-close-btn').addEventListener('click', () => accountsOverlay.classList.remove('open'));
+
+const helpOverlay = document.getElementById('help-overlay');
+document.getElementById('help-btn').addEventListener('click', () => helpOverlay.classList.add('open'));
+document.getElementById('help-close-btn').addEventListener('click', () => helpOverlay.classList.remove('open'));
 
 document.querySelectorAll('.account-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
