@@ -109,12 +109,19 @@
   .briefing-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
   #briefing-label { font-size: 0.95rem; min-height: 1.4em; text-align: center; margin-bottom: 6px; color: #e8e8e8; }
   #briefing-sub { font-size: 0.78rem; color: #9aa0a6; min-height: 1.2em; margin-bottom: 18px; text-align: center; }
+  .play-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
   .play-circle {
     width: 110px; height: 110px; border-radius: 50%; background: #34a853; color: #fff;
     font-size: 2.2rem; display: flex; align-items: center; justify-content: center;
-    margin-bottom: 18px; box-shadow: 0 0 0 8px rgba(52,168,83,0.12);
+    box-shadow: 0 0 0 8px rgba(52,168,83,0.12);
   }
   .play-circle.playing { background: #ea4335; box-shadow: 0 0 0 8px rgba(234,67,53,0.12); }
+  .skip-btn {
+    width: 48px; height: 48px; border-radius: 50%; background: #1a1d24; color: #e8e8e8;
+    font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
+  }
+  .skip-btn:hover { background: #232730; }
+  .skip-btn:disabled { opacity: 0.4; cursor: default; }
   .progress-bar { width: 100%; height: 6px; background: #232730; border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
   .progress-fill { height: 100%; width: 0%; background: #8ab4f8; transition: width .25s; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
@@ -146,7 +153,11 @@
       <div id="briefing-label">Configure suas categorias na aba Grátis</div>
       <div id="briefing-sub"></div>
 
-      <div class="play-circle" id="play-circle">▶</div>
+      <div class="play-controls">
+        <button class="skip-btn" id="prev-btn">⏮</button>
+        <div class="play-circle" id="play-circle">▶</div>
+        <button class="skip-btn" id="next-btn">⏭</button>
+      </div>
 
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
 
@@ -926,6 +937,24 @@ playCircle.addEventListener('click', async () => {
     return;
   }
   speakQueueItem(0);
+});
+
+document.getElementById('prev-btn').addEventListener('click', () => {
+  if (currentQueue.length === 0) return;
+  isPlaying = false;
+  speechSynthesis.cancel();
+  setPlayingVisual(true);
+  const prevIndex = Math.max(currentQueueIndex - 1, 0);
+  speakQueueItem(prevIndex);
+});
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (currentQueue.length === 0) return;
+  isPlaying = false;
+  speechSynthesis.cancel();
+  setPlayingVisual(true);
+  const nextIndex = Math.min(currentQueueIndex + 1, currentQueue.length - 1);
+  speakQueueItem(nextIndex);
 });
 
 /* =========================================================================
