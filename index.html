@@ -612,7 +612,7 @@ const CATEGORY_DEFS = [
     id: 'pessoal', icon: '👤', title: 'Pessoal',
     features: [
       { id: 'email', label: 'Últimos e-mails (resumo)', fields: [
-        { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'] },
+        { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'], disabledOptions: OUTLOOK_CLIENT_ID ? [] : ['Hotmail'] },
         { id: 'quantidade', kind: 'dropdown', label: 'Quantidade de e-mails', options: ['5', '10', '15', '20'] },
       ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada — conecta em ⚙️ Central de Contas' },
       { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
@@ -784,18 +784,27 @@ function renderButtonGroup(field, fs, onChange) {
   const wrap = document.createElement('div');
   wrap.className = 'btn-group';
   const selected = new Set(fs.fields[field.id] || []);
+  const disabledOptions = field.disabledOptions || [];
   field.options.forEach(opt => {
+    const isDisabled = disabledOptions.includes(opt);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-opt' + (selected.has(opt) ? ' selected' : '');
     btn.textContent = opt;
-    btn.addEventListener('click', () => {
-      if (selected.has(opt)) selected.delete(opt); else selected.add(opt);
-      fs.fields[field.id] = Array.from(selected);
-      saveState();
-      btn.classList.toggle('selected');
-      if (onChange) onChange();
-    });
+    if (isDisabled) {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'default';
+      btn.title = 'Ainda não configurado';
+    } else {
+      btn.addEventListener('click', () => {
+        if (selected.has(opt)) selected.delete(opt); else selected.add(opt);
+        fs.fields[field.id] = Array.from(selected);
+        saveState();
+        btn.classList.toggle('selected');
+        if (onChange) onChange();
+      });
+    }
     wrap.appendChild(btn);
   });
   return wrap;
