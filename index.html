@@ -1128,9 +1128,11 @@ async function fetchRedditItems(subredditsStr, limit) {
   const subreddits = parseList(subredditsStr);
   let all = [];
   for (const subreddit of subreddits) {
-    const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/.rss`;
-    const titles = await fetchRssTitles(url);
-    all = all.concat(titles.slice(0, limit).map(title => ({ category: 'Noticias', sub: `r/${subreddit}`, title, full: `No subreddit ${subreddit}: ${title}.`, quick: title })));
+    try {
+      const { items, error } = await callEdgeFunction('reddit', { subreddit });
+      if (error) { console.error('reddit:', error); continue; }
+      all = all.concat((items || []).slice(0, limit).map(title => ({ category: 'Noticias', sub: `r/${subreddit}`, title, full: `No subreddit ${subreddit}: ${title}.`, quick: title })));
+    } catch (e) { console.error('reddit:', e); }
   }
   return all;
 }
@@ -1175,8 +1177,10 @@ async function fetchMusicasItems(generos, limit) {
 
 async function fetchJogosItems(limit) {
   const titles = await fetchRssTitles('https://br.ign.com/feed.xml');
-  const filtered = titles.filter(t => /lan[çc]amento/i.test(t));
-  return filtered.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: 'Jogos', title, full: `Lançamento: ${title}.`, quick: title }));
+  const keywordRe = /lan[çc]a|chega|anunciad|revelad|estreia|dispon[íi]vel|data de lan[çc]amento/i;
+  let filtered = titles.filter(t => keywordRe.test(t));
+  if (filtered.length === 0) filtered = titles; // fallback: feed do IGN raramente usa essas palavras exatas
+  return filtered.slice(0, limit).map(title => ({ category: 'Entretenimento', sub: 'Jogos', title, full: `${title}.`, quick: title }));
 }
 
 /* =========================================================================
