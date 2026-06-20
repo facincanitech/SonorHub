@@ -843,13 +843,33 @@ speechSynthesis.onvoiceschanged = populateVoices;
 populateVoices();
 
 // Retry pro Android/iOS, onde getVoices() costuma vir vazio no primeiro load
-// e onvoiceschanged nem sempre dispara de forma confiável.
+// e onvoiceschanged nem sempre dispara de forma confiável. 30s de tentativas.
 let voicePopulateAttempts = 0;
 const voicePopulateRetry = setInterval(() => {
   voicePopulateAttempts++;
-  if (voices.length > 0 || voicePopulateAttempts > 15) { clearInterval(voicePopulateRetry); return; }
+  if (voices.length > 0 || voicePopulateAttempts > 60) { clearInterval(voicePopulateRetry); return; }
   populateVoices();
-}, 400);
+}, 500);
+
+// Alguns navegadores mobile só liberam a lista de vozes depois de uma interação
+// do usuário (toque/clique) — então tentamos de novo no primeiro toque na tela.
+function wakeUpVoicesOnce() {
+  populateVoices();
+  if (voices.length === 0) {
+    // truque pra "acordar" o motor de TTS em alguns Android: fala algo silencioso e cancela.
+    try {
+      const warmup = new SpeechSynthesisUtterance(' ');
+      warmup.volume = 0;
+      speechSynthesis.speak(warmup);
+      speechSynthesis.cancel();
+    } catch (e) {}
+    setTimeout(populateVoices, 300);
+  }
+  document.removeEventListener('touchstart', wakeUpVoicesOnce);
+  document.removeEventListener('click', wakeUpVoicesOnce);
+}
+document.addEventListener('touchstart', wakeUpVoicesOnce, { once: true });
+document.addEventListener('click', wakeUpVoicesOnce, { once: true });
 
 function getSelectedVoice() {
   return voices[voiceSelect.value];
