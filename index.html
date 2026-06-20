@@ -309,6 +309,7 @@
       <div class="sub">Configure o que você quer ouvir.</div>
 
       <div id="category-cards"></div>
+      <div style="text-align:center; color: var(--c-text-faint); font-size: 0.75rem; margin-top: 24px;">2026 — criado por FacincaniTech</div>
     </div>
 
     <div id="gratis-detail-view" style="display:none;"></div>
@@ -398,9 +399,10 @@
 
     <div class="account-tabs">
       <button class="account-tab-btn active" data-account="google">Email</button>
-      <button class="account-tab-btn" data-account="spotify">Spotify</button>
       <button class="account-tab-btn" data-account="youtube">YouTube</button>
+      <button class="account-tab-btn" data-account="spotify">Spotify</button>
       <button class="account-tab-btn" data-account="tema">Tema</button>
+      <button class="account-tab-btn" data-account="contato">Contato</button>
     </div>
 
     <div class="account-panel active" id="account-google">
@@ -410,25 +412,27 @@
         <button class="btn-connect" id="google-connect-btn">Entrar com Google</button>
       </div>
       <div class="account-card">
-        <div class="status"><span class="status-dot" id="outlook-status-dot"></span><span id="outlook-status-text">Desconectado</span></div>
-        <div class="scope-list">Hotmail / Outlook.</div>
-        <button class="btn-connect" id="outlook-connect-btn">Entrar com Hotmail</button>
-      </div>
-    </div>
-
-    <div class="account-panel" id="account-spotify">
-      <div class="account-card">
-        <div class="status"><span class="status-dot" id="spotify-status-dot"></span><span id="spotify-status-text">Desconectado</span></div>
-        <div class="scope-list">Acesso a: podcasts e músicas salvas.</div>
-        <button class="btn-connect" id="spotify-connect-btn">Entrar com Spotify</button>
+        <div class="status"><span class="status-dot" id="outlook-status-dot"></span><span id="outlook-status-text">Indisponível</span></div>
+        <div class="scope-list">Hotmail / Outlook — indisponível no momento.</div>
+        <button class="btn-connect" id="outlook-connect-btn" disabled style="opacity:0.4; cursor:default;">Indisponível no momento</button>
       </div>
     </div>
 
     <div class="account-panel" id="account-youtube">
       <div class="account-card">
-        <div class="status"><span class="status-dot" id="youtube-status-dot"></span><span id="youtube-status-text">Desconectado</span></div>
-        <div class="scope-list">Usa a mesma conta Google. Canais favoritos: em breve.</div>
-        <button class="btn-connect" id="youtube-connect-btn">Entrar com Google</button>
+        <div class="scope-list">
+          Canais do YouTube não precisam de login — é só digitar o nome do canal
+          direto na categoria <b>Mídias</b>, na aba Guia. Essa aba aqui não controla
+          nada do YouTube, é só informativa.
+        </div>
+      </div>
+    </div>
+
+    <div class="account-panel" id="account-spotify">
+      <div class="account-card">
+        <div class="status"><span class="status-dot" id="spotify-status-dot"></span><span id="spotify-status-text">Indisponível</span></div>
+        <div class="scope-list">Acesso a: podcasts e músicas salvas — indisponível no momento.</div>
+        <button class="btn-connect" id="spotify-connect-btn" disabled style="opacity:0.4; cursor:default;">Indisponível no momento</button>
       </div>
     </div>
 
@@ -450,6 +454,15 @@
           voz — o <b>Chrome</b> costuma funcionar melhor no Android. No <b>PC</b>,
           geralmente tem mais opções de voz disponíveis (incluindo vozes neurais mais
           naturais) do que no celular.
+        </div>
+      </div>
+    </div>
+
+    <div class="account-panel" id="account-contato">
+      <div class="account-card">
+        <div class="scope-list">
+          Dúvida, sugestão ou bug pra reportar? Manda um e-mail:<br><br>
+          <b>facincanitech@gmail.com</b>
         </div>
       </div>
     </div>
@@ -1164,30 +1177,10 @@ function updateAccountsUI() {
   document.getElementById('google-connect-btn').textContent = googleOn ? 'Desconectar' : 'Entrar com Google';
   document.getElementById('google-connect-btn').className = googleOn ? 'btn-disconnect' : 'btn-connect';
 
-  document.getElementById('youtube-status-dot').classList.toggle('on', googleOn);
-  document.getElementById('youtube-status-text').textContent = googleOn ? 'Conectado' : 'Desconectado';
-  document.getElementById('youtube-connect-btn').textContent = googleOn ? 'Desconectar' : 'Entrar com Google';
-  document.getElementById('youtube-connect-btn').className = googleOn ? 'btn-disconnect' : 'btn-connect';
-
-  const spotifyToken = localStorage.getItem('infohub_spotify_token');
-  const spotifyOn = !!spotifyToken;
-  document.getElementById('spotify-status-dot').classList.toggle('on', spotifyOn);
-  document.getElementById('spotify-status-text').textContent = spotifyOn ? 'Conectado' : 'Desconectado';
-  document.getElementById('spotify-connect-btn').textContent = spotifyOn ? 'Desconectar' : 'Entrar com Spotify';
-  document.getElementById('spotify-connect-btn').className = spotifyOn ? 'btn-disconnect' : 'btn-connect';
-
-  const outlookOn = !!localStorage.getItem('infohub_outlook_token');
-  document.getElementById('outlook-status-dot').classList.toggle('on', outlookOn);
-  document.getElementById('outlook-status-text').textContent = outlookOn ? 'Conectado' : 'Desconectado';
-  document.getElementById('outlook-connect-btn').textContent = outlookOn ? 'Desconectar' : 'Entrar com Hotmail';
-  document.getElementById('outlook-connect-btn').className = outlookOn ? 'btn-disconnect' : 'btn-connect';
+  // Spotify e Hotmail estão indisponíveis no momento — status/botão fixos, sem dinâmica.
 }
 
 document.getElementById('google-connect-btn').addEventListener('click', () => {
-  if (accessToken) { accessToken = null; updateAccountsUI(); }
-  else tokenClient.requestAccessToken();
-});
-document.getElementById('youtube-connect-btn').addEventListener('click', () => {
   if (accessToken) { accessToken = null; updateAccountsUI(); }
   else tokenClient.requestAccessToken();
 });
