@@ -234,7 +234,7 @@
       <div class="settings-row" id="notify-row" style="display:none;">
         <div>
           <div class="label">🔔 Notificar todo dia</div>
-          <div class="desc">Toca a notificação no horário; ao abrir, já tenta dar o play</div>
+          <div class="desc">Toca sozinho se a aba já estiver aberta; senão, manda notificação pra abrir. Precisa do app aberto em alguma aba pra funcionar.</div>
         </div>
         <label class="switch">
           <input type="checkbox" id="notify-toggle">
@@ -650,6 +650,7 @@ function loadState() {
     premiumUnlocked: saved.premiumUnlocked || false,
     notifyEnabled: saved.notifyEnabled || false,
     notifyTime: saved.notifyTime || '07:00',
+    lastAutoPlayDate: saved.lastAutoPlayDate || '',
     autoRepeatEnabled: saved.autoRepeatEnabled || false,
     autoRepeatInterval: saved.autoRepeatInterval || 30,
   };
@@ -1925,15 +1926,25 @@ function scheduleNextNotification() {
   if (target <= now) target.setDate(target.getDate() + 1);
   const ms = target - now;
   notifyTimeoutId = setTimeout(async () => {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      reg.showNotification('InfoHub — Meu Dia', {
-        body: 'Seu briefing de hoje está pronto. Toca aqui pra ouvir.',
-        icon: 'icon.svg',
-        tag: 'infohub-briefing',
-      });
-    } catch (e) {
-      console.error('notify:', e);
+    const today = new Date().toISOString().slice(0, 10);
+    if (state.lastAutoPlayDate !== today) {
+      state.lastAutoPlayDate = today;
+      saveState();
+      if (document.visibilityState === 'visible') {
+        // Aba já aberta e em foco: toca direto, sem precisar de notificação.
+        startBriefingPlayback();
+      } else {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          reg.showNotification('InfoHub — Meu Dia', {
+            body: 'Seu briefing de hoje está pronto. Toca aqui pra ouvir.',
+            icon: 'icon.svg',
+            tag: 'infohub-briefing',
+          });
+        } catch (e) {
+          console.error('notify:', e);
+        }
+      }
     }
     scheduleNextNotification(); // reagenda pro dia seguinte
   }, ms);
