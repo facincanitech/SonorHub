@@ -589,18 +589,30 @@ const CATEGORY_DEFS = [
     ],
   },
   {
-    id: 'horoscopo', icon: '🔮', title: 'Horóscopo',
-    features: [
-      { id: 'fase-lua', label: 'Fase da lua', fields: [], hint: 'Calculado localmente, sem API' },
-    ],
-  },
-  {
     id: 'clima', icon: '🌤️', title: 'Clima',
     features: [
       { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', fields: [
         { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
         { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2 — opcional' },
       ], hint: 'Usa OpenWeatherMap' },
+    ],
+  },
+  {
+    id: 'midias', icon: '📺', title: 'Mídias',
+    features: [
+      { id: 'youtube', label: 'Canais favoritos (YouTube)', fields: [], hint: 'Vídeo mais recente dos canais que você segue — conecta em ⚙️ Central de Contas' },
+      { id: 'podcasts', label: 'Podcasts', fields: [
+        { id: 'nomes', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
+      ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
+    ],
+  },
+  {
+    id: 'esportes', icon: '⚽', title: 'Esportes',
+    features: [
+      { id: 'jogo', label: 'Resultado e próximo jogo', fields: [
+        { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
+        { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
+      ], hint: 'API-Football' },
     ],
   },
   {
@@ -632,12 +644,9 @@ const CATEGORY_DEFS = [
     ],
   },
   {
-    id: 'esportes', icon: '⚽', title: 'Esportes',
+    id: 'horoscopo', icon: '🔮', title: 'Horóscopo',
     features: [
-      { id: 'jogo', label: 'Resultado e próximo jogo', fields: [
-        { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
-        { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
-      ], hint: 'API-Football' },
+      { id: 'fase-lua', label: 'Fase da lua', fields: [], hint: 'Calculado localmente, sem API' },
     ],
   },
 ];
@@ -1500,6 +1509,50 @@ async function fetchJogosItems(limit) {
   });
 }
 
+async function fetchYoutubeItems(limit) {
+  if (!accessToken) return [];
+  try {
+    const subsResp = await googleApiFetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&order=relevance&maxResults=${limit}`);
+    if (!subsResp.items) return [];
+    const items = [];
+    for (const sub of subsResp.items) {
+      const channelId = sub.snippet.resourceId.channelId;
+      const channelTitle = sub.snippet.title;
+      try {
+        const searchResp = await googleApiFetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&maxResults=1&type=video`);
+        const video = searchResp.items && searchResp.items[0];
+        if (!video) continue;
+        const videoTitle = video.snippet.title;
+        const desc = video.snippet.description || '';
+        const link = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+        const full = desc ? `Novo vídeo de ${channelTitle}: ${videoTitle}. ${truncateAtBoundary(desc, 300)}` : `Novo vídeo de ${channelTitle}: ${videoTitle}.`;
+        items.push({ category: 'Entretenimento', sub: `YouTube: ${channelTitle}`, title: `${channelTitle} — ${videoTitle}`, full, quick: videoTitle, link });
+      } catch (e) {
+        console.error('youtube(video):', e);
+      }
+    }
+    return items;
+  } catch (e) {
+    console.error('youtube:', e);
+    return [];
+  }
+}
+
+async function fetchPodcastItems(nomesStr, limit) {
+  const nomes = parseList(nomesStr);
+  let all = [];
+  for (const nome of nomes) {
+    try {
+      const { items, error } = await callEdgeFunction('podcast', { name: nome });
+      if (error) { console.error('podcast:', error); continue; }
+      all = all.concat((items || []).slice(0, limit).map(title => ({ category: 'Entretenimento', sub: `Podcast: ${nome}`, title, full: `Novo episódio de ${nome}: ${title}.`, quick: title })));
+    } catch (e) {
+      console.error('podcast:', e);
+    }
+  }
+  return all;
+}
+
 /* =========================================================================
    FINANCEIRO — Moedas (Banco Central) + Criptos (CoinGecko), sem chave
    ========================================================================= */
@@ -1581,6 +1634,8 @@ async function buildQueue() {
       else if (s.catId === 'entretenimento' && s.featId === 'series') items = await fetchSeriesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'musicas') items = await fetchMusicasItems(s.fields.generos, limit);
       else if (s.catId === 'entretenimento' && s.featId === 'jogos') items = await fetchJogosItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'youtube') items = await fetchYoutubeItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'podcasts') items = await fetchPodcastItems(s.fields.nomes, limit);
       else if (s.catId === 'esportes' && s.featId === 'jogo') items = await fetchEsportesItems(s.fields.competicao, s.fields.time);
     } catch (e) {
       console.error(`Erro ao buscar ${s.catId}.${s.featId}:`, e);
