@@ -613,7 +613,8 @@ const CATEGORY_DEFS = [
     features: [
       { id: 'email', label: 'Últimos e-mails (resumo)', fields: [
         { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'] },
-      ], hint: 'Sempre resumo, até 5 mais recentes de cada conta selecionada — conecta em ⚙️ Central de Contas' },
+        { id: 'quantidade', kind: 'dropdown', label: 'Quantidade de e-mails', options: ['5', '10', '15', '20'] },
+      ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada — conecta em ⚙️ Central de Contas' },
       { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'feriados', label: 'Feriados próximos', fields: [], hint: 'Feriados nacionais — BrasilAPI, sem chave' },
@@ -888,6 +889,26 @@ function openCategoryDetail(catId) {
         fieldsEl.appendChild(renderButtonGroup(field, fs));
       } else if (field.kind === 'tags') {
         fieldsEl.appendChild(renderTagsInput(field, fs));
+      } else if (field.kind === 'dropdown') {
+        if (field.label) {
+          const labelEl = document.createElement('div');
+          labelEl.className = 'hint';
+          labelEl.textContent = field.label;
+          fieldsEl.appendChild(labelEl);
+        }
+        const select = document.createElement('select');
+        field.options.forEach(opt => {
+          const optEl = document.createElement('option');
+          optEl.value = opt;
+          optEl.textContent = opt;
+          select.appendChild(optEl);
+        });
+        select.value = fs.fields[field.id] || field.options[0];
+        select.addEventListener('change', () => {
+          fs.fields[field.id] = select.value;
+          saveState();
+        });
+        fieldsEl.appendChild(select);
       } else {
         const fieldInput = document.createElement('input');
         fieldInput.type = 'text';
@@ -1290,9 +1311,9 @@ function truncateAtBoundary(text, maxLen) {
   return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice) + '.';
 }
 
-async function fetchGmailEmailItems() {
+async function fetchGmailEmailItems(quantidade) {
   if (!accessToken) return [];
-  const listResp = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=UNREAD&maxResults=5`);
+  const listResp = await googleApiFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=UNREAD&maxResults=${quantidade}`);
   if (!listResp.messages) return [];
   const items = [];
   for (const m of listResp.messages) {
@@ -1307,11 +1328,11 @@ async function fetchGmailEmailItems() {
   return items;
 }
 
-async function fetchOutlookEmailItems() {
+async function fetchOutlookEmailItems(quantidade) {
   const token = localStorage.getItem('infohub_outlook_token');
   if (!token) return [];
   try {
-    const resp = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=5&$select=from,subject,bodyPreview', {
+    const resp = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${quantidade}&$select=from,subject,bodyPreview`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(r => r.json());
     if (!resp.value) return [];
@@ -1328,11 +1349,12 @@ async function fetchOutlookEmailItems() {
   }
 }
 
-async function fetchEmailItems(contas) {
+async function fetchEmailItems(contas, quantidadeStr) {
   const selected = contas && contas.length ? contas : ['Google', 'Hotmail'];
+  const quantidade = parseInt(quantidadeStr, 10) || 5;
   let all = [];
-  if (selected.includes('Google')) all = all.concat(await fetchGmailEmailItems());
-  if (selected.includes('Hotmail')) all = all.concat(await fetchOutlookEmailItems());
+  if (selected.includes('Google')) all = all.concat(await fetchGmailEmailItems(quantidade));
+  if (selected.includes('Hotmail')) all = all.concat(await fetchOutlookEmailItems(quantidade));
   return all;
 }
 
@@ -1681,7 +1703,7 @@ async function buildQueue() {
   for (const s of summaries) {
     let items = [];
     try {
-      if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems(s.fields.contas);
+      if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems(s.fields.contas, s.fields.quantidade);
       else if (s.catId === 'pessoal' && s.featId === 'agenda') items = await fetchAgendaItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'aniversarios') items = await fetchAniversariosItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'feriados') items = await fetchFeriadosItems(limit);
