@@ -235,6 +235,25 @@
         <div class="label">Horário</div>
         <input type="time" id="notify-time-input" value="07:00">
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="label">🔁 Repetir automaticamente</div>
+          <div class="desc">Depois de terminar, espera o intervalo e toca tudo de novo sozinho (precisa dar play uma vez antes)</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="auto-repeat-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row" id="auto-repeat-interval-row" style="display:none;">
+        <div class="label">Intervalo</div>
+        <select id="auto-repeat-interval-select">
+          <option value="15">15 minutos</option>
+          <option value="30">30 minutos</option>
+          <option value="60">1 hora</option>
+          <option value="180">3 horas</option>
+        </select>
+      </div>
     </div>
 
     <div class="briefing-wrap">
@@ -447,6 +466,20 @@
       </div>
     </div>
 
+    <div class="account-card" style="margin-bottom: 14px;">
+      <div class="title" style="font-weight:600; margin-bottom: 8px;">🔁 Repetir automaticamente</div>
+      <div class="scope-list">
+        Em Meu Dia, ative "Repetir automaticamente" e escolha o intervalo (15min,
+        30min, 1h ou 3h). Depois de apertar o play <b>uma vez</b>, o app busca tudo de
+        novo e toca sozinho a cada intervalo, sem precisar abrir o app de novo — bom
+        pra deixar tocando enquanto você joga ou trabalha com o navegador minimizado.<br><br>
+        Funciona bem no <b>PC</b> (o navegador continua rodando minimizado). No
+        <b>celular</b>, depende do aparelho: se o Android suspender o navegador em
+        segundo plano pra economizar bateria, a repetição pode atrasar ou parar até
+        você abrir o app de novo.
+      </div>
+    </div>
+
     <div class="account-card">
       <div class="title" style="font-weight:600; margin-bottom: 8px;">⭐ Premium</div>
       <div class="scope-list">
@@ -587,6 +620,8 @@ function loadState() {
     premiumUnlocked: saved.premiumUnlocked || false,
     notifyEnabled: saved.notifyEnabled || false,
     notifyTime: saved.notifyTime || '07:00',
+    autoRepeatEnabled: saved.autoRepeatEnabled || false,
+    autoRepeatInterval: saved.autoRepeatInterval || 30,
   };
 }
 
@@ -1552,8 +1587,15 @@ function renderHistory(currentIndex) {
 function speakQueueItem(i) {
   if (i >= currentQueue.length) {
     setPlayingVisual(false);
-    briefingLabel.textContent = 'Meu Dia concluído';
-    briefingSub.textContent = '';
+    if (state.autoRepeatEnabled) {
+      const mins = state.autoRepeatInterval;
+      briefingLabel.textContent = `Concluído — repete em ${mins} min`;
+      briefingSub.textContent = '';
+      autoRepeatTimeoutId = setTimeout(() => { if (state.autoRepeatEnabled) startBriefingPlayback(); }, mins * 60000);
+    } else {
+      briefingLabel.textContent = 'Meu Dia concluído';
+      briefingSub.textContent = '';
+    }
     return;
   }
   currentQueueIndex = i;
@@ -1577,12 +1619,10 @@ function speakQueueItem(i) {
   speechSynthesis.speak(utter);
 }
 
-playCircle.addEventListener('click', async () => {
-  if (isPlaying) {
-    speechSynthesis.cancel();
-    setPlayingVisual(false);
-    return;
-  }
+let autoRepeatTimeoutId = null;
+
+async function startBriefingPlayback() {
+  if (autoRepeatTimeoutId) { clearTimeout(autoRepeatTimeoutId); autoRepeatTimeoutId = null; }
   const summaries = getEnabledFeatureSummaries();
   if (summaries.length === 0) {
     briefingLabel.textContent = 'Nenhuma categoria ativa. Vá na aba Guia e ative algo.';
@@ -1601,6 +1641,16 @@ playCircle.addEventListener('click', async () => {
     return;
   }
   speakQueueItem(0);
+}
+
+playCircle.addEventListener('click', () => {
+  if (autoRepeatTimeoutId) { clearTimeout(autoRepeatTimeoutId); autoRepeatTimeoutId = null; }
+  if (isPlaying) {
+    speechSynthesis.cancel();
+    setPlayingVisual(false);
+    return;
+  }
+  startBriefingPlayback();
 });
 
 document.getElementById('prev-btn').addEventListener('click', () => {
@@ -1872,6 +1922,36 @@ notifyTimeInput.addEventListener('change', () => {
   state.notifyTime = notifyTimeInput.value;
   saveState();
   scheduleNextNotification();
+});
+
+/* =========================================================================
+   REPETIÇÃO AUTOMÁTICA — toca a fila inteira em loop após o usuário dar play
+   ao menos uma vez (necessário pra liberar autoplay no navegador)
+   ========================================================================= */
+const autoRepeatToggle = document.getElementById('auto-repeat-toggle');
+const autoRepeatIntervalRow = document.getElementById('auto-repeat-interval-row');
+const autoRepeatIntervalSelect = document.getElementById('auto-repeat-interval-select');
+
+function updateAutoRepeatUI() {
+  autoRepeatToggle.checked = state.autoRepeatEnabled;
+  autoRepeatIntervalSelect.value = String(state.autoRepeatInterval);
+  autoRepeatIntervalRow.style.display = state.autoRepeatEnabled ? 'flex' : 'none';
+}
+updateAutoRepeatUI();
+
+autoRepeatToggle.addEventListener('change', () => {
+  state.autoRepeatEnabled = autoRepeatToggle.checked;
+  saveState();
+  updateAutoRepeatUI();
+  if (!state.autoRepeatEnabled && autoRepeatTimeoutId) {
+    clearTimeout(autoRepeatTimeoutId);
+    autoRepeatTimeoutId = null;
+  }
+});
+
+autoRepeatIntervalSelect.addEventListener('change', () => {
+  state.autoRepeatInterval = parseInt(autoRepeatIntervalSelect.value, 10);
+  saveState();
 });
 
 /* =========================================================================
