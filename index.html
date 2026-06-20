@@ -584,6 +584,10 @@ const GOOGLE_SCOPES = [
 
 // Preencha quando criar o app em https://developer.spotify.com/dashboard
 const SPOTIFY_CLIENT_ID = '2091e973264947739ebdcd861aba4fd2';
+// Spotify exige conta Premium ativa no dono do app pra liberar a Web API — sem
+// isso toda chamada falha. Desativado até a conta ter Premium; vira true sozinho
+// se você ligar de novo aqui depois.
+const SPOTIFY_MUSIC_ENABLED = false;
 const SPOTIFY_SCOPES = 'user-library-read user-top-read playlist-read-private';
 
 // Preencha quando criar o app em https://developers.mercadolivre.com.br
@@ -1510,6 +1514,7 @@ const SPOTIFY_SEED_GENRES = {
 };
 
 async function fetchSpotifyGenreItems(genero, limit) {
+  if (!SPOTIFY_MUSIC_ENABLED) return null;
   const seed = SPOTIFY_SEED_GENRES[genero];
   if (!seed) return null; // null = "não tentou", deixa o fallback decidir
   try {
