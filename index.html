@@ -480,6 +480,13 @@ const CATEGORY_DEFS = [
       ], hint: 'Sempre resumo, até 5 mais recentes de cada conta selecionada — conecta em ⚙️ Central de Contas' },
       { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
+      { id: 'feriados', label: 'Feriados próximos', fields: [], hint: 'Feriados nacionais — BrasilAPI, sem chave' },
+    ],
+  },
+  {
+    id: 'horoscopo', icon: '🔮', title: 'Horóscopo',
+    features: [
+      { id: 'fase-lua', label: 'Fase da lua', fields: [], hint: 'Calculado localmente, sem API' },
     ],
   },
   {
@@ -1200,6 +1207,55 @@ async function fetchAniversariosItems(limit) {
   });
 }
 
+async function fetchFeriadosItems(limit) {
+  try {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const [thisYear, nextYear] = await Promise.all([
+      fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`).then(r => r.json()),
+      fetch(`https://brasilapi.com.br/api/feriados/v1/${year + 1}`).then(r => r.json()),
+    ]);
+    const upcoming = [...thisYear, ...nextYear]
+      .map(f => ({ ...f, dateObj: new Date(f.date + 'T00:00:00') }))
+      .filter(f => f.dateObj >= today)
+      .sort((a, b) => a.dateObj - b.dateObj);
+    return upcoming.slice(0, limit).map(f => {
+      const diffDays = Math.round((f.dateObj - today) / 86400000);
+      const dataFmt = f.dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const diasTexto = diffDays === 0 ? 'hoje' : diffDays === 1 ? 'amanhã' : `em ${diffDays} dias`;
+      const title = `${f.name} — ${dataFmt} (${diasTexto})`;
+      return { category: 'Pessoal', sub: 'Feriado', title, full: `${f.name} é ${diasTexto}, dia ${dataFmt}.`, quick: title };
+    });
+  } catch (e) {
+    console.error('feriados:', e);
+    return [];
+  }
+}
+
+/* =========================================================================
+   HORÓSCOPO — Fase da lua (cálculo local, sem API)
+   ========================================================================= */
+function getMoonPhaseName(date) {
+  const synodicMonth = 29.530588853;
+  const knownNewMoon = new Date('2000-01-06T18:14:00Z').getTime();
+  const diffDays = (date.getTime() - knownNewMoon) / 86400000;
+  let phase = (diffDays % synodicMonth) / synodicMonth;
+  if (phase < 0) phase += 1;
+  if (phase < 0.03 || phase >= 0.97) return 'Lua Nova';
+  if (phase < 0.22) return 'Lua Crescente';
+  if (phase < 0.28) return 'Quarto Crescente';
+  if (phase < 0.47) return 'Lua Crescente Gibosa';
+  if (phase < 0.53) return 'Lua Cheia';
+  if (phase < 0.72) return 'Lua Minguante Gibosa';
+  if (phase < 0.78) return 'Quarto Minguante';
+  return 'Lua Minguante';
+}
+
+async function fetchFaseLuaItems() {
+  const fase = getMoonPhaseName(new Date());
+  return [{ category: 'Horóscopo', sub: 'Lua', title: `Fase da lua: ${fase}`, full: `Hoje a fase da lua é: ${fase}.`, quick: `Lua: ${fase}` }];
+}
+
 /* =========================================================================
    SUPABASE EDGE FUNCTIONS
    ========================================================================= */
@@ -1402,6 +1458,8 @@ async function buildQueue() {
       if (s.catId === 'pessoal' && s.featId === 'email') items = await fetchEmailItems(s.fields.contas);
       else if (s.catId === 'pessoal' && s.featId === 'agenda') items = await fetchAgendaItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'aniversarios') items = await fetchAniversariosItems(limit);
+      else if (s.catId === 'pessoal' && s.featId === 'feriados') items = await fetchFeriadosItems(limit);
+      else if (s.catId === 'horoscopo' && s.featId === 'fase-lua') items = await fetchFaseLuaItems();
       else if (s.catId === 'clima' && s.featId === 'previsao') items = (await fetchWeatherItems(s.fields.cidade1, s.fields.cidade2)).items;
       else if (s.catId === 'noticias' && s.featId === 'keyword') items = await fetchNewsItems(s.fields.termos, limit);
       else if (s.catId === 'financeiro' && s.featId === 'cotacoes') items = await fetchCotacoesItems(s.fields.moedas, s.fields.criptos);
