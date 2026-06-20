@@ -221,6 +221,20 @@
         <div class="label">Velocidade</div>
         <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="label">🔔 Notificar todo dia</div>
+          <div class="desc">Toca a notificação no horário; ao abrir, já tenta dar o play</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="notify-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row" id="notify-time-row" style="display:none;">
+        <div class="label">Horário</div>
+        <input type="time" id="notify-time-input" value="07:00">
+      </div>
     </div>
 
     <div class="briefing-wrap">
@@ -559,6 +573,8 @@ function loadState() {
     activeClimateCity: saved.activeClimateCity || 1,
     theme: saved.theme || 'dark',
     premiumUnlocked: saved.premiumUnlocked || false,
+    notifyEnabled: saved.notifyEnabled || false,
+    notifyTime: saved.notifyTime || '07:00',
   };
 }
 
@@ -1785,11 +1801,80 @@ document.getElementById('rastreio-email-btn').addEventListener('click', async ()
 });
 
 /* =========================================================================
+   NOTIFICAÇÃO DIÁRIA (local, via Service Worker — sem servidor)
+   ========================================================================= */
+const notifyToggle = document.getElementById('notify-toggle');
+const notifyTimeRow = document.getElementById('notify-time-row');
+const notifyTimeInput = document.getElementById('notify-time-input');
+let notifyTimeoutId = null;
+
+function updateNotifyUI() {
+  notifyToggle.checked = state.notifyEnabled;
+  notifyTimeInput.value = state.notifyTime;
+  notifyTimeRow.style.display = state.notifyEnabled ? 'flex' : 'none';
+}
+updateNotifyUI();
+
+function scheduleNextNotification() {
+  if (notifyTimeoutId) { clearTimeout(notifyTimeoutId); notifyTimeoutId = null; }
+  if (!state.notifyEnabled) return;
+  const [h, m] = state.notifyTime.split(':').map(Number);
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const ms = target - now;
+  notifyTimeoutId = setTimeout(async () => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification('InfoHub — Meu Dia', {
+        body: 'Seu briefing de hoje está pronto. Toca aqui pra ouvir.',
+        icon: 'icon.svg',
+        tag: 'infohub-briefing',
+      });
+    } catch (e) {
+      console.error('notify:', e);
+    }
+    scheduleNextNotification(); // reagenda pro dia seguinte
+  }, ms);
+}
+
+notifyToggle.addEventListener('change', async () => {
+  if (notifyToggle.checked) {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      notifyToggle.checked = false;
+      alert('Permissão de notificação negada — não vai dar pra avisar no horário sem isso.');
+      return;
+    }
+  }
+  state.notifyEnabled = notifyToggle.checked;
+  saveState();
+  updateNotifyUI();
+  scheduleNextNotification();
+});
+
+notifyTimeInput.addEventListener('change', () => {
+  state.notifyTime = notifyTimeInput.value;
+  saveState();
+  scheduleNextNotification();
+});
+
+/* =========================================================================
    INIT
    ========================================================================= */
 renderCategoryCards();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'infohub-autoplay') {
+      setTimeout(() => playCircle.click(), 300);
+    }
+  });
+}
+if (state.notifyEnabled) scheduleNextNotification();
+
+if (new URLSearchParams(window.location.search).get('autoplay') === '1') {
+  window.addEventListener('load', () => setTimeout(() => playCircle.click(), 600));
 }
 </script>
 </body>
