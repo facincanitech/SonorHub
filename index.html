@@ -583,7 +583,7 @@ const GOOGLE_SCOPES = [
 ].join(' ');
 
 // Preencha quando criar o app em https://developer.spotify.com/dashboard
-const SPOTIFY_CLIENT_ID = '';
+const SPOTIFY_CLIENT_ID = '2091e973264947739ebdcd861aba4fd2';
 const SPOTIFY_SCOPES = 'user-library-read user-top-read playlist-read-private';
 
 // Preencha quando criar o app em https://developers.mercadolivre.com.br
@@ -1510,20 +1510,14 @@ const SPOTIFY_SEED_GENRES = {
 };
 
 async function fetchSpotifyGenreItems(genero, limit) {
-  const token = localStorage.getItem('infohub_spotify_token');
   const seed = SPOTIFY_SEED_GENRES[genero];
-  if (!token || !seed) return null; // null = "não tentou", deixa o fallback decidir
+  if (!seed) return null; // null = "não tentou", deixa o fallback decidir
   try {
-    const resp = await fetch(`https://api.spotify.com/v1/recommendations?seed_genres=${seed}&market=BR&limit=${limit}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!resp.ok) throw new Error(`Spotify API error ${resp.status}`);
-    const data = await resp.json();
-    if (!data.tracks) return [];
-    return data.tracks.map((track) => {
-      const artist = track.artists.map((a) => a.name).join(', ');
-      const title = `${artist} — ${track.name}`;
-      return { category: 'Mídias', sub: `Música ${genero}`, title, full: `Em ${genero}: ${artist} com a música ${track.name}.`, quick: title, link: track.external_urls && track.external_urls.spotify };
+    const { items, error } = await callEdgeFunction('spotify-music', { seed_genre: seed, limit });
+    if (error) { console.error('spotify(musicas):', error); return null; }
+    return (items || []).map(({ artist, name, url }) => {
+      const title = `${artist} — ${name}`;
+      return { category: 'Mídias', sub: `Música ${genero}`, title, full: `Em ${genero}: ${artist} com a música ${name}.`, quick: title, link: url };
     });
   } catch (e) {
     console.error('spotify(musicas):', e);
