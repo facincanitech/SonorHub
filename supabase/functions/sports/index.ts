@@ -1,6 +1,11 @@
-// Supabase Edge Function — proxies API-Football so the API key never reaches the browser.
-// Deploy: cole esse código numa function chamada "sports" no painel do Supabase.
-// Secret: APIFOOTBALL_API_KEY
+// Supabase Edge Function — busca último/próximo jogo via TheSportsDB.
+// Trocamos de API-Football porque a conta deles foi suspensa sem aviso e o
+// suporte só ofereceu planos pagos (o mais barato, US$99/mês) pra reativar.
+// TheSportsDB funciona com uma chave de teste pública gratuita ("3"), sem
+// precisar criar conta — dá pra trocar por uma chave pessoal via Patreon
+// deles depois se precisar de mais limite de requisições.
+// Deploy: cole essa função numa function chamada "sports" no painel do Supabase.
+// Secret (opcional): THESPORTSDB_API_KEY — se não setar, usa a chave de teste "3".
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -10,48 +15,50 @@ const CORS_HEADERS = {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
-  const apiKey = Deno.env.get('APIFOOTBALL_API_KEY');
+  const apiKey = Deno.env.get('THESPORTSDB_API_KEY') || '3';
   const url = new URL(req.url);
   const time = (url.searchParams.get('time') || '').trim();
-  const competicao = (url.searchParams.get('competicao') || '').trim();
+  const competicao = (url.searchParams.get('competicao') || '').trim().toLowerCase();
 
-  if (!apiKey || !time) {
-    return Response.json({ items: [], error: 'Faltando time ou chave API-Football no servidor.' }, { headers: CORS_HEADERS });
+  if (!time) {
+    return Response.json({ items: [], error: 'Faltando time.' }, { headers: CORS_HEADERS });
   }
 
   try {
-    const searchUrl = `https://v3.football.api-sports.io/teams?search=${encodeURIComponent(time)}`;
-    const search = await fetch(searchUrl, { headers: { 'x-apisports-key': apiKey } }).then(r => r.json());
-    const teamId = search.response && search.response[0] && search.response[0].team.id;
-    if (!teamId) {
+    const base = `https://www.thesportsdb.com/api/v1/json/${apiKey}`;
+    const search = await fetch(`${base}/searchteams.php?t=${encodeURIComponent(time)}`).then(r => r.json());
+    const team = search.teams && search.teams[0];
+    if (!team) {
       return Response.json({ items: [], error: `Time "${time}" não encontrado.` }, { headers: CORS_HEADERS });
     }
 
-    let leagueId = null;
-    if (competicao) {
-      const leagueSearch = await fetch(`https://v3.football.api-sports.io/leagues?search=${encodeURIComponent(competicao)}`, { headers: { 'x-apisports-key': apiKey } }).then(r => r.json());
-      leagueId = leagueSearch.response && leagueSearch.response[0] && leagueSearch.response[0].league.id;
-    }
-
-    const leagueParam = leagueId ? `&league=${leagueId}` : '';
     const [lastResp, nextResp] = await Promise.all([
-      fetch(`https://v3.football.api-sports.io/fixtures?team=${teamId}&last=1${leagueParam}`, { headers: { 'x-apisports-key': apiKey } }).then(r => r.json()),
-      fetch(`https://v3.football.api-sports.io/fixtures?team=${teamId}&next=1${leagueParam}`, { headers: { 'x-apisports-key': apiKey } }).then(r => r.json()),
+      fetch(`${base}/eventslast.php?id=${team.idTeam}`).then(r => r.json()),
+      fetch(`${base}/eventsnext.php?id=${team.idTeam}`).then(r => r.json()),
     ]);
 
+    function pickEvent(list: any[]) {
+      if (!list || list.length === 0) return null;
+      if (competicao) {
+        const match = list.find((e: any) => (e.strLeague || '').toLowerCase().includes(competicao));
+        if (match) return match;
+      }
+      return list[0];
+    }
+
     const items = [];
-    const last = lastResp.response && lastResp.response[0];
+    const last = pickEvent(lastResp.results);
     if (last) {
-      const dateL = new Date(last.fixture.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      const placar = `${last.goals.home} x ${last.goals.away}`;
-      const text = `${last.teams.home.name} ${placar} ${last.teams.away.name}, em ${dateL}`;
+      const dateL = new Date(last.dateEvent).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const placar = `${last.intHomeScore} x ${last.intAwayScore}`;
+      const text = `${last.strHomeTeam} ${placar} ${last.strAwayTeam} (${last.strLeague}), em ${dateL}`;
       items.push({ category: 'Esportes', sub: 'Último jogo', title: text, full: `Último jogo de ${time}: ${text}.`, quick: text });
     }
 
-    const next = nextResp.response && nextResp.response[0];
+    const next = pickEvent(nextResp.events);
     if (next) {
-      const dateN = new Date(next.fixture.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-      const text = `${next.teams.home.name} x ${next.teams.away.name}, em ${dateN}`;
+      const dateN = `${new Date(next.dateEvent).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${(next.strTime || '').slice(0, 5)}`;
+      const text = `${next.strHomeTeam} x ${next.strAwayTeam} (${next.strLeague}), em ${dateN}`;
       items.push({ category: 'Esportes', sub: 'Próximo jogo', title: text, full: `Próximo jogo de ${time}: ${text}.`, quick: text });
     }
 
@@ -60,6 +67,6 @@ Deno.serve(async (req: Request) => {
     }
     return Response.json({ items, error: null }, { headers: CORS_HEADERS });
   } catch (e) {
-    return Response.json({ items: [], error: 'Erro ao consultar API-Football: ' + e.message }, { headers: CORS_HEADERS });
+    return Response.json({ items: [], error: 'Erro ao consultar TheSportsDB: ' + e.message }, { headers: CORS_HEADERS });
   }
 });
