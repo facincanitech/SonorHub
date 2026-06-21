@@ -48,6 +48,10 @@ Deno.serve(async (req: Request) => {
     quick: `${nomeLocal}: ${temp}°C, ${desc}`,
   });
 
+  // Ícones reais do OpenWeatherMap (agora + próximas previsões de 3 em 3h), pro
+  // herói animado do Guia mostrar o tempo de verdade em vez de desenho genérico.
+  const icons = [weather.weather[0].icon];
+
   if (weather.coord) {
     const uvResp = await fetch(`https://api.openweathermap.org/data/2.5/uvi?lat=${weather.coord.lat}&lon=${weather.coord.lon}&appid=${apiKey}`).then(r => r.json()).catch(() => null);
     if (uvResp && uvResp.value !== undefined) {
@@ -60,7 +64,14 @@ Deno.serve(async (req: Request) => {
       const labels = ['', 'Boa', 'Razoável', 'Moderada', 'Ruim', 'Muito ruim'];
       items.push({ category: 'Clima', sub: 'Qualidade do ar', title: `AQI: ${labels[aqi] || aqi}`, full: `A qualidade do ar em ${nomeLocal} está classificada como ${labels[aqi] || aqi}.`, quick: `Ar: ${labels[aqi] || aqi}` });
     }
+
+    const forecastResp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${weather.coord.lat}&lon=${weather.coord.lon}&units=metric&lang=pt_br&appid=${apiKey}`).then(r => r.json()).catch(() => null);
+    if (forecastResp && forecastResp.list) {
+      for (const f of forecastResp.list.slice(0, 2)) {
+        if (f.weather && f.weather[0]) icons.push(f.weather[0].icon);
+      }
+    }
   }
 
-  return Response.json({ items, error: null }, { headers: CORS_HEADERS });
+  return Response.json({ items, icons, error: null }, { headers: CORS_HEADERS });
 });

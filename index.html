@@ -159,7 +159,7 @@
      sem cortar — desliza, segura uns segundos, desliza pra próxima, sem piscar. */
   .hero-track {
     position: absolute; inset: 0; display: flex; width: 400%; height: 100%;
-    animation: cat-hero-slide 12s ease-in-out infinite;
+    animation: cat-hero-slide 20s ease-in-out infinite;
   }
   .hero-slide {
     flex: 0 0 25%; height: 100%; position: relative;
@@ -1031,8 +1031,12 @@ function countEnabled(cat) {
 // Pôsteres/imagens reais pros heróis de Entretenimento e Notícias. Buscado uma
 // única vez por sessão (não a cada render) pra não bater nas APIs gratuitas
 // repetidamente só pela tela do Guia ser reaberta.
-let heroImageUrls = { entretenimento: [], noticias: [] };
+let heroImageUrls = { entretenimento: [], noticias: [], clima: [] };
 let heroImagesLoaded = false;
+
+function weatherIconUrl(code) {
+  return `https://openweathermap.org/img/wn/${code}@2x.png`;
+}
 
 async function loadHeroImages() {
   if (heroImagesLoaded) return;
@@ -1046,10 +1050,18 @@ async function loadHeroImages() {
     const fs = getFeatureState('noticias', 'keyword');
     const termos = parseList(fs.fields.termos);
     if (termos.length > 0) {
-      const items = await fetchNewsItems(termos, 1);
+      const items = await fetchNewsItems(termos, 3); // mais artigos por termo, pra ter chance de achar com imagem
       heroImageUrls.noticias = items.map((it) => it.image).filter(Boolean).slice(0, 3);
     }
   } catch (e) { console.error('hero(noticias):', e); }
+
+  try {
+    const climaFs = getFeatureState('clima', 'previsao');
+    if (climaFs.fields.cidade1) {
+      const { icons } = await fetchWeatherItems(climaFs.fields.cidade1, '');
+      heroImageUrls.clima = (icons || []).map(weatherIconUrl);
+    }
+  } catch (e) { console.error('hero(clima):', e); }
 
   renderCategoryCards();
 }
@@ -1077,6 +1089,15 @@ function getCategoryHeroScene(cat) {
     return buildHeroTrack(icons.map((ic) => ({ html: ic })));
   }
   if (cat.id === 'clima') {
+    if (heroImageUrls.clima.length > 0) {
+      // Ícone oficial do OpenWeatherMap pra previsão real da cidade configurada,
+      // sobre um fundo de céu — em vez do sol/nuvem/chuva desenhados genéricos.
+      const slides = heroImageUrls.clima.map((url) => ({
+        style: 'background:linear-gradient(180deg,#4a90d9,#87ceeb); background-size: 70px;',
+        html: `<img src="${url}" style="width:64px; height:64px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));">`,
+      }));
+      return buildHeroTrack(slides);
+    }
     return buildHeroTrack([
       { style: 'background:linear-gradient(180deg,#4a90d9,#87ceeb);',
         html: '<div style="position:absolute; top:14px; right:24px; width:30px; height:30px; border-radius:50%; background:#ffd54f; box-shadow:0 0 20px #ffd54f;"></div>' },
@@ -1816,17 +1837,19 @@ async function fetchWeatherItems(cidade1, cidade2) {
   const cidades = [cidade1, cidade2].filter(Boolean);
   if (cidades.length === 0) return { items: [], error: 'Configure pelo menos uma cidade.' };
   let allItems = [];
+  let firstIcons = [];
   let firstError = null;
   for (const cidade of cidades) {
     try {
-      const { items, error } = await callEdgeFunction('weather', { local: cidade });
+      const { items, icons, error } = await callEdgeFunction('weather', { local: cidade });
       if (error && !firstError) firstError = error;
+      if (icons && firstIcons.length === 0) firstIcons = icons;
       allItems = allItems.concat(items || []);
     } catch (e) {
       if (!firstError) firstError = 'Falha ao falar com a Edge Function de clima: ' + e.message;
     }
   }
-  return { items: allItems, error: allItems.length === 0 ? firstError : null };
+  return { items: allItems, icons: firstIcons, error: allItems.length === 0 ? firstError : null };
 }
 
 /* =========================================================================
@@ -1886,9 +1909,9 @@ async function fetchFilmeBuscaItems(query) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'busca', q: query });
     if (error) { console.error('media(busca):', error); return []; }
-    return (items || []).map(({ title, overview, link, poster }) => {
+    return (items || []).map(({ title, overview, link, poster, backdrop }) => {
       const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
-      return { category: 'Entretenimento', sub: 'Filme', title, full, quick: title, link, image: poster || null };
+      return { category: 'Entretenimento', sub: 'Filme', title, full, quick: title, link, image: backdrop || poster || null };
     });
   } catch (e) { console.error('media(busca):', e); return []; }
 }
@@ -1897,9 +1920,9 @@ async function fetchFilmesItems(limit) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'filmes' });
     if (error) { console.error('media(filmes):', error); return []; }
-    return (items || []).slice(0, limit).map(({ title, overview, link, poster }) => {
+    return (items || []).slice(0, limit).map(({ title, overview, link, poster, backdrop }) => {
       const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
-      return { category: 'Entretenimento', sub: 'Filmes', title, full, quick: title, link, image: poster || null };
+      return { category: 'Entretenimento', sub: 'Filmes', title, full, quick: title, link, image: backdrop || poster || null };
     });
   } catch (e) { console.error('media(filmes):', e); return []; }
 }
@@ -1908,9 +1931,9 @@ async function fetchSeriesItems(limit) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'series' });
     if (error) { console.error('media(series):', error); return []; }
-    return (items || []).slice(0, limit).map(({ title, overview, link, poster }) => {
+    return (items || []).slice(0, limit).map(({ title, overview, link, poster, backdrop }) => {
       const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
-      return { category: 'Entretenimento', sub: 'Séries', title, full, quick: title, link, image: poster || null };
+      return { category: 'Entretenimento', sub: 'Séries', title, full, quick: title, link, image: backdrop || poster || null };
     });
   } catch (e) { console.error('media(series):', e); return []; }
 }

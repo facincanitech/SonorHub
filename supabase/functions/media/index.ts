@@ -34,8 +34,11 @@ Deno.serve(async (req: Request) => {
 
   try {
     const seen = new Set<string>();
-    const items: { title: string; overview: string; link: string; poster: string | null }[] = [];
+    const items: { title: string; overview: string; link: string; poster: string | null; backdrop: string | null }[] = [];
     const posterUrl = (path: string | null) => path ? `https://image.tmdb.org/t/p/w500${path}` : null;
+    // Backdrop é a imagem widescreen (16:9) do TMDB — pôster é retrato (2:3) e
+    // corta/aproxima demais num banner baixo e largo como o herói do Guia.
+    const backdropUrl = (path: string | null) => path ? `https://image.tmdb.org/t/p/w780${path}` : null;
 
     if (type === 'busca') {
       if (!q) return Response.json({ items: [], error: 'Faltando termo de busca.' }, { headers: CORS_HEADERS });
@@ -47,6 +50,7 @@ Deno.serve(async (req: Request) => {
           overview: m.overview || '',
           link: `https://www.themoviedb.org/movie/${m.id}`,
           poster: posterUrl(m.poster_path),
+          backdrop: backdropUrl(m.backdrop_path),
         });
       }
     } else if (type === 'filmes') {
@@ -62,13 +66,13 @@ Deno.serve(async (req: Request) => {
       for (const m of (nowPlaying.results || [])) {
         if (seen.has(m.title)) continue;
         seen.add(m.title);
-        items.push({ title: `${m.title} está em cartaz`, overview: m.overview || '', link: `https://www.themoviedb.org/movie/${m.id}`, poster: posterUrl(m.poster_path) });
+        items.push({ title: `${m.title} está em cartaz`, overview: m.overview || '', link: `https://www.themoviedb.org/movie/${m.id}`, poster: posterUrl(m.poster_path), backdrop: backdropUrl(m.backdrop_path) });
       }
       for (const m of (upcoming.results || [])) {
         if (seen.has(m.title)) continue;
         seen.add(m.title);
         const data = formatDate(m.release_date);
-        items.push({ title: `${m.title} chega aos cinemas${data ? ' em ' + data : ' em breve'}`, overview: m.overview || '', link: `https://www.themoviedb.org/movie/${m.id}`, poster: posterUrl(m.poster_path) });
+        items.push({ title: `${m.title} chega aos cinemas${data ? ' em ' + data : ' em breve'}`, overview: m.overview || '', link: `https://www.themoviedb.org/movie/${m.id}`, poster: posterUrl(m.poster_path), backdrop: backdropUrl(m.backdrop_path) });
       }
     } else if (type === 'series') {
       const onTheAir = await tmdbGet('/tv/on_the_air', apiKey);
@@ -76,12 +80,12 @@ Deno.serve(async (req: Request) => {
       for (const s of (onTheAir.results || [])) {
         if (seen.has(s.name)) continue;
         seen.add(s.name);
-        items.push({ title: `${s.name} está no ar`, overview: s.overview || '', link: `https://www.themoviedb.org/tv/${s.id}`, poster: posterUrl(s.poster_path) });
+        items.push({ title: `${s.name} está no ar`, overview: s.overview || '', link: `https://www.themoviedb.org/tv/${s.id}`, poster: posterUrl(s.poster_path), backdrop: backdropUrl(s.backdrop_path) });
       }
       for (const s of (trending.results || [])) {
         if (seen.has(s.name)) continue;
         seen.add(s.name);
-        items.push({ title: `${s.name} está em alta`, overview: s.overview || '', link: `https://www.themoviedb.org/tv/${s.id}`, poster: posterUrl(s.poster_path) });
+        items.push({ title: `${s.name} está em alta`, overview: s.overview || '', link: `https://www.themoviedb.org/tv/${s.id}`, poster: posterUrl(s.poster_path), backdrop: backdropUrl(s.backdrop_path) });
       }
     } else {
       return Response.json({ items: [], error: 'Tipo inválido, use filmes ou series.' }, { headers: CORS_HEADERS });
