@@ -158,19 +158,20 @@
   /* Carrossel deslizante: 3 cenas reais + 1 cópia da 1ª no final, pra dar a volta
      sem cortar — desliza, segura uns segundos, desliza pra próxima, sem piscar. */
   .hero-track {
-    position: absolute; inset: 0; display: flex; width: 400%; height: 100%;
+    position: absolute; inset: 0; display: flex; width: 500%; height: 100%;
     animation: cat-hero-slide 20s ease-in-out infinite;
   }
   .hero-slide {
-    flex: 0 0 25%; height: 100%; position: relative;
+    flex: 0 0 20%; height: 100%; position: relative;
     background-size: cover; background-position: center;
     display: flex; align-items: center; justify-content: center; font-size: 2.3rem;
   }
   @keyframes cat-hero-slide {
-    0%, 22% { transform: translateX(0%); }
-    28%, 47% { transform: translateX(-25%); }
-    53%, 72% { transform: translateX(-50%); }
-    78%, 100% { transform: translateX(-75%); }
+    0%, 16% { transform: translateX(0%); }
+    20%, 36% { transform: translateX(-20%); }
+    40%, 56% { transform: translateX(-40%); }
+    60%, 76% { transform: translateX(-60%); }
+    80%, 100% { transform: translateX(-80%); }
   }
 
   .chart-wrap { position: absolute; inset: 0; overflow: hidden; }
@@ -1031,12 +1032,16 @@ function countEnabled(cat) {
 // Pôsteres/imagens reais pros heróis de Entretenimento e Notícias. Buscado uma
 // única vez por sessão (não a cada render) pra não bater nas APIs gratuitas
 // repetidamente só pela tela do Guia ser reaberta.
-let heroImageUrls = { entretenimento: [], noticias: [], clima: [] };
+let heroImageUrls = { entretenimento: [], noticias: [] };
 let heroImagesLoaded = false;
 
 function weatherIconUrl(code) {
   return `https://openweathermap.org/img/wn/${code}@2x.png`;
 }
+
+// Ícones fixos do OpenWeatherMap (imagem pública, sem precisar de chave nem
+// consultar o tempo de verdade) — sol, nublado, chuva, noite, sempre em loop.
+const CLIMA_HERO_ICONS = ['01d', '03d', '10d', '02n'].map(weatherIconUrl);
 
 async function loadHeroImages() {
   if (heroImagesLoaded) return;
@@ -1054,14 +1059,6 @@ async function loadHeroImages() {
     heroImageUrls.noticias = items.map((it) => it.image).filter(Boolean).slice(0, 3);
   } catch (e) { console.error('hero(noticias):', e); }
 
-  try {
-    const climaFs = getFeatureState('clima', 'previsao');
-    if (climaFs.fields.cidade1) {
-      const { icons } = await fetchWeatherItems(climaFs.fields.cidade1, '');
-      heroImageUrls.clima = (icons || []).map(weatherIconUrl);
-    }
-  } catch (e) { console.error('hero(clima):', e); }
-
   renderCategoryCards();
 }
 
@@ -1070,7 +1067,7 @@ async function loadHeroImages() {
 function buildHeroTrack(slides) {
   if (slides.length === 0) return '';
   const padded = [];
-  for (let i = 0; i < 3; i++) padded.push(slides[i % slides.length]);
+  for (let i = 0; i < 4; i++) padded.push(slides[i % slides.length]);
   const withWrap = [...padded, padded[0]];
   return `<div class="hero-track">${withWrap.map((s) => `<div class="hero-slide" style="${s.style || ''}">${s.html || ''}</div>`).join('')}</div>`;
 }
@@ -1088,23 +1085,19 @@ function getCategoryHeroScene(cat) {
     return buildHeroTrack(icons.map((ic) => ({ html: ic })));
   }
   if (cat.id === 'clima') {
-    if (heroImageUrls.clima.length > 0) {
-      // Ícone oficial do OpenWeatherMap pra previsão real da cidade configurada,
-      // sobre um fundo de céu — em vez do sol/nuvem/chuva desenhados genéricos.
-      const slides = heroImageUrls.clima.map((url) => ({
-        style: 'background:linear-gradient(180deg,#4a90d9,#87ceeb); background-size: 70px;',
-        html: `<img src="${url}" style="width:64px; height:64px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));">`,
-      }));
-      return buildHeroTrack(slides);
-    }
-    return buildHeroTrack([
-      { style: 'background:linear-gradient(180deg,#4a90d9,#87ceeb);',
-        html: '<div style="position:absolute; top:14px; right:24px; width:30px; height:30px; border-radius:50%; background:#ffd54f; box-shadow:0 0 20px #ffd54f;"></div>' },
-      { style: 'background:linear-gradient(180deg,#5c6f7d,#8a9aa5);',
-        html: '<div style="position:absolute; top:20px; right:26px; width:48px; height:22px; border-radius:20px; background:rgba(255,255,255,0.85);"></div><div style="position:absolute; top:13px; right:44px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,0.85);"></div>' },
-      { style: 'background:linear-gradient(180deg,#37474f,#546e7a);',
-        html: '<div style="position:absolute; top:16px; right:28px; width:42px; height:20px; border-radius:18px; background:rgba(220,230,235,0.85);"></div>' },
-    ]);
+    // Sol, nublado, chuva, noite — ícones reais (OpenWeatherMap, públicos, sem
+    // chave) em loop fixo, sem precisar consultar o tempo de verdade.
+    const skies = [
+      'linear-gradient(180deg,#4a90d9,#87ceeb)',
+      'linear-gradient(180deg,#5c6f7d,#8a9aa5)',
+      'linear-gradient(180deg,#37474f,#546e7a)',
+      'linear-gradient(180deg,#0d1b3e,#1c2f5c)',
+    ];
+    const slides = CLIMA_HERO_ICONS.map((url, i) => ({
+      style: `background:${skies[i]};`,
+      html: `<img src="${url}" style="width:64px; height:64px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));">`,
+    }));
+    return buildHeroTrack(slides);
   }
   if (cat.id === 'entretenimento') {
     return buildHeroTrack([
@@ -1836,19 +1829,17 @@ async function fetchWeatherItems(cidade1, cidade2) {
   const cidades = [cidade1, cidade2].filter(Boolean);
   if (cidades.length === 0) return { items: [], error: 'Configure pelo menos uma cidade.' };
   let allItems = [];
-  let firstIcons = [];
   let firstError = null;
   for (const cidade of cidades) {
     try {
-      const { items, icons, error } = await callEdgeFunction('weather', { local: cidade });
+      const { items, error } = await callEdgeFunction('weather', { local: cidade });
       if (error && !firstError) firstError = error;
-      if (icons && firstIcons.length === 0) firstIcons = icons;
       allItems = allItems.concat(items || []);
     } catch (e) {
       if (!firstError) firstError = 'Falha ao falar com a Edge Function de clima: ' + e.message;
     }
   }
-  return { items: allItems, icons: firstIcons, error: allItems.length === 0 ? firstError : null };
+  return { items: allItems, error: allItems.length === 0 ? firstError : null };
 }
 
 /* =========================================================================
