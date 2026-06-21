@@ -2595,7 +2595,6 @@ function showVoiceToast(texto, durationMs = 4000) {
 
 async function handleVoiceQuery(textoOriginal) {
   const texto = textoOriginal.trim();
-  showVoiceToast(`Você disse: "${texto}"`, 0);
 
   const faq = matchVoiceQA(texto);
   let resposta = faq ? faq.response : null;
@@ -2605,13 +2604,11 @@ async function handleVoiceQuery(textoOriginal) {
   if (!resposta) resposta = await tryAnswerNoticias(texto);
   if (!resposta) resposta = await tryAnswerWikipedia(texto);
 
-  showVoiceToast(resposta, 0);
-  await speakAndWait(resposta);
-  showVoiceToast(resposta, 4000);
-
   voiceHistoryItems.unshift({ category: 'Pergunte algo', title: `"${texto}" — ${resposta}` });
   voiceHistoryItems = voiceHistoryItems.slice(0, 20);
   renderHistory(currentQueueIndex);
+
+  await speakAndWait(resposta);
 }
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2629,7 +2626,6 @@ document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     btn.classList.add('listening');
-    showVoiceToast('Ouvindo... pode falar', 0);
 
     const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 7000);
 
