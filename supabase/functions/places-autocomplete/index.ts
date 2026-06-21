@@ -19,6 +19,7 @@ Deno.serve(async (req: Request) => {
   const input = (url.searchParams.get('input') || '').trim();
   const lat = parseFloat(url.searchParams.get('lat') || '');
   const lng = parseFloat(url.searchParams.get('lng') || '');
+  const sessionToken = (url.searchParams.get('sessionToken') || '').trim();
 
   if (!apiKey || !input) {
     return Response.json({ suggestions: [], error: 'Faltando texto digitado ou chave do Google Maps no servidor.' }, { headers: CORS_HEADERS });
@@ -30,6 +31,7 @@ Deno.serve(async (req: Request) => {
       languageCode: 'pt-BR',
       regionCode: 'BR',
     };
+    if (sessionToken) body.sessionToken = sessionToken;
     if (!isNaN(lat) && !isNaN(lng)) {
       body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 50000 } };
     }

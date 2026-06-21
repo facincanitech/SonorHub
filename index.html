@@ -2036,6 +2036,15 @@ function hideGpsSuggestions() {
   gpsDestinoSuggestions.innerHTML = '';
 }
 
+// Session token agrupa todas as chamadas de uma mesma busca (várias teclas digitadas)
+// num "evento" só pra cobrança — é a prática recomendada do Google pra Autocomplete.
+// Sem confirmar o desconto exato na fatura ainda, mas não tem desvantagem em usar.
+let gpsAutocompleteSessionToken = null;
+function newGpsAutocompleteSession() {
+  gpsAutocompleteSessionToken = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+}
+newGpsAutocompleteSession();
+
 function renderGpsSuggestions(suggestions) {
   gpsDestinoSuggestions.innerHTML = '';
   if (!suggestions || suggestions.length === 0) { hideGpsSuggestions(); return; }
@@ -2050,6 +2059,7 @@ function renderGpsSuggestions(suggestions) {
       ev.preventDefault(); // evita perder o clique pro blur do input
       gpsDestinoInput.value = s.text;
       hideGpsSuggestions();
+      newGpsAutocompleteSession(); // endereço escolhido — fecha a sessão, próxima busca começa nova
     });
     gpsDestinoSuggestions.appendChild(item);
   });
@@ -2062,7 +2072,7 @@ gpsDestinoInput.addEventListener('input', () => {
   if (texto.length < 4) { hideGpsSuggestions(); return; }
   gpsAutocompleteTimeoutId = setTimeout(async () => {
     try {
-      const params = { input: texto };
+      const params = { input: texto, sessionToken: gpsAutocompleteSessionToken };
       try {
         const pos = await getCurrentPosition();
         params.lat = pos.coords.latitude;
