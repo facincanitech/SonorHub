@@ -1058,7 +1058,10 @@ async function loadHeroImages() {
     // configurou em Notícias, já que é só decoração, não conteúdo lido.
     const NEWS_HERO_KEYWORDS = ['política', 'tecnologia', 'esportes', 'economia'];
     const items = await fetchNewsItems(NEWS_HERO_KEYWORDS, 3);
-    heroImageUrls.noticias = items.map((it) => it.image).filter(Boolean).slice(0, 3);
+    // O GNews às vezes devolve a logo do veículo em vez de foto da matéria
+    // quando o artigo não tem capa própria — filtra esses casos óbvios.
+    const isLikelyLogo = (url) => /logo|favicon|brand|placeholder/i.test(url);
+    heroImageUrls.noticias = items.map((it) => it.image).filter((url) => url && !isLikelyLogo(url)).slice(0, 3);
   } catch (e) { console.error('hero(noticias):', e); }
 
   renderCategoryCards();
