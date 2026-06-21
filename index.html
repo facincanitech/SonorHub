@@ -2002,19 +2002,21 @@ document.querySelectorAll('#gps-poi-categories .btn-opt').forEach(btn => {
 });
 
 async function announceNearbyPlaceIfNew(lat, lng) {
-  for (const type of gpsPoiCategories) {
-    try {
-      const { places, error } = await callEdgeFunction('places-nearby', { lat, lng, type, radius: 1000 });
-      if (error || !places) continue;
-      const novo = places.find(p => !announcedPlaceIds.has(p.id));
-      if (novo) {
-        announcedPlaceIds.add(novo.id);
-        const notaTexto = novo.rating ? `, nota ${novo.rating.toFixed(1)}` : '';
-        await speakAndWait(`Tem um lugar a ${novo.distance} metros: ${novo.name}${notaTexto}.`);
-      }
-    } catch (e) {
-      console.error('places-nearby:', e);
+  if (gpsPoiCategories.size === 0) return;
+  try {
+    // Uma chamada só com todas as categorias selecionadas, em vez de uma por categoria —
+    // bem mais barato (a Places API já aceita várias categorias na mesma requisição).
+    const types = Array.from(gpsPoiCategories).join(',');
+    const { places, error } = await callEdgeFunction('places-nearby', { lat, lng, types, radius: 1000 });
+    if (error || !places) return;
+    const novo = places.find(p => !announcedPlaceIds.has(p.id));
+    if (novo) {
+      announcedPlaceIds.add(novo.id);
+      const notaTexto = novo.rating ? `, nota ${novo.rating.toFixed(1)}` : '';
+      await speakAndWait(`Tem um lugar a ${novo.distance} metros: ${novo.name}${notaTexto}.`);
     }
+  } catch (e) {
+    console.error('places-nearby:', e);
   }
 }
 
@@ -2057,8 +2059,12 @@ async function narrateTrafficOnce() {
     if (heading === null || heading === undefined || isNaN(heading)) {
       resultEl.textContent = 'Aguardando direção de movimento (ainda sem dados suficientes)...';
     } else {
-      const destLat = lat + (3 / 111) * Math.cos(heading * Math.PI / 180);
-      const destLon = lon + (3 / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(heading * Math.PI / 180);
+      // Ponto projetado em linha reta a 1km na direção do heading — não segue ruas de
+      // verdade, então em curvas/cruzamentos pode pegar o trânsito de uma via paralela
+      // à que você realmente está. 1km (em vez dos 3km originais) reduz esse erro, mas
+      // não elimina; resolver isso de verdade precisaria da Roads API (snap-to-road).
+      const destLat = lat + (1 / 111) * Math.cos(heading * Math.PI / 180);
+      const destLon = lon + (1 / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(heading * Math.PI / 180);
       const { status, error } = await callEdgeFunction('traffic', { origem: `${lat},${lon}`, destino: `${destLat},${destLon}` });
       if (error) {
         resultEl.textContent = error;
@@ -2111,7 +2117,7 @@ document.getElementById('gps-start-btn').addEventListener('click', async () => {
     announcedPlaceIds = new Set();
     resultEl.textContent = 'Modo trânsito ativo — narrando condições nas proximidades.';
     narrateTrafficOnce();
-    trafficIntervalId = setInterval(narrateTrafficOnce, 90000);
+    trafficIntervalId = setInterval(narrateTrafficOnce, 180000); // 3min — equilíbrio entre atualização e custo de API
   }
 });
 

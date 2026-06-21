@@ -1,6 +1,11 @@
 // Supabase Edge Function — busca lugares próximos (posto, restaurante, etc.) via
 // Google Places API (New) — Nearby Search. Usada pelo "modo trânsito" do GPS auditivo
 // pra avisar quando um lugar novo aparece nas proximidades (sem repetir o mesmo).
+//
+// Recebe TODAS as categorias selecionadas numa chamada só (Places API aceita várias
+// em includedTypes) — antes era 1 chamada por categoria a cada ciclo, o que ficava
+// caro rápido (4 categorias × ciclo de 90s ≈ 200 chamadas/hora de uso ativo).
+//
 // Deploy: cole essa função numa function chamada "places-nearby" no painel do Supabase.
 // Secret: GOOGLE_MAPS_API_KEY (mesma chave das functions directions/traffic — precisa
 // ter "Places API (New)" habilitada também)
@@ -17,11 +22,11 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const lat = parseFloat(url.searchParams.get('lat') || '');
   const lng = parseFloat(url.searchParams.get('lng') || '');
-  const type = (url.searchParams.get('type') || '').trim();
+  const types = (url.searchParams.get('types') || '').split(',').map(t => t.trim()).filter(Boolean);
   const radius = parseFloat(url.searchParams.get('radius') || '1000');
 
-  if (!apiKey || !type || isNaN(lat) || isNaN(lng)) {
-    return Response.json({ places: [], error: 'Faltando lat/lng/tipo ou chave do Google Maps no servidor.' }, { headers: CORS_HEADERS });
+  if (!apiKey || types.length === 0 || isNaN(lat) || isNaN(lng)) {
+    return Response.json({ places: [], error: 'Faltando lat/lng/tipos ou chave do Google Maps no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
@@ -30,11 +35,11 @@ Deno.serve(async (req: Request) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.rating',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.rating,places.types',
       },
       body: JSON.stringify({
-        includedTypes: [type],
-        maxResultCount: 3,
+        includedTypes: types,
+        maxResultCount: 5,
         locationRestriction: {
           circle: { center: { latitude: lat, longitude: lng }, radius },
         },
@@ -56,12 +61,14 @@ Deno.serve(async (req: Request) => {
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    const places = (data.places || []).map((p: any) => ({
-      id: p.id,
-      name: p.displayName && p.displayName.text,
-      distance: Math.round(distanceMeters(lat, lng, p.location.latitude, p.location.longitude)),
-      rating: p.rating || null,
-    }));
+    const places = (data.places || [])
+      .map((p: any) => ({
+        id: p.id,
+        name: p.displayName && p.displayName.text,
+        distance: Math.round(distanceMeters(lat, lng, p.location.latitude, p.location.longitude)),
+        rating: p.rating || null,
+      }))
+      .sort((a: any, b: any) => a.distance - b.distance);
     return Response.json({ places, error: null }, { headers: CORS_HEADERS });
   } catch (e) {
     return Response.json({ places: [], error: 'Erro ao buscar lugares: ' + e.message }, { headers: CORS_HEADERS });
