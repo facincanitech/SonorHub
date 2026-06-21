@@ -1882,6 +1882,17 @@ async function fetchNewsItems(termosStr, limit) {
   return all;
 }
 
+async function fetchFilmeBuscaItems(query) {
+  try {
+    const { items, error } = await callEdgeFunction('media', { type: 'busca', q: query });
+    if (error) { console.error('media(busca):', error); return []; }
+    return (items || []).map(({ title, overview, link, poster }) => {
+      const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
+      return { category: 'Entretenimento', sub: 'Filme', title, full, quick: title, link, image: poster || null };
+    });
+  } catch (e) { console.error('media(busca):', e); return []; }
+}
+
 async function fetchFilmesItems(limit) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'filmes' });
@@ -2863,6 +2874,16 @@ async function tryAnswerGuia(texto) {
   }
 }
 
+async function tryAnswerFilmeBusca(texto) {
+  const m = texto.match(/filme[s]?\s+(?:do|da|de|dos|das|sobre|com)\s+(.+)/i);
+  if (!m) return null;
+  const termo = m[1].replace(/[?.!]+$/, '').trim();
+  if (!termo) return null;
+  const items = await fetchFilmeBuscaItems(termo);
+  if (!items || items.length === 0) return `Não encontrei nenhum filme relacionado a "${termo}".`;
+  return items[0].full;
+}
+
 async function tryAnswerEsportes(texto) {
   let m;
   let time = null;
@@ -2974,6 +2995,7 @@ async function handleVoiceQuery(textoOriginal) {
     if (!resposta) resposta = await tryAnswerClima(semSaudacao);
     if (!resposta) resposta = await tryAnswerEsportes(semSaudacao);
     if (!resposta) resposta = await tryAnswerGuia(semSaudacao);
+    if (!resposta) resposta = await tryAnswerFilmeBusca(semSaudacao);
     if (!resposta) resposta = await tryAnswerNoticias(semSaudacao);
     if (!resposta) resposta = await tryAnswerWikipedia(semSaudacao);
   }
@@ -2982,7 +3004,12 @@ async function handleVoiceQuery(textoOriginal) {
   voiceHistoryItems = voiceHistoryItems.slice(0, 20);
   renderHistory(currentQueueIndex);
 
+  // Usa o mesmo play/stop do briefing: assim o botão mostra "tocando" enquanto o
+  // assistente fala, e clicar nele cancela igual cancelaria a fila normal.
+  speechSynthesis.cancel(); // se a fila já estava tocando, não deixa sobrepor
+  setPlayingVisual(true);
   await speakAndWait(resposta);
+  setPlayingVisual(false);
 }
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;

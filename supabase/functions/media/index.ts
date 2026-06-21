@@ -26,9 +26,10 @@ Deno.serve(async (req: Request) => {
   const apiKey = Deno.env.get('TMDB_API_KEY');
   const url = new URL(req.url);
   const type = (url.searchParams.get('type') || '').trim();
+  const q = (url.searchParams.get('q') || '').trim();
 
   if (!apiKey || !type) {
-    return Response.json({ items: [], error: 'Faltando tipo (filmes/series) ou chave TMDB no servidor.' }, { headers: CORS_HEADERS });
+    return Response.json({ items: [], error: 'Faltando tipo (filmes/series/busca) ou chave TMDB no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
@@ -36,7 +37,19 @@ Deno.serve(async (req: Request) => {
     const items: { title: string; overview: string; link: string; poster: string | null }[] = [];
     const posterUrl = (path: string | null) => path ? `https://image.tmdb.org/t/p/w500${path}` : null;
 
-    if (type === 'filmes') {
+    if (type === 'busca') {
+      if (!q) return Response.json({ items: [], error: 'Faltando termo de busca.' }, { headers: CORS_HEADERS });
+      const search = await tmdbGet(`/search/movie?query=${encodeURIComponent(q)}`, apiKey);
+      for (const m of (search.results || []).slice(0, 3)) {
+        const data = formatDate(m.release_date);
+        items.push({
+          title: `${m.title}${data ? ` (${data.slice(-4)})` : ''}`,
+          overview: m.overview || '',
+          link: `https://www.themoviedb.org/movie/${m.id}`,
+          poster: posterUrl(m.poster_path),
+        });
+      }
+    } else if (type === 'filmes') {
       let nowPlaying = await tmdbGet('/movie/now_playing?region=BR', apiKey);
       if (!nowPlaying.results || nowPlaying.results.length === 0) {
         nowPlaying = await tmdbGet('/movie/now_playing', apiKey); // fallback sem filtro de região
