@@ -182,15 +182,30 @@
   .back-btn:hover { background: var(--c-border); }
   .detail-header h2 { font-size: 1.1rem; margin: 0; }
 
-  .feature { background: var(--c-surface); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .feature {
+    background: linear-gradient(155deg, var(--c-surface-alt), var(--c-surface));
+    border: 1px solid var(--c-border2); border-left: 4px solid var(--item-color, var(--c-border2));
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
   .feature-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .feature-row .label { font-size: 0.92rem; font-weight: 600; }
+  .feature-icon {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; font-size: 1.1rem;
+    background: color-mix(in srgb, var(--item-color, var(--c-accent-blue)) 18%, var(--c-surface));
+    display: flex; align-items: center; justify-content: center;
+  }
+  .feature-row .label { flex: 1; font-size: 0.92rem; font-weight: 600; }
   .feature-fields { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
   .feature-fields input {
     background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text);
     border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; width: 100%; font-family: inherit;
   }
   .feature-fields .hint { color: var(--c-text-faint); font-size: 0.72rem; }
+  .feature .switch input:checked + .slider { background: var(--item-color, var(--c-green)); }
+  .feature .btn-opt.selected {
+    background: color-mix(in srgb, var(--item-color, var(--c-accent-blue)) 18%, transparent);
+    border-color: var(--item-color, var(--c-accent-blue)); color: var(--item-color, var(--c-accent-blue));
+  }
 
   /* ===== Button-group selector (chips clicáveis) ===== */
   .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -850,19 +865,19 @@ const CATEGORY_DEFS = [
   {
     id: 'pessoal', icon: '👤', title: 'Pessoal', color: 'var(--cat-pessoal)',
     features: [
-      { id: 'email', label: 'Últimos e-mails (resumo)', fields: [
+      { id: 'email', label: 'Últimos e-mails (resumo)', icon: '📧', fields: [
         { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'], disabledOptions: OUTLOOK_CLIENT_ID ? [] : ['Hotmail'] },
         { id: 'quantidade', kind: 'dropdown', label: 'Quantidade de e-mails', options: ['5', '10', '15', '20'] },
       ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada, conecta em ⚙️ Central de Contas' },
-      { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
-      { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
-      { id: 'feriados', label: 'Feriados próximos', fields: [], hint: 'Feriados nacionais, BrasilAPI, sem chave' },
+      { id: 'agenda', label: 'Agenda de hoje', icon: '📅', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
+      { id: 'aniversarios', label: 'Aniversários', icon: '🎂', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
+      { id: 'feriados', label: 'Feriados próximos', icon: '🎉', fields: [], hint: 'Feriados nacionais, BrasilAPI, sem chave' },
     ],
   },
   {
     id: 'clima', icon: '🌤️', title: 'Clima', color: 'var(--cat-clima)',
     features: [
-      { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', fields: [
+      { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', icon: '🌡️', fields: [
         { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
         { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2, opcional' },
       ], hint: 'Usa OpenWeatherMap' },
@@ -871,19 +886,19 @@ const CATEGORY_DEFS = [
   {
     id: 'entretenimento', icon: '🎮', title: 'Entretenimento', color: 'var(--cat-entretenimento)',
     features: [
-      { id: 'filmes', label: 'Filmes em cartaz', fields: [], hint: 'Estreias de cinema' },
-      { id: 'series', label: 'Séries lançamentos', fields: [], hint: 'Lançamentos de streaming' },
-      { id: 'jogos', label: 'Jogos (lançamentos)', fields: [], hint: 'IGN Brasil' },
-      { id: 'youtube', label: 'Canais do YouTube', fields: [
+      { id: 'filmes', label: 'Filmes em cartaz', icon: '🎬', fields: [], hint: 'Estreias de cinema' },
+      { id: 'series', label: 'Séries lançamentos', icon: '📺', fields: [], hint: 'Lançamentos de streaming' },
+      { id: 'jogos', label: 'Jogos (lançamentos)', icon: '🕹️', fields: [], hint: 'IGN Brasil' },
+      { id: 'youtube', label: 'Canais do YouTube', icon: '▶️', fields: [
         { id: 'canais', kind: 'tags', placeholder: 'Nome do canal, digite e aperte Enter (até 5)' },
       ], hint: 'Vídeo mais recente de cada canal. Cuidado com erro de digitação, se o nome não bater certinho, o canal não é encontrado.' },
-      { id: 'podcasts', label: 'Podcasts', fields: [
+      { id: 'podcasts', label: 'Podcasts', icon: '🎧', fields: [
         { id: 'nomes', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
       ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
-      { id: 'musicas', label: 'Músicas por categoria', fields: [
+      { id: 'musicas', label: 'Músicas por categoria', icon: '🎵', fields: [
         { id: 'generos', kind: 'buttons', options: ['Pop', 'Rap', 'Eletrônico', 'Sertanejo', 'Rock'] },
       ], hint: 'Via Spotify se conectado (⚙️ Central de Contas), senão notícias musicais' },
-      { id: 'jogo-esportivo', label: 'Esportes: resultado e próximo jogo', fields: [
+      { id: 'jogo-esportivo', label: 'Esportes: resultado e próximo jogo', icon: '⚽', fields: [
         { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
         { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
       ], hint: 'API-Football' },
@@ -892,7 +907,7 @@ const CATEGORY_DEFS = [
   {
     id: 'noticias', icon: '📰', title: 'Notícias e Curiosidades', color: 'var(--cat-noticias)',
     features: [
-      { id: 'keyword', label: 'Notícias por palavra-chave', fields: [
+      { id: 'keyword', label: 'Notícias por palavra-chave', icon: '🔍', fields: [
         { id: 'termos', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
       ], hint: 'Google News RSS' },
     ],
@@ -900,7 +915,7 @@ const CATEGORY_DEFS = [
   {
     id: 'financeiro', icon: '💰', title: 'Financeiro', color: 'var(--cat-financeiro)',
     features: [
-      { id: 'cotacoes', label: 'Cotações', fields: [
+      { id: 'cotacoes', label: 'Cotações', icon: '💱', fields: [
         { id: 'moedas', kind: 'buttons', options: ['Dólar', 'Euro', 'Libra', 'Peso'] },
         { id: 'criptos', kind: 'buttons', options: ['Bitcoin', 'Ethereum', 'Solana', 'BNB'] },
       ], hint: 'Moedas via Banco Central, criptos via CoinGecko, sem chave' },
@@ -909,7 +924,7 @@ const CATEGORY_DEFS = [
   {
     id: 'horoscopo', icon: '🔮', title: 'Horóscopo', color: 'var(--cat-horoscopo)',
     features: [
-      { id: 'fase-lua', label: 'Fase da lua', fields: [], hint: 'Calculado localmente, sem API' },
+      { id: 'fase-lua', label: 'Fase da lua', icon: '🌙', fields: [], hint: 'Calculado localmente, sem API' },
     ],
   },
 ];
@@ -1117,10 +1132,11 @@ function openCategoryDetail(catId) {
     const fs = getFeatureState(cat.id, feat.id);
     const featEl = document.createElement('div');
     featEl.className = 'feature';
+    featEl.style.setProperty('--item-color', cat.color);
 
     const row = document.createElement('div');
     row.className = 'feature-row';
-    row.innerHTML = `<span class="label">${feat.label}</span>`;
+    row.innerHTML = `<span class="feature-icon">${feat.icon || cat.icon}</span><span class="label">${feat.label}</span>`;
     const label = document.createElement('label');
     label.className = 'switch';
     const input = document.createElement('input');
