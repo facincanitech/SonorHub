@@ -1352,6 +1352,15 @@ briefingRateInput.addEventListener('input', () => {
   saveState();
 });
 
+// Bug conhecido do Chrome/Edge: speechSynthesis trava sozinho em falas longas
+// (~15s+) se não receber pause()/resume() periodicamente. Mantém viva o tempo
+// todo (inofensivo quando não tem nada falando, por isso o if no início).
+setInterval(() => {
+  if (!speechSynthesis.speaking) return;
+  speechSynthesis.pause();
+  speechSynthesis.resume();
+}, 5000);
+
 let voices = [];
 const voiceSelect = document.getElementById('voice-select');
 
@@ -2821,9 +2830,9 @@ const GUIA_VOICE_TOPICS = [
     fetch: () => fetchFeriadosItems(3) },
   { keywords: ['fase da lua', 'lua hoje', 'horóscopo', 'horoscopo'], catId: 'horoscopo', featId: 'fase-lua',
     fetch: () => fetchFaseLuaItems() },
-  { keywords: ['filme', 'cinema'], catId: 'entretenimento', featId: 'filmes',
+  { keywords: ['filme em cartaz', 'filmes em cartaz', 'filme no cinema', 'filmes no cinema', 'cinema agora', 'o que tem no cinema'], catId: 'entretenimento', featId: 'filmes',
     fetch: () => fetchFilmesItems(2) },
-  { keywords: ['série', 'series', 'séries'], catId: 'entretenimento', featId: 'series',
+  { keywords: ['série em cartaz', 'séries em cartaz', 'série no ar', 'séries no ar', 'o que tem de série', 'lançamento de série', 'lançamentos de série'], catId: 'entretenimento', featId: 'series',
     fetch: () => fetchSeriesItems(2) },
   { keywords: ['lançamento de jogo', 'jogos novos', 'jogo lançado', 'lançamentos de jogos'], catId: 'entretenimento', featId: 'jogos',
     fetch: () => fetchJogosItems(2) },
