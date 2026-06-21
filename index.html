@@ -2129,7 +2129,9 @@ function checkAndCountGpsAmbientCycle() {
 async function narrateTrafficOnce() {
   const resultEl = document.getElementById('gps-result');
   if (!checkAndCountGpsAmbientCycle()) {
-    resultEl.textContent = `Limite mensal do modo trânsito atingido (${GPS_AMBIENT_MONTHLY_LIMIT} ciclos). Volta a funcionar no próximo mês.`;
+    const msg = 'Limite mensal do modo trânsito atingido. Volta a funcionar no próximo mês.';
+    resultEl.textContent = msg;
+    await speakAndWait(msg);
     stopGps();
     return;
   }
