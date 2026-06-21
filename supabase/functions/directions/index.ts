@@ -1,6 +1,11 @@
-// Supabase Edge Function — proxies Google Routes API (substituta da antiga Directions
-// API, que o Google não deixa mais ativar em projetos novos) pra feature premium
-// "GPS auditivo". Chave fica só aqui, nunca no navegador.
+// Supabase Edge Function — proxies Google Routes API pra feature premium "GPS
+// auditivo". Chave fica só aqui, nunca no navegador.
+//
+// Devolve cada passo com a localização (lat/lng) de onde a manobra acontece, pra
+// o cliente conseguir tocar o próximo passo só quando o usuário chegar perto de
+// verdade (em vez de ler tudo de uma vez, parado) — sem isso o app "lê o trajeto
+// inteiro" ao mesmo tempo, o que não é como um GPS de verdade funciona.
+//
 // Deploy: cole essa função numa function chamada "directions" no painel do Supabase.
 // Secret: GOOGLE_MAPS_API_KEY (precisa de faturamento ativado + "Routes API" habilitada
 // no Google Cloud Console)
@@ -37,7 +42,7 @@ Deno.serve(async (req: Request) => {
   const destino = (url.searchParams.get('destino') || '').trim();
 
   if (!apiKey || !origem || !destino) {
-    return Response.json({ steps: [], error: 'Faltando origem/destino ou chave do Google Maps no servidor.' }, { headers: CORS_HEADERS });
+    return Response.json({ summary: '', steps: [], error: 'Faltando origem/destino ou chave do Google Maps no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
@@ -46,7 +51,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps.navigationInstruction',
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps.navigationInstruction,routes.legs.steps.endLocation',
       },
       body: JSON.stringify({
         origin: toWaypoint(origem),
@@ -59,22 +64,23 @@ Deno.serve(async (req: Request) => {
     const data = await resp.json();
     if (!resp.ok || !data.routes || data.routes.length === 0) {
       const msg = (data.error && data.error.message) || `HTTP ${resp.status}`;
-      return Response.json({ steps: [], error: `Google Routes: ${msg}` }, { headers: CORS_HEADERS });
+      return Response.json({ summary: '', steps: [], error: `Google Routes: ${msg}` }, { headers: CORS_HEADERS });
     }
 
     const route = data.routes[0];
     const durationSec = parseInt(route.duration.replace('s', ''), 10);
     const distanceKm = (route.distanceMeters / 1000).toFixed(1);
-    const steps: string[] = [];
+    const steps: { text: string; lat: number; lng: number }[] = [];
     for (const leg of route.legs || []) {
       for (const step of leg.steps || []) {
         const text = step.navigationInstruction && step.navigationInstruction.instructions;
-        if (text) steps.push(text);
+        const loc = step.endLocation && step.endLocation.latLng;
+        if (text && loc) steps.push({ text, lat: loc.latitude, lng: loc.longitude });
       }
     }
-    steps.unshift(`Rota de ${origem} até ${destino}: ${distanceKm} quilômetros, tempo estimado ${formatDuration(durationSec)}.`);
-    return Response.json({ steps, error: null }, { headers: CORS_HEADERS });
+    const summary = `Rota até ${destino}: ${distanceKm} quilômetros, tempo estimado ${formatDuration(durationSec)}.`;
+    return Response.json({ summary, steps, error: null }, { headers: CORS_HEADERS });
   } catch (e) {
-    return Response.json({ steps: [], error: 'Erro ao calcular rota: ' + e.message }, { headers: CORS_HEADERS });
+    return Response.json({ summary: '', steps: [], error: 'Erro ao calcular rota: ' + e.message }, { headers: CORS_HEADERS });
   }
 });
