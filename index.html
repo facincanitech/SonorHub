@@ -60,6 +60,18 @@
   .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
   .icon-btn { background: var(--c-surface); color: var(--c-text); width: 34px; height: 34px; border-radius: 50%; font-size: 0.95rem; flex-shrink: 0; }
   .icon-btn:hover { background: var(--c-border); }
+  .icon-btn.listening { background: var(--c-red); animation: voice-pulse 1s infinite; }
+  @keyframes voice-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(234,67,53,0.15); }
+  }
+  .voice-toast {
+    position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%) translateY(10px);
+    max-width: 380px; width: calc(100% - 32px); background: var(--c-surface); border: 1px solid var(--c-border2);
+    border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; text-align: center; z-index: 200;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  .voice-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ===== Bottom nav ===== */
   .navbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; background: var(--c-navbar); border-top: 1px solid var(--c-border); z-index: 50; }
@@ -235,6 +247,7 @@
     <div class="screen-header">
       <h1>▶ Meu Dia</h1>
       <div class="header-actions">
+        <button class="icon-btn" data-action="voice">🎤</button>
         <button class="icon-btn" data-action="help">❓</button>
         <button class="icon-btn" data-action="gear">⚙️</button>
       </div>
@@ -291,16 +304,6 @@
         <button class="skip-btn" id="next-btn">⏭</button>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-      <div class="settings-panel" style="width:100%; margin-top: 20px;">
-        <div class="settings-row" style="justify-content: center; gap: 12px;">
-          <button id="voice-query-btn" style="background: var(--c-green); color: #fff; width: 56px; height: 56px; border-radius: 50%; font-size: 1.4rem; flex-shrink: 0;">🎤</button>
-          <div style="flex:1;">
-            <div class="label" style="margin-bottom: 2px;">Pergunte algo</div>
-            <div class="desc" id="voice-query-status">Matemática, hora, clima, cotação, notícias ou busca geral</div>
-          </div>
-        </div>
-      </div>
 
       <div id="history-list" class="history-list"></div>
     </div>
@@ -409,6 +412,8 @@
       <button class="nav-btn" data-tab="premium"><span class="ic">⭐</span>Premium</button>
     </div>
   </nav>
+
+  <div id="voice-toast" class="voice-toast"></div>
 </div>
 
 <!-- ============ CENTRAL DE CONTAS (overlay) ============ -->
@@ -599,9 +604,11 @@
           <span class="chev">›</span>
         </div>
         <div class="help-section-body">
-          Também em Meu Dia, tem um botão de microfone — aperta, fala sua pergunta, e o
-          app responde em voz alta. Não usa IA (é tudo no app, sem custo), então ele só
-          reconhece alguns tipos específicos de pergunta:<br><br>
+          O ícone de microfone no topo da tela (do lado do ❓ e ⚙️, em qualquer aba) é um
+          assistente por voz. Aperta, ele pisca enquanto te escuta, e para automaticamente
+          depois de alguns segundos pra responder. Não usa IA (é tudo no app, sem custo),
+          então ele só reconhece alguns tipos específicos de pergunta:<br><br>
+          • <b>Conversa simples</b>: "oi", "o que você pode fazer", "obrigado"<br>
           • <b>Matemática</b>: "quanto é 7 vezes 8"<br>
           • <b>Hora/data</b>: "que horas são", "que dia é hoje"<br>
           • <b>Cotação</b>: "cotação do dólar", "quanto vale o bitcoin"<br>
@@ -611,6 +618,8 @@
           • Qualquer outra coisa cai num último recurso: busca um resumo na
           <b>Wikipédia</b> pelo termo da pergunta (ex: "o que é buraco negro", "quem foi
           Einstein") — funciona bem pra perguntas diretas, não pra frases complexas.<br><br>
+          Se perguntar "você é uma IA?", ele deixa bem claro que não é — é um assistente
+          de voz com respostas fixas, não inteligência artificial.<br><br>
           ⚠️ O reconhecimento de voz funciona bem no <b>Chrome</b> e <b>Edge</b>. No
           Firefox o suporte é bem limitado, e pode não funcionar no Safari/iOS.
         </div>
@@ -2515,46 +2524,94 @@ async function tryAnswerWikipedia(texto) {
   }
 }
 
-async function handleVoiceQuery(textoOriginal) {
-  const statusEl = document.getElementById('voice-query-status');
-  const texto = textoOriginal.trim();
-  statusEl.textContent = `Você disse: "${texto}"`;
+const VOICE_QA = [
+  {
+    triggers: ['oi', 'olá', 'ola', 'e aí', 'eae', 'opa'],
+    response: 'Oi! Pode falar.',
+  },
+  {
+    triggers: ['o que você pode fazer', 'o que voce pode fazer', 'quais suas funções', 'quais suas funcoes', 'me ajuda com o quê', 'me ajuda com o que', 'o que você faz', 'o que voce faz'],
+    response: 'Eu leio seu briefing do dia, calculo contas, converto unidades, falo cotação, clima, hora e notícias, e dou rota e trânsito se você ativar o Premium. É só perguntar.',
+  },
+  {
+    triggers: ['você é uma ia', 'voce e uma ia', 'você é inteligência artificial', 'voce e inteligencia artificial', 'isso é ia', 'isso e ia', 'você é um robô', 'voce e um robo'],
+    response: 'Não, eu não sou uma inteligência artificial. Sou um assistente de voz com comandos fixos — entendo só o que foi programado pra eu entender.',
+  },
+  {
+    triggers: ['quem te criou', 'quem fez você', 'quem fez voce', 'quem é o desenvolvedor', 'quem e o desenvolvedor'],
+    response: 'Fui criado pela FacincaniTech.',
+  },
+  {
+    triggers: ['obrigado', 'obrigada', 'valeu'],
+    response: 'De nada! Qualquer coisa é só chamar.',
+  },
+];
 
-  let resposta = tryAnswerMath(texto) || tryAnswerTime(texto);
+function matchVoiceQA(textoOuvido) {
+  const texto = textoOuvido.toLowerCase().trim();
+  return VOICE_QA.find((qa) => qa.triggers.some((t) => texto.includes(t)));
+}
+
+let voiceToastTimer = null;
+function showVoiceToast(texto, durationMs = 4000) {
+  const toastEl = document.getElementById('voice-toast');
+  toastEl.textContent = texto;
+  toastEl.classList.add('show');
+  if (voiceToastTimer) clearTimeout(voiceToastTimer);
+  if (durationMs > 0) {
+    voiceToastTimer = setTimeout(() => toastEl.classList.remove('show'), durationMs);
+  }
+}
+
+async function handleVoiceQuery(textoOriginal) {
+  const texto = textoOriginal.trim();
+  showVoiceToast(`Você disse: "${texto}"`, 0);
+
+  const faq = matchVoiceQA(texto);
+  let resposta = faq ? faq.response : null;
+  if (!resposta) resposta = tryAnswerMath(texto) || tryAnswerTime(texto);
   if (!resposta) resposta = await tryAnswerCotacao(texto);
   if (!resposta) resposta = await tryAnswerClima(texto);
   if (!resposta) resposta = await tryAnswerNoticias(texto);
   if (!resposta) resposta = await tryAnswerWikipedia(texto);
 
-  statusEl.textContent = resposta;
+  showVoiceToast(resposta, 0);
   await speakAndWait(resposta);
-  statusEl.textContent = 'Matemática, hora, clima, cotação, notícias ou busca geral';
+  showVoiceToast(resposta, 4000);
 }
 
-const voiceQueryBtn = document.getElementById('voice-query-btn');
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-voiceQueryBtn.addEventListener('click', () => {
-  if (!SpeechRecognitionImpl) {
-    document.getElementById('voice-query-status').textContent = 'Reconhecimento de voz não suportado nesse navegador (tenta no Chrome).';
-    return;
-  }
-  const statusEl = document.getElementById('voice-query-status');
-  const recognition = new SpeechRecognitionImpl();
-  recognition.lang = 'pt-BR';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  voiceQueryBtn.textContent = '🔴';
-  statusEl.textContent = 'Ouvindo...';
-  recognition.onresult = (event) => {
-    const texto = event.results[0][0].transcript;
-    handleVoiceQuery(texto);
-  };
-  recognition.onerror = (event) => {
-    statusEl.textContent = 'Erro ao ouvir: ' + event.error;
-  };
-  recognition.onend = () => { voiceQueryBtn.textContent = '🎤'; };
-  recognition.start();
+document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (!SpeechRecognitionImpl) {
+      showVoiceToast('Reconhecimento de voz não suportado nesse navegador (tenta no Chrome).');
+      return;
+    }
+    if (btn.classList.contains('listening')) return;
+
+    const recognition = new SpeechRecognitionImpl();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    btn.classList.add('listening');
+    showVoiceToast('Ouvindo... pode falar', 0);
+
+    const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 7000);
+
+    recognition.onresult = (event) => {
+      const texto = event.results[0][0].transcript;
+      handleVoiceQuery(texto);
+    };
+    recognition.onerror = (event) => {
+      showVoiceToast('Erro ao ouvir: ' + event.error);
+    };
+    recognition.onend = () => {
+      clearTimeout(stopTimeout);
+      btn.classList.remove('listening');
+    };
+    recognition.start();
+  });
 });
 
 /* =========================================================================
