@@ -2640,11 +2640,14 @@ async function tryAnswerNoticias(texto) {
 // pergunta de voz em vez de passivamente pela fila do play.
 const GUIA_VOICE_TOPICS = [
   { keywords: ['e-mail', 'email', 'caixa de entrada'], catId: 'pessoal', featId: 'email',
-    fetch: (fields) => fetchEmailItems(fields.contas, fields.quantidade || '5'), spokenLimit: Infinity },
+    fetch: (fields) => fetchEmailItems(fields.contas, fields.quantidade || '5'), spokenLimit: Infinity,
+    checkAccount: () => (accessToken || localStorage.getItem('infohub_outlook_token')) ? null : 'Você ainda não conectou nenhuma conta de e-mail. Vá em Central de Contas, no ícone de engrenagem, pra conectar.' },
   { keywords: ['agenda', 'compromisso'], catId: 'pessoal', featId: 'agenda',
-    fetch: () => fetchAgendaItems(10), spokenLimit: Infinity },
+    fetch: () => fetchAgendaItems(10), spokenLimit: Infinity,
+    checkAccount: () => accessToken ? null : 'Você ainda não conectou sua conta Google. Vá em Central de Contas, no ícone de engrenagem, pra conectar.' },
   { keywords: ['aniversário', 'aniversario', 'aniversariante'], catId: 'pessoal', featId: 'aniversarios',
-    fetch: () => fetchAniversariosItems(10), spokenLimit: Infinity },
+    fetch: () => fetchAniversariosItems(10), spokenLimit: Infinity,
+    checkAccount: () => accessToken ? null : 'Você ainda não conectou sua conta Google. Vá em Central de Contas, no ícone de engrenagem, pra conectar.' },
   { keywords: ['feriado'], catId: 'pessoal', featId: 'feriados',
     fetch: () => fetchFeriadosItems(3) },
   { keywords: ['fase da lua', 'lua hoje', 'horóscopo', 'horoscopo'], catId: 'horoscopo', featId: 'fase-lua',
@@ -2667,6 +2670,10 @@ async function tryAnswerGuia(texto) {
   const lower = texto.toLowerCase();
   const topic = GUIA_VOICE_TOPICS.find((t) => t.keywords.some((k) => lower.includes(k)));
   if (!topic) return null;
+  if (topic.checkAccount) {
+    const blocked = topic.checkAccount();
+    if (blocked) return blocked;
+  }
   try {
     const fields = getFeatureState(topic.catId, topic.featId).fields;
     const items = await topic.fetch(fields);
