@@ -539,8 +539,7 @@
 
     <div class="account-tabs">
       <button class="account-tab-btn active" data-account="google" style="--brand-color:#4285f4;"><span class="dot"></span>Email</button>
-      <button class="account-tab-btn" data-account="youtube" style="--brand-color:#ff0000;"><span class="dot"></span>YouTube</button>
-      <button class="account-tab-btn" data-account="spotify" style="--brand-color:#1db954;"><span class="dot"></span>Spotify</button>
+      <button class="account-tab-btn" data-account="midia" style="--brand-color:#ff0000;"><span class="dot"></span>Mídia</button>
       <button class="account-tab-btn" data-account="tema" style="--brand-color: var(--c-accent-blue);"><span class="dot"></span>Tema</button>
       <button class="account-tab-btn" data-account="contato" style="--brand-color: var(--c-accent-blue);"><span class="dot"></span>Contato</button>
     </div>
@@ -564,10 +563,12 @@
       </div>
     </div>
 
-    <div class="account-panel" id="account-youtube">
-      <div class="account-card connected" style="--brand-color:#ff0000;">
+    <div class="account-panel" id="account-midia">
+      <div class="account-card connected" style="margin-bottom: 12px; --brand-color:#ff0000;">
         <div class="acc-top">
-          <div class="acc-icon-badge">▶️</div>
+          <div class="acc-icon-badge">
+            <svg viewBox="0 0 24 17" width="22" height="16"><path fill="#FF0000" d="M23.5 2.6c-.3-1.1-1.1-1.9-2.2-2.2C19.4 0 12 0 12 0S4.6 0 2.7.4C1.6.7.8 1.5.5 2.6 0 4.5 0 8.4 0 8.4s0 3.9.5 5.8c.3 1.1 1.1 1.9 2.2 2.2 1.9.5 9.3.5 9.3.5s7.4 0 9.3-.5c1.1-.3 1.9-1.1 2.2-2.2.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8z"/><path fill="#fff" d="M9.6 12.1V4.9l6.4 3.6-6.4 3.6z"/></svg>
+          </div>
           <div class="status"><span class="status-dot on"></span>YouTube</div>
         </div>
         <div class="scope-list">
@@ -576,12 +577,12 @@
           controla nada do YouTube, é só informativa.
         </div>
       </div>
-    </div>
 
-    <div class="account-panel" id="account-spotify">
       <div class="account-card unavailable" style="--brand-color:#1db954;">
         <div class="acc-top">
-          <div class="acc-icon-badge">🎵</div>
+          <div class="acc-icon-badge">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" d="M6 9c4-1.2 8-1 11 1M6.5 12.3c3.3-1 6.7-.8 9.3.8M7 15.4c2.7-.7 5.3-.6 7.5.7"/></svg>
+          </div>
           <div class="status"><span class="status-dot" id="spotify-status-dot"></span><span id="spotify-status-text">Indisponível</span></div>
         </div>
         <div class="scope-list">Acesso a: podcasts e músicas salvas, indisponível no momento.</div>
