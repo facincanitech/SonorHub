@@ -1056,18 +1056,20 @@ async function loadHeroImages() {
   try {
     // Palavras fixas só pra ilustrar o banner — não depende do que o usuário
     // configurou em Notícias, já que é só decoração, não conteúdo lido.
+    // Uma imagem por palavra-chave (não várias do mesmo termo) — senão o mesmo
+    // assunto em alta (ex: cobertura de eleição) aparece repetido em vários
+    // veículos diferentes, com URLs diferentes mas a mesma foto de agência.
     const NEWS_HERO_KEYWORDS = ['política', 'tecnologia', 'esportes', 'economia'];
-    const items = await fetchNewsItems(NEWS_HERO_KEYWORDS, 3);
-    // O GNews às vezes devolve a logo do veículo em vez de foto da matéria
-    // quando o artigo não tem capa própria — filtra esses casos óbvios. Também
-    // remove duplicatas, já que termos diferentes podem trazer a mesma matéria.
     const isLikelyLogo = (url) => /logo|favicon|brand|placeholder/i.test(url);
+    const isValidUrl = (url) => typeof url === 'string' && url.trim().length > 0 && !isLikelyLogo(url);
     const seenUrls = new Set();
-    heroImageUrls.noticias = items
-      .map((it) => it.image)
-      .filter((url) => typeof url === 'string' && url.trim().length > 0 && !isLikelyLogo(url))
-      .filter((url) => { if (seenUrls.has(url)) return false; seenUrls.add(url); return true; })
-      .slice(0, 3);
+    const picked = [];
+    for (const termo of NEWS_HERO_KEYWORDS) {
+      const items = await fetchNewsItems([termo], 5);
+      const found = items.map((it) => it.image).find((url) => isValidUrl(url) && !seenUrls.has(url));
+      if (found) { seenUrls.add(found); picked.push(found); }
+    }
+    heroImageUrls.noticias = picked;
   } catch (e) { console.error('hero(noticias):', e); }
 
   renderCategoryCards();
