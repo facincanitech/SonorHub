@@ -669,6 +669,7 @@
           • <b>Clima</b>: "previsão do tempo em São Paulo" (se não falar a cidade, usa a
           que você já configurou em Clima)<br>
           • <b>Notícias</b>: "notícias sobre futebol"<br>
+          • <b>Esportes</b>: "quando o Flamengo vai jogar", "último jogo do Brasil"<br>
           • Qualquer outra coisa cai num último recurso: busca um resumo na
           <b>Wikipédia</b> pelo termo da pergunta (ex: "o que é buraco negro", "quem foi
           Einstein"), funciona bem pra perguntas diretas, não pra frases complexas.<br><br>
@@ -2589,6 +2590,28 @@ async function tryAnswerNoticias(texto) {
   return items[0].full;
 }
 
+async function tryAnswerEsportes(texto) {
+  let m;
+  let time = null;
+  let querNext = true;
+  if ((m = texto.match(/pr[óo]ximo jogo (?:do |da |de )?(.+)/i)) ||
+      (m = texto.match(/(?:quando|que dia)\s+(?:o |a )?(.+?)\s+(?:vai jogar|joga|tem jogo)/i))) {
+    time = m[1].trim();
+    querNext = true;
+  } else if ((m = texto.match(/[uú]ltimo jogo (?:do |da |de )?(.+)/i)) ||
+             (m = texto.match(/resultado (?:do |da )?jogo (?:do |da |de )?(.+)/i)) ||
+             (m = texto.match(/como foi o jogo (?:do |da |de )?(.+)/i))) {
+    time = m[1].trim();
+    querNext = false;
+  }
+  if (!time) return null;
+  time = time.replace(/[?.!]+$/, '').trim();
+  const items = await fetchEsportesItems('', time);
+  if (!items || items.length === 0) return `Não encontrei jogos de ${time}.`;
+  const wanted = items.find((it) => it.sub === (querNext ? 'Próximo jogo' : 'Último jogo'));
+  return (wanted || items[0]).full;
+}
+
 async function tryAnswerWikipedia(texto) {
   const termo = texto
     .replace(/^(o que é|o que são|quem foi|quem é|como funciona|defina|definição de|explica)\s+/i, '')
@@ -2662,13 +2685,24 @@ function showVoiceToast(texto, durationMs = 4000) {
 async function handleVoiceQuery(textoOriginal) {
   const texto = textoOriginal.trim();
 
-  const faq = matchVoiceQA(texto);
-  let resposta = faq ? faq.response : null;
-  if (!resposta) resposta = tryAnswerMath(texto) || tryAnswerTime(texto);
-  if (!resposta) resposta = await tryAnswerCotacao(texto);
-  if (!resposta) resposta = await tryAnswerClima(texto);
-  if (!resposta) resposta = await tryAnswerNoticias(texto);
-  if (!resposta) resposta = await tryAnswerWikipedia(texto);
+  // Tira uma saudação de abertura ("oi, quando o Brasil vai jogar") antes de
+  // processar — sem isso, qualquer pergunta que comece com "oi"/"olá" cai
+  // direto na resposta de saudação e ignora o resto da frase.
+  const semSaudacao = texto.replace(/^(oi|ol[áa]|e a[íi]|eae|opa)[,!.\s]+/i, '').trim();
+
+  let resposta = null;
+  if (!semSaudacao) {
+    resposta = 'Oi! Pode falar.';
+  } else {
+    const faq = matchVoiceQA(semSaudacao);
+    resposta = faq ? faq.response : null;
+    if (!resposta) resposta = tryAnswerMath(semSaudacao) || tryAnswerTime(semSaudacao);
+    if (!resposta) resposta = await tryAnswerCotacao(semSaudacao);
+    if (!resposta) resposta = await tryAnswerClima(semSaudacao);
+    if (!resposta) resposta = await tryAnswerEsportes(semSaudacao);
+    if (!resposta) resposta = await tryAnswerNoticias(semSaudacao);
+    if (!resposta) resposta = await tryAnswerWikipedia(semSaudacao);
+  }
 
   voiceHistoryItems.unshift({ category: 'Pergunte algo', title: `"${texto}", ${resposta}` });
   voiceHistoryItems = voiceHistoryItems.slice(0, 20);
