@@ -1,7 +1,7 @@
 {
   "name": "InfoHub",
   "short_name": "InfoHub",
-  "description": "Seu briefing pessoal, lido em voz alta.",
+  "description": "Seu dia em voz alta.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
