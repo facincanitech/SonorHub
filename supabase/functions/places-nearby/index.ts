@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.location',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.rating',
       },
       body: JSON.stringify({
         includedTypes: [type],
@@ -60,6 +60,7 @@ Deno.serve(async (req: Request) => {
       id: p.id,
       name: p.displayName && p.displayName.text,
       distance: Math.round(distanceMeters(lat, lng, p.location.latitude, p.location.longitude)),
+      rating: p.rating || null,
     }));
     return Response.json({ places, error: null }, { headers: CORS_HEADERS });
   } catch (e) {

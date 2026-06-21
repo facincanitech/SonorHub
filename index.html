@@ -2007,7 +2007,8 @@ async function announceNearbyPlaceIfNew(lat, lng) {
       const novo = places.find(p => !announcedPlaceIds.has(p.id));
       if (novo) {
         announcedPlaceIds.add(novo.id);
-        await speakAndWait(`Tem um lugar a ${novo.distance} metros: ${novo.name}.`);
+        const notaTexto = novo.rating ? `, nota ${novo.rating.toFixed(1)}` : '';
+        await speakAndWait(`Tem um lugar a ${novo.distance} metros: ${novo.name}${notaTexto}.`);
       }
     } catch (e) {
       console.error('places-nearby:', e);
