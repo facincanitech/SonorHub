@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>InfoHub — Seu dia em voz alta</title>
+<title>InfoHub, Seu dia em voz alta</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔊</text></svg>">
 <link rel="manifest" href="manifest.json">
 <style>
@@ -322,7 +322,7 @@
       <div class="sub">Configure o que você quer ouvir.</div>
 
       <div id="category-cards"></div>
-      <div style="text-align:center; color: var(--c-text-faint); font-size: 0.75rem; margin-top: 24px;">2026 — criado por FacincaniTech</div>
+      <div style="text-align:center; color: var(--c-text-faint); font-size: 0.75rem; margin-top: 24px;">2026, criado por FacincaniTech</div>
     </div>
 
     <div id="gratis-detail-view" style="display:none;"></div>
@@ -346,7 +346,7 @@
 
       <div class="premium-feature">
         <div class="title">🧭 GPS auditivo</div>
-        <div class="desc">Navegação por voz completa, 100% auditiva — sem precisar olhar pra tela. Ative sem destino pro modo proximidades (avisa lugares perto de você), ou coloque um destino pra navegação turn-by-turn de verdade, acompanhando sua posição.</div>
+        <div class="desc">Navegação por voz completa, 100% auditiva, sem precisar olhar pra tela. Ative sem destino pro modo proximidades (avisa lugares perto de você), ou coloque um destino pra navegação turn-by-turn de verdade, acompanhando sua posição.</div>
       </div>
 
       <div class="premium-feature">
@@ -357,7 +357,7 @@
       <button id="subscribe-btn" disabled style="opacity:0.5; cursor:default;">Em breve</button>
       <button id="check-subscription-btn" style="background: var(--c-surface); color: var(--c-text); margin-top: 10px; width: 100%; padding: 12px;">Já assinei, verificar</button>
       <div class="result" id="subscribe-result" style="text-align:center; margin-top: 8px;"></div>
-      <div class="premium-note">Pagamento via Mercado Pago. Conecte sua conta Google (⚙️ Central de Contas) antes — é assim que identificamos sua assinatura.</div>
+      <div class="premium-note">Pagamento via Mercado Pago. Conecte sua conta Google (⚙️ Central de Contas) antes, é assim que identificamos sua assinatura.</div>
     </div>
 
     <div id="premium-unlocked" style="display:none;">
@@ -375,12 +375,12 @@
           <span>🧭 GPS auditivo</span>
           <button id="gps-start-btn" style="width: auto; padding: 8px 16px; font-size: 0.82rem; background: var(--c-accent-blue); color: var(--c-on-accent);">Ativar</button>
         </div>
-        <div class="desc">Origem: sua localização atual (GPS). Deixe o destino vazio pro modo proximidades (avisa lugares perto de você), ou preencha pra navegação turn-by-turn de verdade — só fala o próximo passo quando você chegar perto do ponto da manobra.</div>
+        <div class="desc">Origem: sua localização atual (GPS). Deixe o destino vazio pro modo proximidades (avisa lugares perto de você), ou preencha pra navegação turn-by-turn de verdade, só fala o próximo passo quando você chegar perto do ponto da manobra.</div>
         <div style="position: relative;">
-          <input type="text" id="gps-destino" placeholder="Destino (opcional) — digite e escolha um endereço" autocomplete="off">
+          <input type="text" id="gps-destino" placeholder="Destino (opcional), digite e escolha um endereço" autocomplete="off">
           <div id="gps-destino-suggestions" style="display:none; position:absolute; left:0; right:0; top:100%; z-index:10; background: var(--c-surface); border: 1px solid var(--c-border2); border-radius: 8px; margin-top: 2px; overflow: hidden;"></div>
         </div>
-        <div class="desc" style="margin-top: 6px; font-size: 0.72rem;">Digite o endereço completo — rua, número e cidade — pra maior precisão. Se a sugestão não vier certinha, pode ignorar a lista e ativar do mesmo jeito, o cálculo da rota funciona com o texto digitado.</div>
+        <div class="desc" style="margin-top: 6px; font-size: 0.72rem;">Digite o endereço completo, rua, número e cidade, pra maior precisão. Se a sugestão não vier certinha, pode ignorar a lista e ativar do mesmo jeito, o cálculo da rota funciona com o texto digitado.</div>
         <div class="desc" style="margin-top: 8px;">No modo proximidades (sem destino), avisar quando aparecer perto (escolha só 1):</div>
         <div class="btn-group" id="gps-poi-categories" style="margin-bottom: 10px;">
           <button type="button" class="btn-opt" data-poi="gas_station">⛽ Posto</button>
@@ -435,12 +435,12 @@
     <div class="account-panel active" id="account-google">
       <div class="account-card" style="margin-bottom: 12px;">
         <div class="status"><span class="status-dot" id="google-status-dot"></span><span id="google-status-text">Desconectado</span></div>
-        <div class="scope-list">Google — também dá acesso a agenda e contatos (aniversários).</div>
+        <div class="scope-list">Google, também dá acesso a agenda e contatos (aniversários).</div>
         <button class="btn-connect" id="google-connect-btn">Entrar com Google</button>
       </div>
       <div class="account-card">
         <div class="status"><span class="status-dot" id="outlook-status-dot"></span><span id="outlook-status-text">Indisponível</span></div>
-        <div class="scope-list">Hotmail / Outlook — indisponível no momento.</div>
+        <div class="scope-list">Hotmail / Outlook, indisponível no momento.</div>
         <button class="btn-connect" id="outlook-connect-btn" disabled style="opacity:0.4; cursor:default;">Indisponível no momento</button>
       </div>
     </div>
@@ -448,7 +448,7 @@
     <div class="account-panel" id="account-youtube">
       <div class="account-card">
         <div class="scope-list">
-          Canais do YouTube não precisam de login — é só digitar o nome do canal
+          Canais do YouTube não precisam de login, é só digitar o nome do canal
           direto na categoria <b>Entretenimento</b>, na aba Guia. Essa aba aqui não
           controla nada do YouTube, é só informativa.
         </div>
@@ -458,7 +458,7 @@
     <div class="account-panel" id="account-spotify">
       <div class="account-card">
         <div class="status"><span class="status-dot" id="spotify-status-dot"></span><span id="spotify-status-text">Indisponível</span></div>
-        <div class="scope-list">Acesso a: podcasts e músicas salvas — indisponível no momento.</div>
+        <div class="scope-list">Acesso a: podcasts e músicas salvas, indisponível no momento.</div>
         <button class="btn-connect" id="spotify-connect-btn" disabled style="opacity:0.4; cursor:default;">Indisponível no momento</button>
       </div>
     </div>
@@ -474,11 +474,11 @@
       <div class="account-card">
         <div class="title" style="font-weight:600; margin-bottom: 8px;">🔊 Sobre as vozes</div>
         <div class="scope-list">
-          O InfoHub usa o sistema de voz do próprio aparelho — cada dispositivo tem o
+          O InfoHub usa o sistema de voz do próprio aparelho, cada dispositivo tem o
           seu próprio conjunto de vozes instaladas, então a lista (e a qualidade) muda
           de celular pra celular e de navegador pra navegador.<br><br>
           No <b>celular</b>, o navegador <b>Edge</b> pode falhar e nem mostrar nenhuma
-          voz — o <b>Chrome</b> costuma funcionar melhor no Android. No <b>PC</b>,
+          voz, o <b>Chrome</b> costuma funcionar melhor no Android. No <b>PC</b>,
           geralmente tem mais opções de voz disponíveis (incluindo vozes neurais mais
           naturais) do que no celular.
         </div>
@@ -506,7 +506,7 @@
 
     <div class="account-card" style="margin-bottom: 14px;">
       <div class="scope-list">
-        🧪 O InfoHub está em <b>beta aberto</b> — algumas coisas podem mudar ou dar erro
+        🧪 O InfoHub está em <b>beta aberto</b>, algumas coisas podem mudar ou dar erro
         enquanto a gente ajusta. Qualquer problema, é só avisar.
       </div>
     </div>
@@ -522,10 +522,10 @@
           (Google, Spotify, YouTube). É por ali que o app acessa e-mail, agenda e
           aniversários.<br><br>
           <b>Status atual:</b> Google (Gmail, agenda, aniversários) está funcionando.
-          Canais do YouTube também funcionam, mas não precisam de login — é só digitar
+          Canais do YouTube também funcionam, mas não precisam de login, é só digitar
           o nome do canal direto na categoria Entretenimento. <b>Spotify e Hotmail ainda não
           estão disponíveis</b> (Spotify exige conta Premium na conta que criou o app,
-          e o Hotmail ficou travado num problema de cadastro no Azure) — os botões
+          e o Hotmail ficou travado num problema de cadastro no Azure), os botões
           aparecem na tela, mas não fazem nada por enquanto.
         </div>
       </div>
@@ -537,7 +537,7 @@
         </div>
         <div class="help-section-body">
           Como o app ainda está em teste, o Google mostra um aviso de segurança ao
-          entrar com a conta Google. É esperado — clica em <b>Avançar</b>
+          entrar com a conta Google. É esperado, clica em <b>Avançar</b>
           (ou "Acessar [nome do app] (não seguro)") e depois em <b>Continuar</b> pra
           seguir com o login normalmente. Isso não significa que o app é perigoso, é
           só porque ele ainda não passou pela revisão oficial do Google.
@@ -552,36 +552,36 @@
         <div class="help-section-body">
           Na aba Guia, clica em cada categoria (Pessoal, Clima, Entretenimento,
           Notícias e Curiosidades, Financeiro, Horóscopo) e ativa só o que você quer ouvir.
-          Cada feature tem um toggle — quando ligado, aparecem os campos pra configurar
+          Cada feature tem um toggle, quando ligado, aparecem os campos pra configurar
           (cidade, time, palavras-chave, etc).
         </div>
       </div>
 
       <div class="help-section">
         <div class="help-section-header">
-          <span class="title">🎮 Entretenimento — guia completo</span>
+          <span class="title">🎮 Entretenimento, guia completo</span>
           <span class="chev">›</span>
         </div>
         <div class="help-section-body">
           A categoria Entretenimento junta tudo nesse tema num só lugar. Cada tópico é
-          independente — ativa só os que quiser:<br><br>
+          independente, ativa só os que quiser:<br><br>
           🎬 <b>Filmes em cartaz</b>: sem campo nenhum, já traz o que está passando no
           cinema agora (e o que chega em breve), com sinopse.<br><br>
-          📺 <b>Séries lançamentos</b>: igual filmes, mas pra série — sem campo, automático.<br><br>
+          📺 <b>Séries lançamentos</b>: igual filmes, mas pra série, sem campo, automático.<br><br>
           🕹️ <b>Jogos (lançamentos)</b>: também automático, busca no IGN Brasil.<br><br>
-          ▶️ <b>Canais do YouTube</b>: digite o nome do canal e aperte Enter (até 5) — não
+          ▶️ <b>Canais do YouTube</b>: digite o nome do canal e aperte Enter (até 5), não
           precisa conectar conta nenhuma, é busca direta pelo nome. Lê o vídeo mais
           recente de cada canal, com título e descrição. Cuidado com erro de digitação:
           se o nome não bater exatamente com o canal de verdade, ele simplesmente não é
           encontrado. Na primeira vez que adiciona um canal o app demora um pouquinho
           mais pra achar ele; das próximas vezes em diante é bem mais rápido.<br><br>
-          🎧 <b>Podcasts</b>: mesma lógica do YouTube — digite o nome (até 5), sem precisar
+          🎧 <b>Podcasts</b>: mesma lógica do YouTube, digite o nome (até 5), sem precisar
           de link de RSS.<br><br>
           🎵 <b>Músicas por categoria</b>: marca os gêneros que quiser (Pop, Rap, Eletrônico,
           Sertanejo, Rock). Por enquanto lê notícia musical sobre o gênero (o Spotify de
           verdade está indisponível, veja a aba Spotify em ⚙️).<br><br>
           ⚽ <b>Esportes</b>: preenche Competição (ex: Brasileirão, Copa do Mundo) e
-          Time/seleção (ex: Flamengo, Brasil) — lê o resultado do último jogo e a data
+          Time/seleção (ex: Flamengo, Brasil), lê o resultado do último jogo e a data
           do próximo.
         </div>
       </div>
@@ -617,8 +617,8 @@
           • <b>Notícias</b>: "notícias sobre futebol"<br>
           • Qualquer outra coisa cai num último recurso: busca um resumo na
           <b>Wikipédia</b> pelo termo da pergunta (ex: "o que é buraco negro", "quem foi
-          Einstein") — funciona bem pra perguntas diretas, não pra frases complexas.<br><br>
-          Se perguntar "você é uma IA?", ele deixa bem claro que não é — é um assistente
+          Einstein"), funciona bem pra perguntas diretas, não pra frases complexas.<br><br>
+          Se perguntar "você é uma IA?", ele deixa bem claro que não é, é um assistente
           de voz com respostas fixas, não inteligência artificial.<br><br>
           ⚠️ O reconhecimento de voz funciona bem no <b>Chrome</b> e <b>Edge</b>. No
           Firefox o suporte é bem limitado, e pode não funcionar no Safari/iOS.
@@ -632,13 +632,13 @@
         </div>
         <div class="help-section-body">
           Em Meu Dia, adicione quantos horários quiser (ex: 07:00, 12:00, 20:00) com
-          o botão "+ Adicionar horário" — cada um vira um item na lista, com um ✕ pra
+          o botão "+ Adicionar horário", cada um vira um item na lista, com um ✕ pra
           remover. Isso por si só não faz nada ainda: você precisa <b>ativar</b> o
           toggle "Briefing automático" pra ligar o cronômetro interno que de fato
           dispara nesses horários.<br><br>
           Quando um horário chega: se a aba do InfoHub já estiver aberta e em foco,
           ele toca <b>direto</b>, sem precisar de nada. Se estiver minimizada ou em
-          segundo plano, ele manda uma <b>notificação</b> — toca nela pra abrir o app
+          segundo plano, ele manda uma <b>notificação</b>, toca nela pra abrir o app
           e já tentar dar o play sozinho.<br><br>
           Bom pra deixar tocando em horários fixos do dia, ou pra simular uma
           repetição (ex: adicionar 08h, 11h, 14h, 17h pra ouvir de 3 em 3 horas
@@ -647,10 +647,10 @@
           <b>celular</b>, depende do aparelho: se o Android suspender o navegador em
           segundo plano pra economizar bateria, o alarme pode atrasar ou não disparar
           até você abrir o app de novo. Em ambos os casos, <b>precisa de uma aba do
-          InfoHub aberta</b> — fechando o navegador por completo, os alarmes param.<br><br>
+          InfoHub aberta</b>, fechando o navegador por completo, os alarmes param.<br><br>
           <b>Deu "Permissão de notificação negada"?</b> Isso normalmente significa que o
-          navegador já tinha negado notificação pra esse site antes (de propósito ou não)
-          — uma vez negado, ele não pergunta de novo, só nega direto. Pra resetar:<br><br>
+          navegador já tinha negado notificação pra esse site antes (de propósito ou não),
+          uma vez negado, ele não pergunta de novo, só nega direto. Pra resetar:<br><br>
           1. Clica no ícone de cadeado/informações na barra de endereço, ao lado da URL<br>
           2. Procura "Notificações" nas permissões do site<br>
           3. Muda de "Bloquear" pra "Perguntar" (ou "Permitir")<br>
@@ -679,7 +679,7 @@
 <script>
 /* =========================================================================
    CONFIGURAÇÃO
-   CLIENT_ID, SPOTIFY_CLIENT_ID e SUPABASE_ANON_KEY não são segredos — são
+   CLIENT_ID, SPOTIFY_CLIENT_ID e SUPABASE_ANON_KEY não são segredos, são
    feitos pra rodar no navegador (OAuth client id público / chave publishable).
    Chaves de verdade (OpenWeatherMap, API-Football, Google Maps) ficam só no
    servidor, como secret das Supabase Edge Functions em supabase/functions/*.
@@ -695,7 +695,7 @@ const GOOGLE_SCOPES = [
 
 // Preencha quando criar o app em https://developer.spotify.com/dashboard
 const SPOTIFY_CLIENT_ID = '2091e973264947739ebdcd861aba4fd2';
-// Spotify exige conta Premium ativa no dono do app pra liberar a Web API — sem
+// Spotify exige conta Premium ativa no dono do app pra liberar a Web API, sem
 // isso toda chamada falha. Desativado até a conta ter Premium; vira true sozinho
 // se você ligar de novo aqui depois.
 const SPOTIFY_MUSIC_ENABLED = false;
@@ -711,7 +711,7 @@ const OUTLOOK_SCOPES = 'openid email Mail.Read offline_access';
 const SUPABASE_URL = 'https://xpscjwcqgdldwtmbbzua.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1bC_g0W2cQ_Sx2b968VFtg_UkeTRUV0';
 
-// Chave pública do Mercado Pago — segura pra ficar no navegador (equivalente a uma
+// Chave pública do Mercado Pago, segura pra ficar no navegador (equivalente a uma
 // publishable key). O access token de verdade fica só no secret das Edge Functions.
 const MERCADOPAGO_PUBLIC_KEY = 'APP_USR-b5d01291-3875-4991-a80b-e39753c9748c';
 
@@ -725,10 +725,10 @@ const CATEGORY_DEFS = [
       { id: 'email', label: 'Últimos e-mails (resumo)', fields: [
         { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'], disabledOptions: OUTLOOK_CLIENT_ID ? [] : ['Hotmail'] },
         { id: 'quantidade', kind: 'dropdown', label: 'Quantidade de e-mails', options: ['5', '10', '15', '20'] },
-      ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada — conecta em ⚙️ Central de Contas' },
+      ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada, conecta em ⚙️ Central de Contas' },
       { id: 'agenda', label: 'Agenda de hoje', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
-      { id: 'feriados', label: 'Feriados próximos', fields: [], hint: 'Feriados nacionais — BrasilAPI, sem chave' },
+      { id: 'feriados', label: 'Feriados próximos', fields: [], hint: 'Feriados nacionais, BrasilAPI, sem chave' },
     ],
   },
   {
@@ -736,7 +736,7 @@ const CATEGORY_DEFS = [
     features: [
       { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', fields: [
         { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
-        { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2 — opcional' },
+        { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2, opcional' },
       ], hint: 'Usa OpenWeatherMap' },
     ],
   },
@@ -747,8 +747,8 @@ const CATEGORY_DEFS = [
       { id: 'series', label: 'Séries lançamentos', fields: [], hint: 'Lançamentos de streaming' },
       { id: 'jogos', label: 'Jogos (lançamentos)', fields: [], hint: 'IGN Brasil' },
       { id: 'youtube', label: 'Canais do YouTube', fields: [
-        { id: 'canais', kind: 'tags', placeholder: 'Nome do canal — digite e aperte Enter (até 5)' },
-      ], hint: 'Vídeo mais recente de cada canal. Cuidado com erro de digitação — se o nome não bater certinho, o canal não é encontrado.' },
+        { id: 'canais', kind: 'tags', placeholder: 'Nome do canal, digite e aperte Enter (até 5)' },
+      ], hint: 'Vídeo mais recente de cada canal. Cuidado com erro de digitação, se o nome não bater certinho, o canal não é encontrado.' },
       { id: 'podcasts', label: 'Podcasts', fields: [
         { id: 'nomes', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
       ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
@@ -775,7 +775,7 @@ const CATEGORY_DEFS = [
       { id: 'cotacoes', label: 'Cotações', fields: [
         { id: 'moedas', kind: 'buttons', options: ['Dólar', 'Euro', 'Libra', 'Peso'] },
         { id: 'criptos', kind: 'buttons', options: ['Bitcoin', 'Ethereum', 'Solana', 'BNB'] },
-      ], hint: 'Moedas via Banco Central, criptos via CoinGecko — sem chave' },
+      ], hint: 'Moedas via Banco Central, criptos via CoinGecko, sem chave' },
     ],
   },
   {
@@ -847,7 +847,7 @@ function getFeatureState(catId, featId) {
 }
 
 /* =========================================================================
-   RENDER — TELA CONFIGURAR (lista de cards + tela de detalhe)
+   RENDER, TELA CONFIGURAR (lista de cards + tela de detalhe)
    ========================================================================= */
 const listView = document.getElementById('gratis-list-view');
 const detailView = document.getElementById('gratis-detail-view');
@@ -1112,7 +1112,7 @@ function voiceRank(v) {
 
 function populateVoices() {
   const allVoices = speechSynthesis.getVoices();
-  if (allVoices.length === 0) return; // mobile às vezes demora — o retry abaixo tenta de novo
+  if (allVoices.length === 0) return; // mobile às vezes demora, o retry abaixo tenta de novo
   voices = allVoices.filter(v => v.lang.startsWith('pt') || v.lang.startsWith('en'));
   voices = voices.filter(v => !/Online.*Natural/i.test(v.name) || CONFIRMED_ONLINE_VOICES.test(v.name));
   if (voices.length === 0) voices = allVoices;
@@ -1143,7 +1143,7 @@ const voicePopulateRetry = setInterval(() => {
 }, 500);
 
 // Alguns navegadores mobile só liberam a lista de vozes depois de uma interação
-// do usuário (toque/clique) — então tentamos de novo no primeiro toque na tela.
+// do usuário (toque/clique), então tentamos de novo no primeiro toque na tela.
 function wakeUpVoicesOnce() {
   populateVoices();
   if (voices.length === 0) {
@@ -1243,7 +1243,7 @@ function updateAccountsUI() {
   document.getElementById('google-connect-btn').textContent = googleOn ? 'Desconectar' : 'Entrar com Google';
   document.getElementById('google-connect-btn').className = googleOn ? 'btn-disconnect' : 'btn-connect';
 
-  // Spotify e Hotmail estão indisponíveis no momento — status/botão fixos, sem dinâmica.
+  // Spotify e Hotmail estão indisponíveis no momento, status/botão fixos, sem dinâmica.
 }
 
 document.getElementById('google-connect-btn').addEventListener('click', () => {
@@ -1385,7 +1385,7 @@ document.getElementById('outlook-connect-btn').addEventListener('click', () => {
 });
 
 /* =========================================================================
-   PESSOAL — E-mail (sempre resumo, até 10) / Agenda / Aniversários
+   PESSOAL, E-mail (sempre resumo, até 10) / Agenda / Aniversários
    ========================================================================= */
 function decodeBase64Url(str) {
   str = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -1418,7 +1418,7 @@ async function fetchGmailEmailItems(quantidade) {
     const subject = getHeader(headers, 'Subject') || '(sem assunto)';
     const snippet = msg.snippet || '';
     const text = `E-mail (Google) de ${from}, assunto: ${subject}. ${snippet}`;
-    items.push({ category: 'Pessoal', sub: 'E-mail (Google)', title: `${from} — ${subject}`, full: text, quick: text });
+    items.push({ category: 'Pessoal', sub: 'E-mail (Google)', title: `${from}, ${subject}`, full: text, quick: text });
   }
   return items;
 }
@@ -1436,7 +1436,7 @@ async function fetchOutlookEmailItems(quantidade) {
       const subject = msg.subject || '(sem assunto)';
       const preview = msg.bodyPreview || '';
       const text = `E-mail (Hotmail) de ${from}, assunto: ${subject}. ${preview}`;
-      return { category: 'Pessoal', sub: 'E-mail (Hotmail)', title: `${from} — ${subject}`, full: text, quick: text };
+      return { category: 'Pessoal', sub: 'E-mail (Hotmail)', title: `${from}, ${subject}`, full: text, quick: text };
     });
   } catch (e) {
     console.error('Outlook email:', e);
@@ -1463,7 +1463,7 @@ async function fetchAgendaItems(limit) {
   if (!resp.items) return [];
   return resp.items.map(ev => {
     const time = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'dia todo';
-    const text = `${time} — ${ev.summary || '(sem título)'}`;
+    const text = `${time}, ${ev.summary || '(sem título)'}`;
     return { category: 'Pessoal', sub: 'Agenda', title: text, full: `Evento: ${ev.summary || 'sem título'}, às ${time}.`, quick: text };
   });
 }
@@ -1497,7 +1497,7 @@ async function fetchFeriadosItems(limit) {
       const diffDays = Math.round((f.dateObj - today) / 86400000);
       const dataFmt = f.dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       const diasTexto = diffDays === 0 ? 'hoje' : diffDays === 1 ? 'amanhã' : `em ${diffDays} dias`;
-      const title = `${f.name} — ${dataFmt} (${diasTexto})`;
+      const title = `${f.name}, ${dataFmt} (${diasTexto})`;
       return { category: 'Pessoal', sub: 'Feriado', title, full: `${f.name} é ${diasTexto}, dia ${dataFmt}.`, quick: title };
     });
   } catch (e) {
@@ -1507,7 +1507,7 @@ async function fetchFeriadosItems(limit) {
 }
 
 /* =========================================================================
-   HORÓSCOPO — Fase da lua (cálculo local, sem API)
+   HORÓSCOPO, Fase da lua (cálculo local, sem API)
    ========================================================================= */
 function getMoonPhaseName(date) {
   const synodicMonth = 29.530588853;
@@ -1540,7 +1540,7 @@ async function callEdgeFunction(name, params) {
 }
 
 /* =========================================================================
-   CLIMA — até 2 cidades
+   CLIMA, até 2 cidades
    ========================================================================= */
 async function fetchWeatherItems(cidade1, cidade2) {
   const cidades = [cidade1, cidade2].filter(Boolean);
@@ -1560,7 +1560,7 @@ async function fetchWeatherItems(cidade1, cidade2) {
 }
 
 /* =========================================================================
-   RSS — via Supabase Edge Function
+   RSS, via Supabase Edge Function
    ========================================================================= */
 async function fetchRssItems(targetUrl) {
   try {
@@ -1650,7 +1650,7 @@ async function fetchSpotifyGenreItems(genero, limit) {
     const { items, error } = await callEdgeFunction('spotify-music', { seed_genre: seed, limit });
     if (error) { console.error('spotify(musicas):', error); return null; }
     return (items || []).map(({ artist, name, url }) => {
-      const title = `${artist} — ${name}`;
+      const title = `${artist}, ${name}`;
       return { category: 'Entretenimento', sub: `Música ${genero}`, title, full: `Em ${genero}: ${artist} com a música ${name}.`, quick: title, link: url };
     });
   } catch (e) {
@@ -1730,7 +1730,7 @@ async function fetchYoutubeItems(canaisStr, fields) {
       const full = video.description
         ? `Novo vídeo de ${channelTitle}: ${video.title}. ${truncateAtBoundary(video.description, 600)}`
         : `Novo vídeo de ${channelTitle}: ${video.title}.`;
-      items.push({ category: 'Entretenimento', sub: `YouTube: ${channelTitle}`, title: `${channelTitle} — ${video.title}`, full, quick: video.title, link });
+      items.push({ category: 'Entretenimento', sub: `YouTube: ${channelTitle}`, title: `${channelTitle}, ${video.title}`, full, quick: video.title, link });
     } catch (e) {
       console.error('youtube:', e);
     }
@@ -1759,7 +1759,7 @@ async function fetchPodcastItems(nomesStr, limit) {
 }
 
 /* =========================================================================
-   FINANCEIRO — Moedas (Banco Central) + Criptos (CoinGecko), sem chave
+   FINANCEIRO, Moedas (Banco Central) + Criptos (CoinGecko), sem chave
    ========================================================================= */
 const MOEDA_CODIGOS = { 'Dólar': 'USD', 'Euro': 'EUR', 'Libra': 'GBP', 'Peso': 'ARS' };
 const CRIPTO_IDS = { 'Bitcoin': 'bitcoin', 'Ethereum': 'ethereum', 'Solana': 'solana', 'BNB': 'binancecoin' };
@@ -1796,7 +1796,7 @@ async function fetchCotacoesItems(moedas, criptos) {
 }
 
 /* =========================================================================
-   ESPORTES — competição + time via API-Football
+   ESPORTES, competição + time via API-Football
    ========================================================================= */
 async function fetchEsportesItems(competicao, time) {
   if (!time) return [];
@@ -1807,7 +1807,7 @@ async function fetchEsportesItems(competicao, time) {
 }
 
 /* =========================================================================
-   BRIEFING — montagem da fila e leitura
+   BRIEFING, montagem da fila e leitura
    ========================================================================= */
 function getEnabledFeatureSummaries() {
   const summaries = [];
@@ -1991,7 +1991,7 @@ document.getElementById('next-btn').addEventListener('click', () => {
 });
 
 /* =========================================================================
-   PREMIUM — desbloqueio
+   PREMIUM, desbloqueio
    ========================================================================= */
 const premiumLockedEl = document.getElementById('premium-locked');
 const premiumUnlockedEl = document.getElementById('premium-unlocked');
@@ -2006,7 +2006,7 @@ document.getElementById('subscribe-btn').addEventListener('click', async () => {
   const resultEl = document.getElementById('subscribe-result');
   const email = await getGoogleEmail();
   if (!email) {
-    resultEl.textContent = 'Conecte sua conta Google em ⚙️ Central de Contas primeiro — usamos o e-mail dela pra identificar sua assinatura.';
+    resultEl.textContent = 'Conecte sua conta Google em ⚙️ Central de Contas primeiro, usamos o e-mail dela pra identificar sua assinatura.';
     return;
   }
   resultEl.textContent = 'Criando assinatura...';
@@ -2044,7 +2044,7 @@ document.getElementById('check-subscription-btn').addEventListener('click', asyn
 });
 
 /* =========================================================================
-   PREMIUM — GPS auditivo (via Edge Functions "directions" / "traffic")
+   PREMIUM, GPS auditivo (via Edge Functions "directions" / "traffic")
    ========================================================================= */
 let gpsActive = false;
 let nearbyIntervalId = null;
@@ -2106,7 +2106,7 @@ function hideGpsSuggestions() {
 }
 
 // Session token agrupa todas as chamadas de uma mesma busca (várias teclas digitadas)
-// num "evento" só pra cobrança — é a prática recomendada do Google pra Autocomplete.
+// num "evento" só pra cobrança, é a prática recomendada do Google pra Autocomplete.
 // Sem confirmar o desconto exato na fatura ainda, mas não tem desvantagem em usar.
 let gpsAutocompleteSessionToken = null;
 function newGpsAutocompleteSession() {
@@ -2128,7 +2128,7 @@ function renderGpsSuggestions(suggestions) {
       ev.preventDefault(); // evita perder o clique pro blur do input
       gpsDestinoInput.value = s.text;
       hideGpsSuggestions();
-      newGpsAutocompleteSession(); // endereço escolhido — fecha a sessão, próxima busca começa nova
+      newGpsAutocompleteSession(); // endereço escolhido, fecha a sessão, próxima busca começa nova
     });
     gpsDestinoSuggestions.appendChild(item);
   });
@@ -2153,7 +2153,7 @@ gpsDestinoInput.addEventListener('input', () => {
     } catch (e) {
       console.error('places-autocomplete:', e);
     }
-  }, 400); // debounce — evita 1 chamada de API por tecla digitada
+  }, 400); // debounce, evita 1 chamada de API por tecla digitada
 });
 
 gpsDestinoInput.addEventListener('blur', () => setTimeout(hideGpsSuggestions, 150));
@@ -2197,12 +2197,12 @@ function checkAndCountGpsNearbyCycle() {
 }
 
 // Modo sem destino: só avisa lugares próximos de verdade (dado real, via OpenStreetMap).
-// Não tenta adivinhar trânsito sem uma rota real — isso seria inventar dado que o GPS
+// Não tenta adivinhar trânsito sem uma rota real, isso seria inventar dado que o GPS
 // não tem like fact, e gerava informação errada em curvas/cruzamentos.
 async function checkNearbyOnce() {
   const resultEl = document.getElementById('gps-result');
   if (!gpsPoiCategory) {
-    resultEl.textContent = 'Nenhuma categoria de lugar selecionada — escolha uma acima pra ativar o modo proximidades.';
+    resultEl.textContent = 'Nenhuma categoria de lugar selecionada, escolha uma acima pra ativar o modo proximidades.';
     stopGps();
     return;
   }
@@ -2217,14 +2217,14 @@ async function checkNearbyOnce() {
     const pos = await getCurrentPosition();
     await announceNearbyPlaceIfNew(pos.coords.latitude, pos.coords.longitude);
     if (!resultEl.textContent || resultEl.textContent.startsWith('Modo')) {
-      resultEl.textContent = 'Modo proximidades ativo — sem lugar novo nessa checagem.';
+      resultEl.textContent = 'Modo proximidades ativo, sem lugar novo nessa checagem.';
     }
   } catch (e) {
     resultEl.textContent = 'Erro ao checar proximidades: ' + e.message;
   }
 }
 
-// Modo com destino: navegação turn-by-turn de verdade — só fala o próximo passo quando
+// Modo com destino: navegação turn-by-turn de verdade, só fala o próximo passo quando
 // você de fato chega perto do ponto da manobra (acompanha sua posição ao vivo), em vez
 // de ler o trajeto inteiro de uma vez com você parado.
 function startTurnByTurn(steps, resultEl) {
@@ -2238,7 +2238,7 @@ function startTurnByTurn(steps, resultEl) {
         async (pos) => {
           if (!gpsActive || stepIndex >= steps.length) return;
           const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, steps[stepIndex].lat, steps[stepIndex].lng);
-          resultEl.textContent = `Passo ${stepIndex + 1} de ${steps.length} — ${Math.round(dist)}m até a próxima manobra.`;
+          resultEl.textContent = `Passo ${stepIndex + 1} de ${steps.length}, ${Math.round(dist)}m até a próxima manobra.`;
           if (dist <= ARRIVAL_RADIUS_M) {
             stepIndex++;
             if (stepIndex >= steps.length) {
@@ -2287,14 +2287,14 @@ document.getElementById('gps-start-btn').addEventListener('click', async () => {
   } else {
     setGpsButtonState(true);
     announcedPlaceIds = new Set();
-    resultEl.textContent = 'Modo proximidades ativo — avisando lugares próximos.';
+    resultEl.textContent = 'Modo proximidades ativo, avisando lugares próximos.';
     checkNearbyOnce();
-    nearbyIntervalId = setInterval(checkNearbyOnce, 180000); // 3min — uso responsável da API gratuita
+    nearbyIntervalId = setInterval(checkNearbyOnce, 180000); // 3min, uso responsável da API gratuita
   }
 });
 
 /* =========================================================================
-   PREMIUM — Rastreio de encomenda (Mercado Livre / E-mail)
+   PREMIUM, Rastreio de encomenda (Mercado Livre / E-mail)
    ========================================================================= */
 document.getElementById('rastreio-toggle').addEventListener('click', () => {
   const el = document.getElementById('rastreio-subcategories');
@@ -2340,7 +2340,7 @@ document.getElementById('rastreio-email-btn').addEventListener('click', async ()
 });
 
 /* =========================================================================
-   ALARMES DO BRIEFING (local, via Service Worker — sem servidor)
+   ALARMES DO BRIEFING (local, via Service Worker, sem servidor)
    Lista de horários + botão "Ativar" que liga um cronômetro interno pra
    cada um. Ao disparar: toca direto se a aba estiver visível, senão manda
    notificação. Guarda por horário evita disparar 2x no mesmo dia.
@@ -2394,7 +2394,7 @@ function scheduleAlarm(time) {
       } else {
         try {
           const reg = await navigator.serviceWorker.ready;
-          reg.showNotification('InfoHub — Meu Dia', {
+          reg.showNotification('InfoHub, Meu Dia', {
             body: `Seu briefing das ${time} está pronto. Toca aqui pra ouvir.`,
             icon: 'icon.svg',
             tag: 'infohub-briefing-' + time,
@@ -2423,7 +2423,7 @@ alarmsActiveToggle.addEventListener('change', async () => {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       alarmsActiveToggle.checked = false;
-      alert('Permissão de notificação negada — não vai dar pra avisar nos horários sem isso.');
+      alert('Permissão de notificação negada, não vai dar pra avisar nos horários sem isso.');
       return;
     }
   }
@@ -2442,7 +2442,7 @@ document.getElementById('add-alarm-btn').addEventListener('click', () => {
 });
 
 /* =========================================================================
-   PERGUNTE ALGO — assistente de voz sem IA. Reconhece padrões específicos
+   PERGUNTE ALGO, assistente de voz sem IA. Reconhece padrões específicos
    (matemática, hora, data, cotação, clima, notícias) e cai numa busca de
    resumo na Wikipédia como último recurso pra perguntas genéricas.
    ========================================================================= */
@@ -2551,7 +2551,7 @@ const VOICE_QA = [
   },
   {
     triggers: ['você é uma ia', 'você é inteligência artificial', 'isso é ia', 'você é um robô', 'você é a alexa', 'você é a siri', 'você usa inteligência artificial'],
-    response: 'Não, eu não sou uma inteligência artificial. Sou um assistente de voz com comandos fixos — entendo só o que foi programado pra eu entender.',
+    response: 'Não, eu não sou uma inteligência artificial. Sou um assistente de voz com comandos fixos, entendo só o que foi programado pra eu entender.',
   },
   {
     triggers: ['quem te criou', 'quem fez você', 'quem é o desenvolvedor', 'quem criou esse app', 'quem criou o app'],
@@ -2569,7 +2569,7 @@ const VOICE_QA = [
       'pra que serve esse app', 'pra que serve o app', 'pra que serve isso', 'pra que serve esse aplicativo',
       'o que é esse app', 'o que é o app', 'o que é o infohub', 'o que é esse aplicativo',
     ],
-    response: 'Esse app lê seu briefing diário em voz alta — e-mail, agenda, clima, notícias, financeiro e mais — e ainda responde perguntas simples por voz, sem usar IA. Pra ver tudo que dá pra configurar, toca no ícone de ajuda, o ponto de interrogação, no topo da tela.',
+    response: 'Esse app lê seu briefing diário em voz alta, e-mail, agenda, clima, notícias, financeiro e mais, e ainda responde perguntas simples por voz, sem usar IA. Pra ver tudo que dá pra configurar, toca no ícone de ajuda, o ponto de interrogação, no topo da tela.',
   },
   {
     triggers: ['obrigado', 'obrigada', 'valeu'],
@@ -2604,7 +2604,7 @@ async function handleVoiceQuery(textoOriginal) {
   if (!resposta) resposta = await tryAnswerNoticias(texto);
   if (!resposta) resposta = await tryAnswerWikipedia(texto);
 
-  voiceHistoryItems.unshift({ category: 'Pergunte algo', title: `"${texto}" — ${resposta}` });
+  voiceHistoryItems.unshift({ category: 'Pergunte algo', title: `"${texto}", ${resposta}` });
   voiceHistoryItems = voiceHistoryItems.slice(0, 20);
   renderHistory(currentQueueIndex);
 
