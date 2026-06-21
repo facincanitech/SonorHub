@@ -1550,9 +1550,9 @@ async function fetchFilmesItems(limit) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'filmes' });
     if (error) { console.error('media(filmes):', error); return []; }
-    return (items || []).slice(0, limit).map(({ title, overview }) => {
+    return (items || []).slice(0, limit).map(({ title, overview, link }) => {
       const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
-      return { category: 'Entretenimento', sub: 'Filmes', title, full, quick: title };
+      return { category: 'Entretenimento', sub: 'Filmes', title, full, quick: title, link };
     });
   } catch (e) { console.error('media(filmes):', e); return []; }
 }
@@ -1561,9 +1561,9 @@ async function fetchSeriesItems(limit) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'series' });
     if (error) { console.error('media(series):', error); return []; }
-    return (items || []).slice(0, limit).map(({ title, overview }) => {
+    return (items || []).slice(0, limit).map(({ title, overview, link }) => {
       const full = overview ? `${title}. ${truncateAtBoundary(overview, 600)}` : `${title}.`;
-      return { category: 'Entretenimento', sub: 'Séries', title, full, quick: title };
+      return { category: 'Entretenimento', sub: 'Séries', title, full, quick: title, link };
     });
   } catch (e) { console.error('media(series):', e); return []; }
 }
@@ -1816,7 +1816,10 @@ function renderHistory(currentIndex) {
   historyListEl.scrollTop = 0;
 }
 
+let playbackToken = 0;
+
 function speakQueueItem(i) {
+  const myToken = ++playbackToken; // invalida callbacks de utterances anteriores/canceladas
   if (i >= currentQueue.length) {
     setPlayingVisual(false);
     briefingLabel.textContent = 'Meu Dia concluído';
@@ -1837,10 +1840,14 @@ function speakQueueItem(i) {
   utter.lang = voice ? voice.lang : 'pt-BR';
   utter.rate = parseFloat(briefingRateInput.value);
   utter.onend = () => {
+    if (myToken !== playbackToken) return; // já foi cancelada por um clique novo, ignora
     progressFill.style.width = `${Math.round(((i + 1) / currentQueue.length) * 100)}%`;
     if (isPlaying) speakQueueItem(i + 1);
   };
-  utter.onerror = () => { if (isPlaying) speakQueueItem(i + 1); };
+  utter.onerror = () => {
+    if (myToken !== playbackToken) return;
+    if (isPlaying) speakQueueItem(i + 1);
+  };
   speechSynthesis.speak(utter);
 }
 
