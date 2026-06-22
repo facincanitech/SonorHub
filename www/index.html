@@ -1245,20 +1245,14 @@ async function loadHeroImages() {
   } catch (e) { console.error('hero(entretenimento):', e); }
 
   try {
-    // Palavras fixas só pra ilustrar o banner — não depende do que o usuário
-    // configurou em Notícias, já que é só decoração, não conteúdo lido.
-    // Uma imagem por palavra-chave (não várias do mesmo termo) — senão o mesmo
-    // assunto em alta (ex: cobertura de eleição) aparece repetido em vários
-    // veículos diferentes, com URLs diferentes mas a mesma foto de agência.
+    // Foto temática (Unsplash, decorativo) desacoplada da cota do GNews — o
+    // banner não depende mais do mesmo limite usado pelo conteúdo falado.
     const NEWS_HERO_KEYWORDS = ['política', 'tecnologia', 'esportes', 'economia'];
-    const isLikelyLogo = (url) => /logo|favicon|brand|placeholder/i.test(url);
-    const isValidUrl = (url) => typeof url === 'string' && url.trim().length > 0 && !isLikelyLogo(url);
-    const seenUrls = new Set();
     const picked = [];
     for (const termo of NEWS_HERO_KEYWORDS) {
-      const items = await fetchNewsItems([termo], 5);
-      const found = items.map((it) => it.image).find((url) => isValidUrl(url) && !seenUrls.has(url));
-      if (found) { seenUrls.add(found); picked.push(found); }
+      const { image, error } = await callEdgeFunction('unsplash-image', { q: termo });
+      if (error) { console.error('hero(noticias) unsplash:', error); continue; }
+      if (image) picked.push(image);
     }
     heroImageUrls.noticias = picked;
   } catch (e) { console.error('hero(noticias):', e); }
