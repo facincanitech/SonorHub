@@ -276,6 +276,7 @@
     box-shadow: 0 0 0 8px rgba(52,168,83,0.12); position: relative;
   }
   .play-circle.playing { background: var(--c-red); box-shadow: 0 0 0 8px rgba(234,67,53,0.12); }
+  .play-circle .stop-square { width: 34px; height: 34px; background: #fff; border-radius: 4px; }
   .skip-btn {
     width: 52px; height: 52px; border-radius: 50%; background: var(--c-surface); color: var(--c-text);
     font-size: 1.4rem; display: flex; align-items: center; justify-content: center;
@@ -2195,7 +2196,7 @@ function setPlayingVisual(playing) {
   isPlaying = playing;
   playCircle.classList.toggle('playing', playing);
   playWrap.classList.toggle('playing', playing);
-  playCircle.textContent = playing ? '⏹' : '▶';
+  playCircle.innerHTML = playing ? '<span class="stop-square"></span>' : '▶';
 }
 
 let voiceHistoryItems = []; // perguntas/respostas do "Pergunte algo", mais recente primeiro
