@@ -1835,11 +1835,34 @@ async function startSpotifyLogin() {
   window.location.href = `https://accounts.spotify.com/authorize?${params}`;
 }
 
+// Hash da assinatura do keystore de debug, formato base64 exigido pelo MSAL
+// (diferente do SHA-1 em hex:com:dois:pontos usado no login do Google).
+const OUTLOOK_KEY_HASH = 'GMflyGoV++UsRrw2eKJ2D0Rux5U=';
+const nativeMsAuth = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.MsAuthPlugin;
+
+async function outlookLoginNative() {
+  try {
+    // openid/email/offline_access são escopos reservados que o MSAL já inclui
+    // sozinho — só passa o escopo de recurso de verdade (Mail.Read).
+    const result = await nativeMsAuth.login({
+      clientId: OUTLOOK_CLIENT_ID,
+      tenant: 'common',
+      scopes: ['Mail.Read'],
+      keyHash: OUTLOOK_KEY_HASH,
+    });
+    if (result && result.accessToken) {
+      localStorage.setItem('infohub_outlook_token', result.accessToken);
+      updateAccountsUI();
+    }
+  } catch (e) { console.error('Erro no login Outlook nativo:', e); }
+}
+
 async function startOutlookLogin() {
   if (!OUTLOOK_CLIENT_ID) {
     alert('Configure o OUTLOOK_CLIENT_ID no topo do index.html primeiro (crie o app tipo SPA em portal.azure.com).');
     return;
   }
+  if (nativeMsAuth) { await outlookLoginNative(); return; }
   const verifier = randomString(64);
   localStorage.setItem('infohub_outlook_verifier', verifier);
   const challenge = base64UrlEncode(await sha256(verifier));
@@ -1927,6 +1950,9 @@ document.getElementById('spotify-connect-btn').addEventListener('click', () => {
 document.getElementById('outlook-connect-btn').addEventListener('click', () => {
   if (localStorage.getItem('infohub_outlook_token')) {
     localStorage.removeItem('infohub_outlook_token');
+    if (nativeMsAuth) {
+      nativeMsAuth.logout({ clientId: OUTLOOK_CLIENT_ID, tenant: 'common', keyHash: OUTLOOK_KEY_HASH }).catch(() => {});
+    }
     updateAccountsUI();
   } else {
     startOutlookLogin();

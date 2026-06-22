@@ -35,6 +35,21 @@
         </provider>
 
         <receiver android:name=".BriefingAlarmReceiver" android:exported="false" />
+
+        <!-- Exigido pelo plugin nativo de login da Microsoft (MSAL) — recebe o
+             retorno do navegador do sistema depois do login do Outlook/Hotmail. -->
+        <activity
+            android:name="com.microsoft.identity.client.BrowserTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="msauth"
+                      android:host="com.facincanitech.infohub"
+                      android:path="/GMflyGoV%2B%2BUsRrw2eKJ2D0Rux5U%3D" />
+            </intent-filter>
+        </activity>
     </application>
 
     <!-- Permissions -->
