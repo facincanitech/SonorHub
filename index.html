@@ -491,7 +491,7 @@
         </div>
         <div id="alarms-list"></div>
         <div class="settings-row">
-          <input type="time" id="new-alarm-time-input" value="07:00" style="flex:1; max-width: 160px;">
+          <input type="time" id="new-alarm-time-input" value="07:00" lang="pt-BR" style="flex:1; max-width: 160px;">
           <button type="button" id="add-alarm-btn" style="background: var(--c-accent-blue); color: var(--c-on-accent); padding: 8px 14px; font-size: 0.85rem;">+ Adicionar horário</button>
         </div>
       </div>
@@ -2921,6 +2921,38 @@ function maneuverToIconType(maneuver) {
   return 'straight';
 }
 
+// O texto bruto do Google (navigationInstruction.instructions) às vezes sai
+// com fraseado técnico estranho em pt-BR ("sentido transversal" etc) — pra
+// fala, usa uma frase curta e fixa por tipo de manobra, só com o nome da rua
+// quando dá pra extrair de forma confiável. A tela visual continua mostrando
+// o texto completo do Google (mais informação, é só ler, não precisa ouvir).
+const MANEUVER_SPOKEN_PHRASES = {
+  DEPART: 'Siga em frente para começar a rota',
+  TURN_SLIGHT_LEFT: 'Vire levemente à esquerda',
+  TURN_SHARP_LEFT: 'Vire à esquerda',
+  UTURN_LEFT: 'Faça o retorno',
+  TURN_LEFT: 'Vire à esquerda',
+  TURN_SLIGHT_RIGHT: 'Vire levemente à direita',
+  TURN_SHARP_RIGHT: 'Vire à direita',
+  UTURN_RIGHT: 'Faça o retorno',
+  TURN_RIGHT: 'Vire à direita',
+  STRAIGHT: 'Siga reto',
+  RAMP_LEFT: 'Entre na rampa à esquerda',
+  RAMP_RIGHT: 'Entre na rampa à direita',
+  MERGE: 'Convirja para a via',
+  FORK_LEFT: 'Mantenha-se à esquerda na bifurcação',
+  FORK_RIGHT: 'Mantenha-se à direita na bifurcação',
+  FERRY: 'Embarque na balsa',
+  FERRY_TRAIN: 'Embarque no trem da balsa',
+  ROUNDABOUT_LEFT: 'Entre na rotatória e saia à esquerda',
+  ROUNDABOUT_RIGHT: 'Entre na rotatória e saia à direita',
+  NAME_CHANGE: 'Continue em frente',
+};
+
+function maneuverToSpokenPhrase(maneuver) {
+  return (maneuver && MANEUVER_SPOKEN_PHRASES[maneuver]) || 'Siga reto';
+}
+
 function drawNavArrow(type) {
   const svg = document.getElementById('nav-maneuver-svg');
   if (!svg) return;
@@ -3136,9 +3168,18 @@ gpsMicBtn.addEventListener('touchstart', gpsMicPressStart);
 gpsMicBtn.addEventListener('mouseup', gpsMicPressEnd);
 gpsMicBtn.addEventListener('touchend', gpsMicPressEnd);
 
-function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec) {
+function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino, trafficWarnings) {
   const ARRIVAL_RADIUS_M = 40;
+  // Se a distância até a manobra atual ficar bem maior que o tamanho original
+  // desse trecho (perdeu a curva, foi por outra rua), recalcula do zero a
+  // partir da posição atual em vez de continuar narrando uma rota que não
+  // bate mais com o caminho de verdade.
+  const OFF_ROUTE_BUFFER_M = 150;
   let stepIndex = 0;
+  let minDistSeenForStep = Infinity;
+  const announcedWarnings = new Set();
+  let recalculating = false;
+  let watchErrorCount = 0;
 
   function remainingMetersFrom(index, distToNext) {
     let total = distToNext;
@@ -3149,36 +3190,79 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec) {
   showNavOverlay();
 
   return new Promise((resolve) => {
-    speakAndWait(steps[0].text).then(async () => {
-      if (!gpsActive) { resolve(); return; }
-      gpsWatchId = await watchPositionUnified(
-        async (pos) => {
-          if (!gpsActive || stepIndex >= steps.length) return;
-          const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, steps[stepIndex].lat, steps[stepIndex].lng);
-          resultEl.textContent = `Passo ${stepIndex + 1} de ${steps.length}, ${Math.round(dist)}m até a próxima manobra.`;
-          updateNavDisplay({
-            streetText: steps[stepIndex].text,
-            maneuver: steps[stepIndex].maneuver,
-            distMeters: dist,
-            remainingMeters: remainingMetersFrom(stepIndex, dist),
-            totalMeters,
-            totalDurationSec,
-            speedMs: pos.coords.speed,
-          });
-          if (dist <= ARRIVAL_RADIUS_M) {
-            stepIndex++;
-            if (stepIndex >= steps.length) {
-              showNavArrivedState();
-              await speakAndWait('Você chegou ao seu destino.');
-              stopGps();
-              resolve();
-            } else {
-              await speakAndWait(steps[stepIndex].text);
-            }
+    async function recalculate() {
+      if (recalculating) return;
+      recalculating = true;
+      if (gpsWatchId !== null) { clearWatchUnified(gpsWatchId); gpsWatchId = null; }
+      resultEl.textContent = 'Fora da rota, recalculando...';
+      await speakAndWait('Recalculando a rota.');
+      resolve();
+      startGpsRouteTo(destino, resultEl);
+    }
+
+    async function onPosition(pos) {
+      if (!gpsActive || recalculating || stepIndex >= steps.length) return;
+      watchErrorCount = 0;
+      const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, steps[stepIndex].lat, steps[stepIndex].lng);
+
+      const stepLenM = steps[stepIndex].distanceMeters || 0;
+      if (dist > stepLenM + OFF_ROUTE_BUFFER_M && dist > minDistSeenForStep + 80) {
+        recalculate();
+        return;
+      }
+      minDistSeenForStep = Math.min(minDistSeenForStep, dist);
+
+      if (trafficWarnings && trafficWarnings.length) {
+        const traveledMeters = totalMeters - remainingMetersFrom(stepIndex, dist);
+        for (const aviso of trafficWarnings) {
+          if (announcedWarnings.has(aviso.distanceMeters)) continue;
+          if (traveledMeters >= aviso.distanceMeters - 300 && traveledMeters < aviso.distanceMeters) {
+            announcedWarnings.add(aviso.distanceMeters);
+            const tipo = aviso.severity === 'TRAFFIC_JAM' ? 'parado' : 'lento';
+            speakAndWait(`Atenção: trânsito ${tipo} mais adiante.`);
           }
-        },
-        (err) => { console.error('watchPosition:', err); }
-      );
+        }
+      }
+
+      resultEl.textContent = `Passo ${stepIndex + 1} de ${steps.length}, ${Math.round(dist)}m até a próxima manobra.`;
+      updateNavDisplay({
+        streetText: steps[stepIndex].text,
+        maneuver: steps[stepIndex].maneuver,
+        distMeters: dist,
+        remainingMeters: remainingMetersFrom(stepIndex, dist),
+        totalMeters,
+        totalDurationSec,
+        speedMs: pos.coords.speed,
+      });
+      if (dist <= ARRIVAL_RADIUS_M) {
+        stepIndex++;
+        minDistSeenForStep = Infinity;
+        if (stepIndex >= steps.length) {
+          showNavArrivedState();
+          await speakAndWait('Você chegou ao seu destino.');
+          stopGps();
+          resolve();
+        } else {
+          await speakAndWait(maneuverToSpokenPhrase(steps[stepIndex].maneuver));
+        }
+      }
+    }
+
+    function onWatchError(err) {
+      console.error('watchPosition:', err);
+      // Em alguns aparelhos (sobretudo Android nativo) o watch às vezes para
+      // de chamar o callback depois de um erro, sem nunca mais avisar nada —
+      // reinicia o watch em vez de deixar a navegação "travada" em silêncio.
+      if (!gpsActive || recalculating) return;
+      watchErrorCount++;
+      if (watchErrorCount > 5) { recalculate(); return; }
+      if (gpsWatchId !== null) { clearWatchUnified(gpsWatchId); gpsWatchId = null; }
+      watchPositionUnified(onPosition, onWatchError).then((id) => { gpsWatchId = id; });
+    }
+
+    speakAndWait(maneuverToSpokenPhrase(steps[0].maneuver)).then(async () => {
+      if (!gpsActive) { resolve(); return; }
+      gpsWatchId = await watchPositionUnified(onPosition, onWatchError);
     });
   });
 }
@@ -3205,13 +3289,9 @@ async function startGpsRouteTo(destino, resultEl) {
     const { summary, steps, trafficWarnings, totalDistanceMeters, totalDurationSec, error } = await callEdgeFunction('directions', { origem, destino });
     if (error || !steps || steps.length === 0) { resultEl.textContent = error || 'Nenhum passo de rota encontrado.'; stopGps(); return false; }
     await speakAndWait(summary);
-    if (trafficWarnings && trafficWarnings[0]) {
-      const aviso = trafficWarnings[0];
-      const d = formatDistanceFalado(aviso.distanceMeters);
-      const tipo = aviso.severity === 'TRAFFIC_JAM' ? 'parado' : 'lento';
-      await speakAndWait(`Atenção: trânsito ${tipo} daqui a ${d.value} ${d.unit}.`);
-    }
-    await startTurnByTurn(steps, resultEl, totalDistanceMeters, totalDurationSec);
+    // Avisos de trânsito agora são falados conforme você se aproxima do
+    // trecho (dentro de startTurnByTurn), não tudo de uma vez aqui no início.
+    await startTurnByTurn(steps, resultEl, totalDistanceMeters, totalDurationSec, destino, trafficWarnings);
   } catch (e) {
     resultEl.textContent = 'Erro ao calcular rota: ' + e.message;
     stopGps();
