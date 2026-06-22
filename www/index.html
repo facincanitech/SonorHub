@@ -1111,6 +1111,29 @@ function countEnabled(cat) {
 // repetidamente só pela tela do Guia ser reaberta.
 let heroImageUrls = { entretenimento: [], noticias: [] };
 let heroImagesLoaded = false;
+let financeiroChartPoints = null;
+
+// Monta os pontos do SVG a partir de preços reais, normalizados pro viewBox,
+// e duplica o desenho lado a lado (0-300 e 300-600) pra rolagem ficar sem
+// emenda visível — mesmo truque do gráfico estático que já existia.
+function buildFinanceiroChartPoints(prices) {
+  if (!prices || prices.length < 2) return null;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = (max - min) || 1;
+  const width = 300, height = 100, padding = 12;
+  const half = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * width;
+    const y = height - padding - ((p - min) / range) * (height - padding * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const secondHalf = prices.map((p, i) => {
+    const x = width + (i / (prices.length - 1)) * width;
+    const y = height - padding - ((p - min) / range) * (height - padding * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return [...half, ...secondHalf].join(' ');
+}
 
 // Fotos reais e verificadas (Wikimedia Commons, domínio público/CC) pro herói
 // de Clima: sol, nublado, chuva, noite — sempre fixas, sem busca dinâmica
@@ -1148,6 +1171,16 @@ async function loadHeroImages() {
     }
     heroImageUrls.noticias = picked;
   } catch (e) { console.error('hero(noticias):', e); }
+
+  try {
+    // Curva real do Bitcoin (CoinGecko, já usado em cotações) pros últimos 7
+    // dias, amostrada pra não poluir o desenho — oscila bem, fica vivo de verdade.
+    const data = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=brl&days=7').then((r) => r.json());
+    const allPrices = (data.prices || []).map((p) => p[1]);
+    const step = Math.max(1, Math.floor(allPrices.length / 24));
+    const sampled = allPrices.filter((_, i) => i % step === 0);
+    financeiroChartPoints = buildFinanceiroChartPoints(sampled);
+  } catch (e) { console.error('hero(financeiro):', e); }
 
   renderCategoryCards();
 }
@@ -1192,11 +1225,12 @@ function getCategoryHeroScene(cat) {
     ]);
   }
   if (cat.id === 'financeiro') {
+    const points = financeiroChartPoints
+      || '0,60 30,40 60,70 90,30 120,55 150,20 180,50 210,35 240,65 270,25 300,45 300,60 330,40 360,70 390,30 420,55 450,20 480,50 510,35 540,65 570,25 600,45';
     return `
       <div class="chart-wrap">
         <svg class="chart-track" viewBox="0 0 600 100" preserveAspectRatio="none">
-          <polyline points="0,60 30,40 60,70 90,30 120,55 150,20 180,50 210,35 240,65 270,25 300,45 300,60 330,40 360,70 390,30 420,55 450,20 480,50 510,35 540,65 570,25 600,45"
-            fill="none" stroke="#66bb6a" stroke-width="2.5" />
+          <polyline points="${points}" fill="none" stroke="#66bb6a" stroke-width="2.5" />
         </svg>
       </div>
     `;
