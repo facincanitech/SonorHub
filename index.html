@@ -2295,6 +2295,15 @@ function getSaudacaoPorHorario() {
   return 'Boa noite';
 }
 
+function getHorarioFalado() {
+  const agora = new Date();
+  const h = agora.getHours();
+  const m = agora.getMinutes();
+  const horaTexto = `${h === 1 ? '1 hora' : h + ' horas'}`;
+  if (m === 0) return `são ${horaTexto}`;
+  return `são ${horaTexto} e ${m} minuto${m === 1 ? '' : 's'}`;
+}
+
 async function startBriefingPlayback(automatic = false) {
   const summaries = getEnabledFeatureSummaries();
   if (summaries.length === 0) {
@@ -2316,7 +2325,7 @@ async function startBriefingPlayback(automatic = false) {
   // Só no disparo automático (alarme), não quando a pessoa aperta o play na mão.
   if (automatic) {
     briefingLabel.textContent = 'Briefing automático';
-    await speakAndWait(`${getSaudacaoPorHorario()}! Aqui é o seu briefing automático do InfoHub.`);
+    await speakAndWait(`${getSaudacaoPorHorario()}, ${getHorarioFalado()}. Essas são as informações do seu briefing automático.`);
   }
   speakQueueItem(0);
 }
