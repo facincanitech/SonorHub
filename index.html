@@ -294,6 +294,17 @@
     background: var(--c-border2); border: none; border-radius: 8px; color: var(--c-text);
     width: 30px; height: 30px; font-size: 0.85rem; padding: 0;
   }
+  .item-action-menu {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 20; margin-top: 4px;
+    background: var(--c-surface); border: 1px solid var(--c-border2); border-radius: 10px;
+    overflow: hidden; min-width: 160px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  }
+  .item-action-menu.open { display: block; }
+  .item-action-menu-opt {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: var(--c-text); padding: 10px 14px; font-size: 0.82rem;
+  }
+  .item-action-menu-opt:active { background: var(--c-border2); }
   .saved-item { background: var(--c-surface); border-radius: 10px; padding: 10px 12px; font-size: 0.82rem; margin-bottom: 8px; }
   .saved-item .cat { color: var(--c-text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
   .saved-item .remove-saved-btn {
@@ -2563,19 +2574,41 @@ function setPlayingVisual(playing) {
 
 let voiceHistoryItems = []; // perguntas/respostas do "Pergunte algo", mais recente primeiro
 
-// Botões de ação (compartilhar/copiar/salvar) que aparecem em cada item do
-// histórico — curadoria manual, sem guardar tudo automaticamente.
-function buildItemActionsRow(category, sub, text) {
-  const row = document.createElement('div');
-  row.className = 'item-actions';
+// Um botão só (tipo o "compartilhar" nativo de app), que abre um menu rápido
+// com as 3 ações — em vez de 3 ícones soltos disputando espaço na linha.
+function closeAllItemActionMenus() {
+  document.querySelectorAll('.item-action-menu.open').forEach((m) => m.classList.remove('open'));
+}
+document.addEventListener('click', closeAllItemActionMenus);
 
-  const shareBtn = document.createElement('button');
-  shareBtn.type = 'button';
-  shareBtn.className = 'item-action-btn';
-  shareBtn.title = 'Compartilhar';
-  shareBtn.textContent = '📤';
-  shareBtn.addEventListener('click', async (ev) => {
-    ev.stopPropagation();
+function buildItemActionsRow(category, sub, text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'item-actions';
+  wrap.style.position = 'relative';
+
+  const triggerBtn = document.createElement('button');
+  triggerBtn.type = 'button';
+  triggerBtn.className = 'item-action-btn';
+  triggerBtn.title = 'Ações';
+  triggerBtn.textContent = '📤';
+
+  const menu = document.createElement('div');
+  menu.className = 'item-action-menu';
+
+  function addMenuOption(label, onClick) {
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'item-action-menu-opt';
+    opt.textContent = label;
+    opt.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      closeAllItemActionMenus();
+      await onClick();
+    });
+    menu.appendChild(opt);
+  }
+
+  addMenuOption('📤 Compartilhar', async () => {
     if (navigator.share) {
       try { await navigator.share({ text }); } catch (e) {}
     } else {
@@ -2583,35 +2616,27 @@ function buildItemActionsRow(category, sub, text) {
       showVoiceToast('Compartilhamento não disponível, copiado pra área de transferência.');
     }
   });
-
-  const copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'item-action-btn';
-  copyBtn.title = 'Copiar';
-  copyBtn.textContent = '📋';
-  copyBtn.addEventListener('click', async (ev) => {
-    ev.stopPropagation();
+  addMenuOption('📋 Copiar', async () => {
     await navigator.clipboard.writeText(text);
     showVoiceToast('Copiado.');
   });
-
-  const saveBtn = document.createElement('button');
-  saveBtn.type = 'button';
-  saveBtn.className = 'item-action-btn';
-  saveBtn.title = 'Salvar';
-  saveBtn.textContent = '💾';
-  saveBtn.addEventListener('click', (ev) => {
-    ev.stopPropagation();
+  addMenuOption('💾 Salvar', async () => {
     state.savedItems.unshift({ category, sub: sub || '', text, savedAt: Date.now() });
     saveState();
     renderSavedItems();
     showVoiceToast('Salvo.');
   });
 
-  row.appendChild(shareBtn);
-  row.appendChild(copyBtn);
-  row.appendChild(saveBtn);
-  return row;
+  triggerBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const wasOpen = menu.classList.contains('open');
+    closeAllItemActionMenus();
+    if (!wasOpen) menu.classList.add('open');
+  });
+
+  wrap.appendChild(triggerBtn);
+  wrap.appendChild(menu);
+  return wrap;
 }
 
 function renderHistory(currentIndex) {
