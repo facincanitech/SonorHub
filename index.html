@@ -985,9 +985,9 @@ const CATEGORY_DEFS = [
       { id: 'podcasts', label: 'Podcasts', icon: '🎧', fields: [
         { id: 'nomes', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
       ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
-      { id: 'musicas', label: 'Músicas por categoria', icon: '🎵', fields: [
-        { id: 'generos', kind: 'buttons', options: ['Pop', 'Rap', 'Eletrônico', 'Sertanejo', 'Rock'] },
-      ], hint: 'Via Spotify se conectado (⚙️ Central de Contas), senão notícias musicais' },
+      { id: 'musica', label: 'Música', icon: '🎵', fields: [
+        { id: 'nomes', kind: 'tags', placeholder: 'Nome da banda/artista, digite e aperte Enter (até 5)' },
+      ], hint: 'Spotify se conectado (ainda desativado), senão YouTube, senão notícia sobre o artista' },
       { id: 'jogo-esportivo', label: 'Esportes: resultado e próximo jogo', icon: '⚽', fields: [
         { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
         { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
@@ -2061,64 +2061,37 @@ async function fetchSeriesItems(limit) {
   } catch (e) { console.error('media(series):', e); return []; }
 }
 
-const SPOTIFY_SEED_GENRES = {
-  'Pop': 'pop',
-  'Rap': 'hip-hop',
-  'Eletrônico': 'edm',
-  'Sertanejo': 'sertanejo',
-  'Rock': 'rock',
-};
-
-async function fetchSpotifyGenreItems(genero, limit) {
-  if (!SPOTIFY_MUSIC_ENABLED) return null;
-  const seed = SPOTIFY_SEED_GENRES[genero];
-  if (!seed) return null; // null = "não tentou", deixa o fallback decidir
-  try {
-    const { items, error } = await callEdgeFunction('spotify-music', { seed_genre: seed, limit });
-    if (error) { console.error('spotify(musicas):', error); return null; }
-    return (items || []).map(({ artist, name, url }) => {
-      const title = `${artist}, ${name}`;
-      return { category: 'Entretenimento', sub: `Música ${genero}`, title, full: `Em ${genero}: ${artist} com a música ${name}.`, quick: title, link: url };
-    });
-  } catch (e) {
-    console.error('spotify(musicas):', e);
-    return null; // erro real da API: também cai no fallback
-  }
+async function fetchSpotifyArtistItems(nome) {
+  if (!SPOTIFY_MUSIC_ENABLED) return null; // desativado (sem conta Premium pro app), null = "não tentou"
+  return null; // TODO: busca por artista quando a Web API do Spotify estiver disponível
 }
 
-async function fetchMusicasItems(generos, limit) {
-  if (!generos || generos.length === 0) return [];
+async function fetchYoutubeMusicItem(nome) {
+  try {
+    const { video, error } = await callEdgeFunction('youtube-music', { name: nome });
+    if (error || !video) return null;
+    const title = `${video.channelTitle}, ${video.title}`;
+    const link = `https://www.youtube.com/watch?v=${video.videoId}`;
+    return { category: 'Entretenimento', sub: `Música: ${nome}`, title, full: `${nome}, no YouTube: ${video.title}.`, quick: title, link };
+  } catch (e) { console.error('youtube-music:', e); return null; }
+}
+
+async function fetchMusicaItems(nomesStr, limit) {
+  const nomes = parseList(nomesStr);
+  if (nomes.length === 0) return [];
   let all = [];
-  const seenTitles = new Set();
-  for (const genero of generos) {
-    const spotifyItems = await fetchSpotifyGenreItems(genero, limit);
-    let generoItems = [];
-    if (spotifyItems !== null) {
-      generoItems = spotifyItems;
-    } else {
-      const termo = `música ${genero} lançamento`;
-      try {
-        const { items, error } = await callEdgeFunction('news', { q: termo });
-        if (error) throw new Error(error);
-        generoItems = (items || []).slice(0, limit).map(({ title, description, link }) => {
-          const full = description ? `${title}. ${truncateAtBoundary(description, 600)}` : `${title}.`;
-          return { category: 'Entretenimento', sub: `Música ${genero}`, title, full, quick: title, link };
-        });
-      } catch (e) {
-        console.error('musicas:', e);
-        const url = `https://news.google.com/rss/search?q=${encodeURIComponent(termo)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-        const items = await fetchRssItems(url);
-        generoItems = items.slice(0, limit).map(({ title }) => ({ category: 'Entretenimento', sub: `Música ${genero}`, title, full: `${title}.`, quick: title }));
-      }
+  for (const nome of nomes) {
+    let item = null;
+    const spotifyItems = await fetchSpotifyArtistItems(nome);
+    if (spotifyItems && spotifyItems[0]) item = spotifyItems[0];
+    if (!item) item = await fetchYoutubeMusicItem(nome); // já tenta sem filtro de categoria se for banda desconhecida
+    if (!item) {
+      const newsItems = await fetchNewsItems([nome], 1);
+      if (newsItems[0]) item = { ...newsItems[0], sub: `Música: ${nome}` };
     }
-    for (const item of generoItems) {
-      const normalized = normalizeTitleForDedupe(item.title);
-      if (seenTitles.has(normalized)) continue;
-      seenTitles.add(normalized);
-      all.push(item);
-    }
+    if (item) all.push(item);
   }
-  return all;
+  return all.slice(0, limit);
 }
 
 async function fetchJogosLancamentosItems(limit) {
@@ -2283,7 +2256,7 @@ async function buildQueue() {
       else if (s.catId === 'financeiro' && s.featId === 'cotacoes') items = await fetchCotacoesItems(s.fields.moedas, s.fields.criptos);
       else if (s.catId === 'entretenimento' && s.featId === 'filmes') items = await fetchFilmesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'series') items = await fetchSeriesItems(limit);
-      else if (s.catId === 'entretenimento' && s.featId === 'musicas') items = await fetchMusicasItems(s.fields.generos, limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'musica') items = await fetchMusicaItems(s.fields.nomes, limit);
       else if (s.catId === 'entretenimento' && s.featId === 'jogos') {
         const tipos = s.fields.tipos || [];
         let jogosItems = [];
@@ -3108,8 +3081,8 @@ const GUIA_VOICE_TOPICS = [
     fetch: (fields) => fetchYoutubeItems(fields.canais, fields) },
   { keywords: ['podcast'], catId: 'entretenimento', featId: 'podcasts',
     fetch: (fields) => fetchPodcastItems(fields.nomes, 2) },
-  { keywords: ['música', 'musica', 'playlist'], catId: 'entretenimento', featId: 'musicas',
-    fetch: (fields) => fetchMusicasItems(fields.generos, 2) },
+  { keywords: ['música', 'musica', 'playlist'], catId: 'entretenimento', featId: 'musica',
+    fetch: (fields) => fetchMusicaItems(fields.nomes, 2) },
 ];
 
 async function tryAnswerGuia(texto) {
