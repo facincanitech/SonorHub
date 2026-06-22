@@ -2146,15 +2146,27 @@ async function fetchNewsItems(termosStr, limit) {
   return all;
 }
 
+async function fetchTopHeadlinesFallback(limit) {
+  const url = 'https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419';
+  const items = await fetchRssItems(url);
+  return items.slice(0, limit).map(({ title }) => ({ category: 'Noticias', sub: 'Manchetes', title, full: `${title}.`, quick: title }));
+}
+
 async function fetchTopHeadlines(limit) {
   try {
     const { items, error } = await callEdgeFunction('news', { top: '1' });
-    if (error) { console.error('news(top):', error); return []; }
+    if (error) {
+      console.error('news(top):', error);
+      return await fetchTopHeadlinesFallback(limit);
+    }
     return (items || []).slice(0, limit).map(({ title, description, link, image }) => {
       const full = description ? `${title}. ${truncateAtBoundary(description, 600)}` : `${title}.`;
       return { category: 'Noticias', sub: 'Manchetes', title, full, quick: title, link, image: image || null };
     });
-  } catch (e) { console.error('news(top):', e); return []; }
+  } catch (e) {
+    console.error('news(top):', e);
+    return await fetchTopHeadlinesFallback(limit);
+  }
 }
 
 async function fetchFilmeBuscaItems(query) {
