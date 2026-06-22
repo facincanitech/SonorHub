@@ -2871,6 +2871,15 @@ function newGpsAutocompleteSession() {
 }
 newGpsAutocompleteSession();
 
+// O Photon (busca de endereço gratuita, sem chave) às vezes não tem o número
+// da casa indexado pra rua digitada (comum em endereço residencial no Brasil)
+// — extrai o número que a pessoa já tinha digitado e preserva ele na escolha,
+// mesmo se a sugestão escolhida não trouxer número nenhum.
+function extractNumberFromTypedInput(text) {
+  const m = text.match(/,\s*(\d+)\b/) || text.match(/\b(\d+)\b/);
+  return m ? m[1] : null;
+}
+
 function renderGpsSuggestions(suggestions) {
   gpsDestinoSuggestions.innerHTML = '';
   if (!suggestions || suggestions.length === 0) { hideGpsSuggestions(); return; }
@@ -2883,7 +2892,15 @@ function renderGpsSuggestions(suggestions) {
     item.style.borderBottom = '1px solid var(--c-border)';
     item.addEventListener('mousedown', (ev) => {
       ev.preventDefault(); // evita perder o clique pro blur do input
-      gpsDestinoInput.value = s.text;
+      let finalText = s.text;
+      const typedNumber = extractNumberFromTypedInput(gpsDestinoInput.value);
+      if (typedNumber && !new RegExp(`\\b${typedNumber}\\b`).test(finalText)) {
+        const dashIdx = finalText.indexOf(' - ');
+        finalText = dashIdx !== -1
+          ? `${finalText.slice(0, dashIdx)}, ${typedNumber}${finalText.slice(dashIdx)}`
+          : `${finalText}, ${typedNumber}`;
+      }
+      gpsDestinoInput.value = finalText;
       hideGpsSuggestions();
       newGpsAutocompleteSession(); // endereço escolhido, fecha a sessão, próxima busca começa nova
     });
