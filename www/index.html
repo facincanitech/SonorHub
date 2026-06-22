@@ -2956,6 +2956,13 @@ async function tryAnswerEsportes(texto) {
   return (wanted || items[0]).full;
 }
 
+async function fetchWikipediaSummary(titulo) {
+  const resp = await fetch(`https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(titulo)}`);
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return data.extract || null;
+}
+
 async function tryAnswerWikipedia(texto) {
   const termo = texto
     .replace(/^(o que é|o que são|quem foi|quem é|como funciona|defina|definição de|explica)\s+/i, '')
@@ -2963,11 +2970,18 @@ async function tryAnswerWikipedia(texto) {
     .trim();
   if (!termo) return 'Não entendi a pergunta.';
   try {
-    const resp = await fetch(`https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(termo)}`);
-    if (!resp.ok) return `Não achei nada sobre "${termo}".`;
-    const data = await resp.json();
-    if (!data.extract) return `Não achei nada sobre "${termo}".`;
-    return truncateAtBoundary(data.extract, 600);
+    // Tenta o título exato primeiro (mais rápido); se não bater, faz busca
+    // textual de verdade e usa o melhor resultado — "copa do mundo brasil" não
+    // é título de nenhum artigo, mas a busca acha "Copa do Mundo FIFA" etc.
+    let extract = await fetchWikipediaSummary(termo);
+    if (!extract) {
+      const searchResp = await fetch(`https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(termo)}&srlimit=1&format=json&origin=*`);
+      const searchData = await searchResp.json();
+      const melhorTitulo = searchData.query && searchData.query.search && searchData.query.search[0] && searchData.query.search[0].title;
+      if (melhorTitulo) extract = await fetchWikipediaSummary(melhorTitulo);
+    }
+    if (!extract) return `Não achei nada sobre "${termo}".`;
+    return truncateAtBoundary(extract, 600);
   } catch (e) {
     return 'Erro ao buscar na Wikipédia: ' + e.message;
   }
