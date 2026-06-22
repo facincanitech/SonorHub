@@ -2943,7 +2943,10 @@ async function tryAnswerWikipedia(texto) {
 
 const VOICE_QA = [
   {
-    triggers: ['oi', 'olá', 'e aí', 'eae', 'opa', 'infohub'],
+    // "oi"/"olá"/etc já são tirados do início da frase antes daqui (e tratados
+    // separadamente quando é só a saudação) — checar de novo por substring
+    // pegava qualquer palavra que contivesse "oi" no meio, tipo "noite", "dois".
+    triggers: ['infohub'],
     response: 'Oi! Pode falar.',
   },
   {
