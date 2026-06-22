@@ -3088,6 +3088,9 @@ document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
     // Celular demora mais pra "esquentar" o microfone que desktop — 7s cortava
     // a fala antes mesmo de começar a captar em alguns aparelhos.
     const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 12000);
+    // Rede de segurança: na WebView do app empacotado, o reconhecimento às vezes
+    // nem dispara onend/onerror (trava ouvindo pra sempre) — força destravar.
+    const forceResetTimeout = setTimeout(() => { btn.classList.remove('listening'); }, 14000);
 
     recognition.onresult = (event) => {
       const texto = event.results[0][0].transcript;
@@ -3098,6 +3101,7 @@ document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
     };
     recognition.onend = () => {
       clearTimeout(stopTimeout);
+      clearTimeout(forceResetTimeout);
       btn.classList.remove('listening');
     };
     recognition.start();
