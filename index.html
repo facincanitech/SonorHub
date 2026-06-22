@@ -562,6 +562,11 @@
         <div class="desc">Conecte sua conta do Mercado Livre ou seu e-mail e o app encontra e lê suas encomendas em trânsito em voz alta.</div>
       </div>
 
+      <div class="premium-feature">
+        <div class="title">📤 Backup de fotos no Drive</div>
+        <div class="desc">Escolha fotos e vídeos do celular e o app envia direto pro seu Google Drive. Sem servidor no meio, sem backup automático bagunçado — você decide o que vai.</div>
+      </div>
+
       <button id="subscribe-btn" disabled style="opacity:0.5; cursor:default;">Em breve</button>
       <button id="check-subscription-btn" style="background: var(--c-surface); color: var(--c-text); margin-top: 10px; width: 100%; padding: 12px;">Já assinei, verificar</button>
       <div class="result" id="subscribe-result" style="text-align:center; margin-top: 8px;"></div>
@@ -596,6 +601,14 @@
           </div>
           <div class="result" id="rastreio-result"></div>
         </div>
+      </div>
+
+      <div class="premium-feature">
+        <div class="title">📤 Backup de fotos no Drive</div>
+        <div class="desc">Escolhe as fotos/vídeos do celular e o app envia direto pro seu Google Drive, numa pasta "InfoHub Backup". Precisa estar com o Google conectado em ⚙️ Central de Contas.</div>
+        <input type="file" id="drive-backup-input" accept="image/*,video/*" multiple style="display:none;">
+        <button id="drive-backup-btn">Escolher fotos/vídeos</button>
+        <div class="result" id="drive-backup-result"></div>
       </div>
     </div>
   </section>
@@ -3405,6 +3418,77 @@ document.getElementById('rastreio-email-btn').addEventListener('click', async ()
     for (const line of lines) await speakAndWait(line);
   } catch (e) {
     resultEl.textContent = 'Erro ao buscar e-mails: ' + e.message;
+  }
+});
+
+/* =========================================================================
+   PREMIUM, Backup de fotos/vídeos no Google Drive
+   App é só intermediário: escolhe arquivo no celular, sobe direto pro Drive
+   do próprio usuário via fetch com o accessToken do Google — nunca passa
+   pelo nosso servidor, nada fica salvo aqui.
+   ========================================================================= */
+async function ensureDriveBackupFolder() {
+  const cached = localStorage.getItem('infohub_drive_folder_id');
+  if (cached) return cached;
+  const resp = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'InfoHub Backup', mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data.id) throw new Error((data.error && data.error.message) || 'Não foi possível criar a pasta no Drive.');
+  localStorage.setItem('infohub_drive_folder_id', data.id);
+  return data.id;
+}
+
+async function uploadFileToDrive(file, folderId) {
+  const metadata = { name: file.name, parents: [folderId] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', file);
+  const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  });
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error((data.error && data.error.message) || `HTTP ${resp.status}`);
+  }
+}
+
+document.getElementById('drive-backup-btn').addEventListener('click', () => {
+  const resultEl = document.getElementById('drive-backup-result');
+  if (!accessToken) {
+    resultEl.textContent = 'Conecte sua conta Google em ⚙️ Central de Contas primeiro.';
+    return;
+  }
+  document.getElementById('drive-backup-input').click();
+});
+
+document.getElementById('drive-backup-input').addEventListener('change', async (ev) => {
+  const files = Array.from(ev.target.files || []);
+  ev.target.value = ''; // permite escolher os mesmos arquivos de novo depois
+  if (files.length === 0) return;
+  const resultEl = document.getElementById('drive-backup-result');
+  try {
+    const folderId = await ensureDriveBackupFolder();
+    let ok = 0;
+    const falhas = [];
+    for (let i = 0; i < files.length; i++) {
+      resultEl.textContent = `Enviando ${i + 1} de ${files.length}: ${files[i].name}...`;
+      try {
+        await uploadFileToDrive(files[i], folderId);
+        ok++;
+      } catch (e) {
+        falhas.push(files[i].name);
+      }
+    }
+    resultEl.textContent = falhas.length === 0
+      ? `${ok} arquivo${ok > 1 ? 's' : ''} enviado${ok > 1 ? 's' : ''} pro Drive, na pasta "InfoHub Backup".`
+      : `${ok} enviado(s), ${falhas.length} falhou/falharam: ${falhas.join(', ')}.`;
+  } catch (e) {
+    resultEl.textContent = 'Erro: ' + e.message;
   }
 });
 
