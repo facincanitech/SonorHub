@@ -21,14 +21,18 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // per_page=10 + escolha aleatória — busca com a mesma palavra-chave sempre
+    // devolve o resultado nº1 na mesma ordem, então sem isso a imagem nunca
+    // mudaria de um carregamento pro outro.
     const resp = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=1&orientation=landscape&content_filter=high&client_id=${apiKey}`
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=10&orientation=landscape&content_filter=high&client_id=${apiKey}`
     );
     const data = await resp.json();
-    const photo = data.results && data.results[0];
-    if (!photo) {
+    const results = data.results || [];
+    if (results.length === 0) {
       return Response.json({ image: null, error: `Nada encontrado no Unsplash pra "${q}".` }, { headers: CORS_HEADERS });
     }
+    const photo = results[Math.floor(Math.random() * results.length)];
     return Response.json({ image: photo.urls.regular, error: null }, { headers: CORS_HEADERS });
   } catch (e) {
     return Response.json({ image: null, error: 'Erro ao consultar Unsplash: ' + e.message }, { headers: CORS_HEADERS });
