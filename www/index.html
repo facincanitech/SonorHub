@@ -2767,7 +2767,7 @@ async function scheduleAllAlarmsNative() {
         id: alarmTimeToId(time),
         title: 'InfoHub, Meu Dia',
         body: `Seu briefing das ${time} está pronto. Toca aqui pra ouvir.`,
-        schedule: { on: { hour, minute }, allowWhileIdle: true },
+        schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true },
       };
     }),
   }).catch((e) => console.error('local-notifications schedule:', e));
