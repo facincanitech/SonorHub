@@ -2288,7 +2288,14 @@ function speakQueueItem(i) {
   speechSynthesis.speak(utter);
 }
 
-async function startBriefingPlayback() {
+function getSaudacaoPorHorario() {
+  const hora = new Date().getHours();
+  if (hora >= 5 && hora < 12) return 'Bom dia';
+  if (hora >= 12 && hora < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+async function startBriefingPlayback(automatic = false) {
   const summaries = getEnabledFeatureSummaries();
   if (summaries.length === 0) {
     briefingLabel.textContent = 'Nenhuma categoria ativa. Vá na aba Guia e ative algo.';
@@ -2305,6 +2312,11 @@ async function startBriefingPlayback() {
     briefingLabel.textContent = 'Nada novo para ler agora';
     briefingSub.textContent = 'Verifique as configurações das suas categorias ativas';
     return;
+  }
+  // Só no disparo automático (alarme), não quando a pessoa aperta o play na mão.
+  if (automatic) {
+    briefingLabel.textContent = 'Briefing automático';
+    await speakAndWait(`${getSaudacaoPorHorario()}! Aqui é o seu briefing automático do InfoHub.`);
   }
   speakQueueItem(0);
 }
@@ -2764,7 +2776,7 @@ function scheduleAlarm(time) {
       state.alarmLastFired[time] = today;
       saveState();
       if (document.visibilityState === 'visible') {
-        startBriefingPlayback();
+        startBriefingPlayback(true);
       } else {
         try {
           const reg = await navigator.serviceWorker.ready;
