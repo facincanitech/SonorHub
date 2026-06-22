@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/facincanitech/InfoHub#readme",
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",

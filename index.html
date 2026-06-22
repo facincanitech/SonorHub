@@ -3070,41 +3070,72 @@ async function handleVoiceQuery(textoOriginal) {
 }
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+const nativeSTT = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+
+// Dentro do app empacotado, o reconhecimento de voz do navegador não funciona
+// de verdade na WebView (ficava ouvindo sem nunca captar nada) — usa o plugin
+// nativo do Android (mesmo motor de fala do Google) quando ele existir.
+async function listenWithNativeSTT(btn) {
+  btn.classList.add('listening');
+  try {
+    const avail = await nativeSTT.available();
+    if (!avail.available) {
+      showVoiceToast('Reconhecimento de voz não disponível nesse aparelho.');
+      return;
+    }
+    const perm = await nativeSTT.requestPermissions();
+    if (perm.speechRecognition !== 'granted') {
+      showVoiceToast('Permissão de microfone negada.');
+      return;
+    }
+    const result = await nativeSTT.start({ language: 'pt-BR', maxResults: 1, partialResults: false, popup: false });
+    const texto = (result && result.matches && result.matches[0]) || '';
+    handleVoiceQuery(texto);
+  } catch (e) {
+    showVoiceToast('Erro ao ouvir: ' + (e.message || e));
+  } finally {
+    btn.classList.remove('listening');
+  }
+}
+
+function listenWithBrowserSTT(btn) {
+  if (!SpeechRecognitionImpl) {
+    showVoiceToast('Reconhecimento de voz não suportado nesse navegador (tenta no Chrome).');
+    return;
+  }
+  const recognition = new SpeechRecognitionImpl();
+  recognition.lang = 'pt-BR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  btn.classList.add('listening');
+
+  // Celular demora mais pra "esquentar" o microfone que desktop — 7s cortava
+  // a fala antes mesmo de começar a captar em alguns aparelhos.
+  const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 12000);
+  // Rede de segurança: às vezes o reconhecimento nem dispara onend/onerror
+  // (trava ouvindo pra sempre) — força destravar.
+  const forceResetTimeout = setTimeout(() => { btn.classList.remove('listening'); }, 14000);
+
+  recognition.onresult = (event) => {
+    const texto = event.results[0][0].transcript;
+    handleVoiceQuery(texto);
+  };
+  recognition.onerror = (event) => {
+    showVoiceToast('Erro ao ouvir: ' + event.error);
+  };
+  recognition.onend = () => {
+    clearTimeout(stopTimeout);
+    clearTimeout(forceResetTimeout);
+    btn.classList.remove('listening');
+  };
+  recognition.start();
+}
 
 document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    if (!SpeechRecognitionImpl) {
-      showVoiceToast('Reconhecimento de voz não suportado nesse navegador (tenta no Chrome).');
-      return;
-    }
     if (btn.classList.contains('listening')) return;
-
-    const recognition = new SpeechRecognitionImpl();
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    btn.classList.add('listening');
-
-    // Celular demora mais pra "esquentar" o microfone que desktop — 7s cortava
-    // a fala antes mesmo de começar a captar em alguns aparelhos.
-    const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 12000);
-    // Rede de segurança: na WebView do app empacotado, o reconhecimento às vezes
-    // nem dispara onend/onerror (trava ouvindo pra sempre) — força destravar.
-    const forceResetTimeout = setTimeout(() => { btn.classList.remove('listening'); }, 14000);
-
-    recognition.onresult = (event) => {
-      const texto = event.results[0][0].transcript;
-      handleVoiceQuery(texto);
-    };
-    recognition.onerror = (event) => {
-      showVoiceToast('Erro ao ouvir: ' + event.error);
-    };
-    recognition.onend = () => {
-      clearTimeout(stopTimeout);
-      clearTimeout(forceResetTimeout);
-      btn.classList.remove('listening');
-    };
-    recognition.start();
+    if (nativeSTT) listenWithNativeSTT(btn);
+    else listenWithBrowserSTT(btn);
   });
 });
 
