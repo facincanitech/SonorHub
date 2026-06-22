@@ -1387,6 +1387,30 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
   });
 });
 
+// Botão de voltar do Android: dentro de uma categoria do Guia volta pra lista
+// do Guia; na lista do Guia (ou Premium) volta pro Meu Dia; no Meu Dia sai do
+// app (comportamento padrão).
+const nativeApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+if (nativeApp) {
+  nativeApp.addListener('backButton', () => {
+    const openOverlay = document.querySelector('.overlay.open');
+    if (openOverlay) {
+      openOverlay.classList.remove('open');
+      return;
+    }
+    if (openCategoryId) {
+      closeCategoryDetail();
+      return;
+    }
+    const activeTabBtn = document.querySelector('.nav-btn.active');
+    if (activeTabBtn && activeTabBtn.dataset.tab !== 'briefing') {
+      document.querySelector('.nav-btn[data-tab="briefing"]').click();
+      return;
+    }
+    nativeApp.exitApp();
+  });
+}
+
 /* =========================================================================
    MODO RÁPIDO / VOZ / VELOCIDADE / LIMITE (painel de configurações)
    ========================================================================= */
