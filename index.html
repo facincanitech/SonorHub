@@ -1932,6 +1932,17 @@ async function fetchNewsItems(termosStr, limit) {
   return all;
 }
 
+async function fetchTopHeadlines(limit) {
+  try {
+    const { items, error } = await callEdgeFunction('news', { top: '1' });
+    if (error) { console.error('news(top):', error); return []; }
+    return (items || []).slice(0, limit).map(({ title, description, link, image }) => {
+      const full = description ? `${title}. ${truncateAtBoundary(description, 600)}` : `${title}.`;
+      return { category: 'Noticias', sub: 'Manchetes', title, full, quick: title, link, image: image || null };
+    });
+  } catch (e) { console.error('news(top):', e); return []; }
+}
+
 async function fetchFilmeBuscaItems(query) {
   try {
     const { items, error } = await callEdgeFunction('media', { type: 'busca', q: query });
@@ -2865,6 +2876,14 @@ async function tryAnswerClima(texto) {
   return items[0].full;
 }
 
+async function tryAnswerUltimasNoticias(texto) {
+  const isGeneralRequest = /\b([uú]ltimas?|principais?)\s+not[íi]cias?\b|not[íi]cias?\s+(do\s+mundo|do\s+brasil|do\s+dia|gerais)\b|o\s+que\s+(est[áa]|ta)\s+acontecendo/i.test(texto);
+  if (!isGeneralRequest) return null;
+  const items = await fetchTopHeadlines(2);
+  if (!items || items.length === 0) return 'Não consegui buscar as notícias agora.';
+  return items.map((it) => it.full).join(' ');
+}
+
 async function tryAnswerNoticias(texto) {
   const m = texto.match(/not[íi]cias? (?:sobre|de)\s+(.+)/i);
   if (!m) return null;
@@ -3096,6 +3115,7 @@ async function handleVoiceQuery(textoOriginal) {
     if (!resposta) resposta = await tryAnswerEsportes(semSaudacao);
     if (!resposta) resposta = await tryAnswerGuia(semSaudacao);
     if (!resposta) resposta = await tryAnswerFilmeBusca(semSaudacao);
+    if (!resposta) resposta = await tryAnswerUltimasNoticias(semSaudacao);
     if (!resposta) resposta = await tryAnswerNoticias(semSaudacao);
     if (!resposta) resposta = await tryAnswerWikipedia(semSaudacao);
     if (!resposta) resposta = await tryAnswerNoticiaGenerica(semSaudacao);

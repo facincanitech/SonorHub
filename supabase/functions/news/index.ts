@@ -15,13 +15,18 @@ Deno.serve(async (req: Request) => {
   const apiKey = Deno.env.get('GNEWS_API_KEY');
   const url = new URL(req.url);
   const q = (url.searchParams.get('q') || '').trim();
+  const top = (url.searchParams.get('top') || '').trim();
 
-  if (!apiKey || !q) {
+  if (!apiKey || (!q && !top)) {
     return Response.json({ items: [], error: 'Faltando palavra-chave ou chave GNews no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
-    const gnewsUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=pt&country=br&max=5&apikey=${apiKey}`;
+    // "top=1" pede as manchetes gerais (sem assunto específico) em vez de buscar
+    // por palavra-chave — usado quando a pergunta é tipo "últimas notícias".
+    const gnewsUrl = top
+      ? `https://gnews.io/api/v4/top-headlines?category=general&lang=pt&country=br&max=5&apikey=${apiKey}`
+      : `https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=pt&country=br&max=5&apikey=${apiKey}`;
     const resp = await fetch(gnewsUrl).then(r => r.json());
     if (!resp.articles) {
       const motivo = Array.isArray(resp.errors) ? resp.errors.join(', ') : (resp.errors || resp.message || 'sem resultados');
