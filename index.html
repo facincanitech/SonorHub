@@ -943,7 +943,9 @@ const CATEGORY_DEFS = [
     features: [
       { id: 'filmes', label: 'Filmes em cartaz', icon: '🎬', fields: [], hint: 'Estreias de cinema' },
       { id: 'series', label: 'Séries lançamentos', icon: '📺', fields: [], hint: 'Lançamentos de streaming' },
-      { id: 'jogos', label: 'Jogos (lançamentos)', icon: '🕹️', fields: [], hint: 'IGN Brasil' },
+      { id: 'jogos-lancamentos', label: 'Lançamentos de jogos', icon: '🕹️', fields: [], hint: 'RAWG, jogos lançados nas últimas semanas' },
+      { id: 'jogos-aguardados', label: 'Jogos mais aguardados', icon: '🔥', fields: [], hint: 'RAWG, ranqueado por popularidade dos próximos lançamentos' },
+      { id: 'jogos-curiosidades', label: 'Curiosidades sobre jogos', icon: '🎮', fields: [], hint: 'IGN Brasil' },
       { id: 'youtube', label: 'Canais do YouTube', icon: '▶️', fields: [
         { id: 'canais', kind: 'tags', placeholder: 'Nome do canal, digite e aperte Enter (até 5)' },
       ], hint: 'Vídeo mais recente de cada canal. Cuidado com erro de digitação, se o nome não bater certinho, o canal não é encontrado.' },
@@ -2086,14 +2088,38 @@ async function fetchMusicasItems(generos, limit) {
   return all;
 }
 
-async function fetchJogosItems(limit) {
+function formatRawgGame(g) {
+  const dataFmt = g.released ? new Date(g.released + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const plataformas = g.platforms ? ` para ${g.platforms}` : '';
+  const data = dataFmt ? `, lançamento em ${dataFmt}` : '';
+  return `${g.title}${data}${plataformas}.`;
+}
+
+async function fetchJogosLancamentosItems(limit) {
+  try {
+    const { items, error } = await callEdgeFunction('games', { type: 'lancamentos' });
+    if (error) { console.error('games(lancamentos):', error); return []; }
+    return (items || []).slice(0, limit).map((g) => ({
+      category: 'Entretenimento', sub: 'Jogos (lançamento)', title: g.title, full: formatRawgGame(g), quick: g.title,
+    }));
+  } catch (e) { console.error('games(lancamentos):', e); return []; }
+}
+
+async function fetchJogosAguardadosItems(limit) {
+  try {
+    const { items, error } = await callEdgeFunction('games', { type: 'aguardados' });
+    if (error) { console.error('games(aguardados):', error); return []; }
+    return (items || []).slice(0, limit).map((g) => ({
+      category: 'Entretenimento', sub: 'Jogos (mais aguardados)', title: g.title, full: formatRawgGame(g), quick: g.title,
+    }));
+  } catch (e) { console.error('games(aguardados):', e); return []; }
+}
+
+async function fetchJogosCuriosidadesItems(limit) {
   const items = await fetchRssItems('https://br.ign.com/feed.xml');
-  const keywordRe = /lan[çc]a|chega|anunciad|revelad|estreia|dispon[íi]vel|data de lan[çc]amento/i;
-  let filtered = items.filter(i => keywordRe.test(i.title));
-  if (filtered.length === 0) filtered = items; // fallback: feed do IGN raramente usa essas palavras exatas
-  return filtered.slice(0, limit).map(({ title, description }) => {
+  return items.slice(0, limit).map(({ title, description }) => {
     const full = description ? `${title}. ${truncateAtBoundary(description, 600)}` : `${title}.`;
-    return { category: 'Entretenimento', sub: 'Jogos', title, full, quick: title };
+    return { category: 'Entretenimento', sub: 'Jogos (curiosidades)', title, full, quick: title };
   });
 }
 
@@ -2232,7 +2258,9 @@ async function buildQueue() {
       else if (s.catId === 'entretenimento' && s.featId === 'filmes') items = await fetchFilmesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'series') items = await fetchSeriesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'musicas') items = await fetchMusicasItems(s.fields.generos, limit);
-      else if (s.catId === 'entretenimento' && s.featId === 'jogos') items = await fetchJogosItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'jogos-lancamentos') items = await fetchJogosLancamentosItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'jogos-aguardados') items = await fetchJogosAguardadosItems(limit);
+      else if (s.catId === 'entretenimento' && s.featId === 'jogos-curiosidades') items = await fetchJogosCuriosidadesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'youtube') items = await fetchYoutubeItems(s.fields.canais, s.fields);
       else if (s.catId === 'entretenimento' && s.featId === 'podcasts') items = await fetchPodcastItems(s.fields.nomes, limit);
       else if (s.catId === 'entretenimento' && s.featId === 'jogo-esportivo') items = await fetchEsportesItems(s.fields.competicao, s.fields.time);
@@ -3039,8 +3067,12 @@ const GUIA_VOICE_TOPICS = [
     fetch: () => fetchFilmesItems(2) },
   { keywords: ['série em cartaz', 'séries em cartaz', 'série no ar', 'séries no ar', 'o que tem de série', 'lançamento de série', 'lançamentos de série'], catId: 'entretenimento', featId: 'series',
     fetch: () => fetchSeriesItems(2) },
-  { keywords: ['lançamento de jogo', 'jogos novos', 'jogo lançado', 'lançamentos de jogos'], catId: 'entretenimento', featId: 'jogos',
-    fetch: () => fetchJogosItems(2) },
+  { keywords: ['lançamento de jogo', 'jogos novos', 'jogo lançado', 'lançamentos de jogos'], catId: 'entretenimento', featId: 'jogos-lancamentos',
+    fetch: () => fetchJogosLancamentosItems(2) },
+  { keywords: ['jogos mais aguardados', 'jogo mais aguardado', 'jogos esperados'], catId: 'entretenimento', featId: 'jogos-aguardados',
+    fetch: () => fetchJogosAguardadosItems(2) },
+  { keywords: ['curiosidade sobre jogo', 'curiosidades sobre jogo', 'novidades de jogo', 'novidades de jogos'], catId: 'entretenimento', featId: 'jogos-curiosidades',
+    fetch: () => fetchJogosCuriosidadesItems(2) },
   { keywords: ['youtube', 'canal', 'vídeo novo', 'video novo'], catId: 'entretenimento', featId: 'youtube',
     fetch: (fields) => fetchYoutubeItems(fields.canais, fields) },
   { keywords: ['podcast'], catId: 'entretenimento', featId: 'podcasts',
