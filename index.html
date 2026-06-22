@@ -1366,14 +1366,18 @@ briefingRateInput.addEventListener('input', () => {
   saveState();
 });
 
-// Bug conhecido do Chrome/Edge: speechSynthesis trava sozinho em falas longas
-// (~15s+) se não receber pause()/resume() periodicamente. Mantém viva o tempo
-// todo (inofensivo quando não tem nada falando, por isso o if no início).
-setInterval(() => {
-  if (!speechSynthesis.speaking) return;
-  speechSynthesis.pause();
-  speechSynthesis.resume();
-}, 5000);
+// Bug conhecido do Chrome/Edge DESKTOP: speechSynthesis trava sozinho em falas
+// longas (~15s+) se não receber pause()/resume() periodicamente. No celular,
+// porém, esse mesmo pause()/resume() costuma travar a fala de vez (não retoma)
+// em qualquer navegador — por isso só roda em desktop, onde o bug original existe.
+const isMobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (!isMobileBrowser) {
+  setInterval(() => {
+    if (!speechSynthesis.speaking) return;
+    speechSynthesis.pause();
+    speechSynthesis.resume();
+  }, 5000);
+}
 
 let voices = [];
 const voiceSelect = document.getElementById('voice-select');
@@ -2999,7 +3003,11 @@ async function handleVoiceQuery(textoOriginal) {
   const semSaudacao = texto.replace(/^(oi|ol[áa]|e a[íi]|eae|opa)[,!.\s]+/i, '').trim();
 
   let resposta = null;
-  if (!semSaudacao) {
+  if (!texto) {
+    // Reconhecimento não captou nada de verdade (comum no celular) — bem
+    // diferente de ter dito "oi" sozinho, não pode responder como se fosse isso.
+    resposta = 'Não consegui te ouvir, tenta falar de novo.';
+  } else if (!semSaudacao) {
     resposta = 'Oi! Pode falar.';
   } else {
     const faq = matchVoiceQA(semSaudacao);
@@ -3042,7 +3050,9 @@ document.querySelectorAll('[data-action="voice"]').forEach((btn) => {
     recognition.maxAlternatives = 1;
     btn.classList.add('listening');
 
-    const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 7000);
+    // Celular demora mais pra "esquentar" o microfone que desktop — 7s cortava
+    // a fala antes mesmo de começar a captar em alguns aparelhos.
+    const stopTimeout = setTimeout(() => { try { recognition.stop(); } catch (e) {} }, 12000);
 
     recognition.onresult = (event) => {
       const texto = event.results[0][0].transcript;
