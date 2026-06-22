@@ -930,6 +930,12 @@ const CATEGORY_DEFS = [
         { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
         { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2, opcional' },
       ], hint: 'Usa OpenWeatherMap' },
+      { id: 'alertas', label: 'Alertas climáticos', icon: '⚠️', fields: [
+        { id: 'cidade', kind: 'text', placeholder: 'Cidade (nome ou CEP)' },
+      ], hint: 'Frio, calor, tempestade ou chuva forte, calculado da própria previsão, sem custo extra. Só fala se tiver alerta de verdade' },
+      { id: 'previsao-dias', label: 'Previsão dos próximos dias', icon: '📅', fields: [
+        { id: 'cidade', kind: 'text', placeholder: 'Cidade (nome ou CEP)' },
+      ], hint: 'Mínima e máxima dos próximos 3 dias' },
     ],
   },
   {
@@ -1871,12 +1877,32 @@ async function fetchWeatherItems(cidade1, cidade2) {
     try {
       const { items, error } = await callEdgeFunction('weather', { local: cidade });
       if (error && !firstError) firstError = error;
-      allItems = allItems.concat(items || []);
+      // Alertas (sub: 'Alerta') são da feature separada "Alertas climáticos",
+      // não entram na leitura normal de temperatura/UV/qualidade do ar.
+      allItems = allItems.concat((items || []).filter((it) => it.sub !== 'Alerta'));
     } catch (e) {
       if (!firstError) firstError = 'Falha ao falar com a Edge Function de clima: ' + e.message;
     }
   }
   return { items: allItems, error: allItems.length === 0 ? firstError : null };
+}
+
+async function fetchAlertasClimaticosItems(cidade) {
+  if (!cidade) return [];
+  try {
+    const { items, error } = await callEdgeFunction('weather', { local: cidade });
+    if (error) { console.error('weather(alertas):', error); return []; }
+    return (items || []).filter((it) => it.sub === 'Alerta');
+  } catch (e) { console.error('weather(alertas):', e); return []; }
+}
+
+async function fetchPrevisaoDiasItems(cidade) {
+  if (!cidade) return [];
+  try {
+    const { items, error } = await callEdgeFunction('weather', { local: cidade, forecast: '1' });
+    if (error) { console.error('weather(previsao-dias):', error); return []; }
+    return items || [];
+  } catch (e) { console.error('weather(previsao-dias):', e); return []; }
 }
 
 /* =========================================================================
@@ -2175,6 +2201,8 @@ async function buildQueue() {
       else if (s.catId === 'pessoal' && s.featId === 'feriados') items = await fetchFeriadosItems(limit);
       else if (s.catId === 'horoscopo' && s.featId === 'fase-lua') items = await fetchFaseLuaItems();
       else if (s.catId === 'clima' && s.featId === 'previsao') items = (await fetchWeatherItems(s.fields.cidade1, s.fields.cidade2)).items;
+      else if (s.catId === 'clima' && s.featId === 'alertas') items = await fetchAlertasClimaticosItems(s.fields.cidade);
+      else if (s.catId === 'clima' && s.featId === 'previsao-dias') items = await fetchPrevisaoDiasItems(s.fields.cidade);
       else if (s.catId === 'noticias' && s.featId === 'keyword') items = await fetchNewsItems(s.fields.termos, limit);
       else if (s.catId === 'financeiro' && s.featId === 'cotacoes') items = await fetchCotacoesItems(s.fields.moedas, s.fields.criptos);
       else if (s.catId === 'entretenimento' && s.featId === 'filmes') items = await fetchFilmesItems(limit);
