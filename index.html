@@ -1330,6 +1330,7 @@ function loadState() {
     activeClimateCity: saved.activeClimateCity || 1,
     theme: saved.theme || 'dark',
     premiumUnlocked: saved.premiumUnlocked || false,
+    premiumLastVerified: saved.premiumLastVerified || 0,
     alarmsActive: saved.alarmsActive || false,
     alarmTimes: saved.alarmTimes || [],
     alarmLastFired: saved.alarmLastFired || {},
@@ -1964,6 +1965,7 @@ document.querySelectorAll('.account-tab-btn').forEach(btn => {
 
 function updateAccountsUI() {
   renderPremiumLock();
+  revalidatePremiumIfNeeded();
   const googleOn = !!accessToken;
   document.getElementById('google-status-dot').classList.toggle('on', googleOn);
   document.getElementById('google-status-text').textContent = googleOn ? 'Conectado' : 'Desconectado';
@@ -3052,6 +3054,7 @@ document.getElementById('check-subscription-btn').addEventListener('click', asyn
     if (error) { resultEl.textContent = error; return; }
     if (isPremiumActive) {
       state.premiumUnlocked = true;
+      state.premiumLastVerified = Date.now();
       saveState();
       renderPremiumLock();
     } else {
@@ -3061,6 +3064,26 @@ document.getElementById('check-subscription-btn').addEventListener('click', asyn
     resultEl.textContent = 'Erro ao verificar: ' + e.message;
   }
 });
+
+// Sem isso, premiumUnlocked fica marcado pra sempre no localStorage depois da
+// primeira vez — cancelou a assinatura de verdade no Mercado Pago? continuaria
+// Premium aqui indefinidamente. Revalida com o servidor no máximo 1x por dia
+// (não martela o endpoint cada vez que a conta Google conecta).
+async function revalidatePremiumIfNeeded() {
+  if (!state.premiumUnlocked || !accessToken) return;
+  const UM_DIA_MS = 24 * 60 * 60 * 1000;
+  if (Date.now() - state.premiumLastVerified < UM_DIA_MS) return;
+  try {
+    const email = await getGoogleEmail();
+    if (!email) return;
+    const { isPremiumActive, error } = await callEdgeFunction('premium-status', { email });
+    if (error) return; // falha de rede não desbloqueia nem trava nada, tenta de novo depois
+    state.premiumUnlocked = !!isPremiumActive;
+    state.premiumLastVerified = Date.now();
+    saveState();
+    renderPremiumLock();
+  } catch (e) { console.error('revalidate premium:', e); }
+}
 
 /* =========================================================================
    PREMIUM, GPS auditivo (via Edge Functions "directions" / "traffic")
