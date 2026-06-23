@@ -1903,6 +1903,11 @@ function loadGis() {
       updateAccountsUI();
     },
   });
+  // Tenta reconectar sem mostrar nada (sem popup) — se o navegador ainda tiver
+  // sessão do Google ativa e consentimento de antes, reconecta sozinho a cada
+  // recarregada de página, igual outros apps fazem. Se precisar de interação,
+  // falha calado e segue pedindo o clique manual de sempre.
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 window.addEventListener('load', loadGis);
 
