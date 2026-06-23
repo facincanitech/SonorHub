@@ -2818,11 +2818,12 @@ async function speakQueueItem(i) {
   if (isPlaying) speakQueueItem(i + 1);
 }
 
-function getSaudacaoPorHorario() {
+function getSaudacaoVozKey() {
   const hora = new Date().getHours();
-  if (hora >= 5 && hora < 12) return 'Bom dia';
-  if (hora >= 12 && hora < 18) return 'Boa tarde';
-  return 'Boa noite';
+  if (hora >= 0 && hora < 5) return 'good-dawn';
+  if (hora >= 5 && hora < 12) return 'good-morning';
+  if (hora >= 12 && hora < 18) return 'good-afternoon';
+  return 'good-evening';
 }
 
 function getHorarioFalado() {
@@ -2855,7 +2856,8 @@ async function startBriefingPlayback(automatic = false) {
   // Só no disparo automático (alarme), não quando a pessoa aperta o play na mão.
   if (automatic) {
     briefingLabel.textContent = 'Briefing automático';
-    await speakAndWait(`${getSaudacaoPorHorario()}, ${getHorarioFalado()}. Essas são as informações do seu briefing automático.`);
+    await playVozClip(getSaudacaoVozKey());
+    await speakAndWait(`${getHorarioFalado()}. Essas são as informações do seu briefing automático.`);
   }
   speakQueueItem(0);
 }
@@ -3094,9 +3096,12 @@ function speakAndWait(text) {
 }
 
 function setGpsButtonState(active) {
+  const wasActive = gpsActive;
   gpsActive = active;
   document.getElementById('gps-start-btn').textContent = active ? 'Parar' : 'Ativar';
   if (active) acquireGpsWakeLock(); else releaseGpsWakeLock();
+  if (active && !wasActive) playVozClip('gps-on');
+  if (!active && wasActive) playVozClip('gps-off');
 }
 
 function stopGps() {
@@ -3104,6 +3109,7 @@ function stopGps() {
   stopGpsContinuousListening();
   if (gpsWatchId !== null) { clearWatchUnified(gpsWatchId); gpsWatchId = null; }
   speechSynthesis.cancel();
+  stopVozPlayback();
   // Volta pro estado parado (busca de novo destino) em vez de fechar a tela
   // inteira — só a flechinha de voltar fecha de verdade.
   showNavIdleState();
@@ -3154,6 +3160,95 @@ const MANEUVER_SPOKEN_PHRASES = {
 
 function maneuverToSpokenPhrase(maneuver) {
   return (maneuver && MANEUVER_SPOKEN_PHRASES[maneuver]) || 'Siga reto';
+}
+
+/* =========================================================================
+   VOZ GRAVADA — frases fixas com áudio de verdade (estilo Waze) em vez de
+   TTS robótico, pra GPS e saudação do briefing. Conteúdo dinâmico (notícia,
+   clima, nome de rua) continua no TTS normal pra sempre — infinito, não dá
+   pra pré-gravar. Arquivos em voz/*.mp3, sincronizados igual o resto do app.
+   ========================================================================= */
+// Algumas frases têm mais de uma gravação (variante) — escolhe aleatório
+// cada vez, fica menos repetitivo que tocar sempre o mesmo áudio.
+const VOZ_VARIANTS = {
+  'ramp-left': ['ramp-left-1', 'ramp-left-2'],
+  'traffic-jam': ['traffic-jam-1', 'traffic-jam-2'],
+  'good-afternoon': ['good-afternoon-1', 'good-afternoon-2'],
+};
+
+function vozPickFile(key) {
+  const options = VOZ_VARIANTS[key] || [key];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+let vozAudioEl = null;
+function playVozClip(key) {
+  return new Promise((resolve) => {
+    const audio = new Audio(`voz/${vozPickFile(key)}.mp3`);
+    vozAudioEl = audio;
+    audio.onended = resolve;
+    audio.onerror = resolve;
+    audio.play().catch(resolve);
+  });
+}
+
+async function playVozSequence(keys) {
+  for (const key of keys) await playVozClip(key);
+}
+
+function stopVozPlayback() {
+  if (vozAudioEl) { try { vozAudioEl.pause(); } catch (e) {} }
+}
+
+// Mapeia o enum de manobra pra uma gravação — cobre quase tudo, exceto
+// rotatória (o Google Routes não manda o número da saída, então não dá pra
+// gravar "saia na X saída" com confiança; cai no TTS de texto normal).
+const MANEUVER_VOZ_KEYS = {
+  DEPART: 'depart',
+  TURN_SLIGHT_LEFT: 'turn-slight-left',
+  TURN_SHARP_LEFT: 'turn-left',
+  UTURN_LEFT: 'uturn',
+  TURN_LEFT: 'turn-left',
+  TURN_SLIGHT_RIGHT: 'turn-slight-right',
+  TURN_SHARP_RIGHT: 'turn-right',
+  UTURN_RIGHT: 'uturn',
+  TURN_RIGHT: 'turn-right',
+  STRAIGHT: 'straight',
+  RAMP_LEFT: 'ramp-left',
+  RAMP_RIGHT: 'ramp-right',
+  MERGE: 'merge',
+  FORK_LEFT: 'fork-left',
+  FORK_RIGHT: 'fork-right',
+  FERRY: 'ferry',
+  FERRY_TRAIN: 'ferry',
+  NAME_CHANGE: 'name-change',
+};
+
+async function announceManeuver(maneuver) {
+  const key = maneuver && MANEUVER_VOZ_KEYS[maneuver];
+  if (key) await playVozClip(key);
+  else await speakAndWait(maneuverToSpokenPhrase(maneuver)); // rotatória cai aqui
+}
+
+// Compõe "em X metros/quilômetros" só com gravações que já temos — pra isso,
+// arredonda o valor (≥100m pro múltiplo de 100 mais próximo, <100m pro
+// múltiplo de 10), assim nunca cai numa dezena irregular (11 a 19) que a
+// gente não gravou. Visual continua exato, só a fala que arredonda.
+function distanceToVozKeys(metros) {
+  if (metros >= 1000) {
+    const km = Math.round(metros / 500) * 0.5;
+    const intPart = Math.floor(km);
+    const hasHalf = km - intPart === 0.5;
+    const keys = ['in'];
+    if (intPart > 0) keys.push(`num-${intPart}`);
+    if (hasHalf) keys.push('and-half');
+    keys.push(km === 1 ? 'km' : 'kms');
+    return keys;
+  }
+  const rounded = metros >= 100
+    ? Math.max(100, Math.round(metros / 100) * 100)
+    : Math.max(10, Math.round(metros / 10) * 10);
+  return ['in', `num-${rounded}`, 'meters'];
 }
 
 function drawNavArrow(type) {
@@ -3380,6 +3475,7 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
   const OFF_ROUTE_BUFFER_M = 150;
   let stepIndex = 0;
   let minDistSeenForStep = Infinity;
+  let preAnnouncedForStep = false;
   const announcedWarnings = new Set();
   let recalculating = false;
   let watchErrorCount = 0;
@@ -3398,7 +3494,7 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
       recalculating = true;
       if (gpsWatchId !== null) { clearWatchUnified(gpsWatchId); gpsWatchId = null; }
       resultEl.textContent = 'Fora da rota, recalculando...';
-      await speakAndWait('Recalculando a rota.');
+      await playVozClip('recalculating');
       resolve();
       startGpsRouteTo(destino, resultEl);
     }
@@ -3421,10 +3517,19 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
           if (announcedWarnings.has(aviso.distanceMeters)) continue;
           if (traveledMeters >= aviso.distanceMeters - 300 && traveledMeters < aviso.distanceMeters) {
             announcedWarnings.add(aviso.distanceMeters);
-            const tipo = aviso.severity === 'TRAFFIC_JAM' ? 'parado' : 'lento';
-            speakAndWait(`Atenção: trânsito ${tipo} mais adiante.`);
+            playVozClip(aviso.severity === 'TRAFFIC_JAM' ? 'traffic-jam' : 'traffic-slow');
           }
         }
+      }
+
+      // Aviso de "em X metros, [manobra]" uma vez por passo, ao se aproximar
+      // (antes do aviso final "na hora", que dispara só ao chegar de fato).
+      if (!preAnnouncedForStep && dist <= 300 && dist > ARRIVAL_RADIUS_M) {
+        preAnnouncedForStep = true;
+        (async () => {
+          await playVozSequence(distanceToVozKeys(dist));
+          await announceManeuver(steps[stepIndex].maneuver);
+        })();
       }
 
       resultEl.textContent = `Passo ${stepIndex + 1} de ${steps.length}, ${Math.round(dist)}m até a próxima manobra.`;
@@ -3440,13 +3545,14 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
       if (dist <= ARRIVAL_RADIUS_M) {
         stepIndex++;
         minDistSeenForStep = Infinity;
+        preAnnouncedForStep = false;
         if (stepIndex >= steps.length) {
           showNavArrivedState();
-          await speakAndWait('Você chegou ao seu destino.');
+          await playVozClip('arrived');
           stopGps();
           resolve();
         } else {
-          await speakAndWait(maneuverToSpokenPhrase(steps[stepIndex].maneuver));
+          await announceManeuver(steps[stepIndex].maneuver);
         }
       }
     }
@@ -3463,7 +3569,7 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
       watchPositionUnified(onPosition, onWatchError).then((id) => { gpsWatchId = id; });
     }
 
-    speakAndWait(maneuverToSpokenPhrase(steps[0].maneuver)).then(async () => {
+    announceManeuver(steps[0].maneuver).then(async () => {
       if (!gpsActive) { resolve(); return; }
       gpsWatchId = await watchPositionUnified(onPosition, onWatchError);
     });
