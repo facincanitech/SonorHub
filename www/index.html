@@ -460,6 +460,7 @@
         <button class="icon-btn" data-action="voice">🎤</button>
         <button class="icon-btn" data-action="help">❓</button>
         <button class="icon-btn" id="saved-header-btn">💾</button>
+        <button class="icon-btn" id="sos-header-btn" style="color: var(--c-red, #e53935);">🆘</button>
         <button class="icon-btn" data-action="gear">⚙️</button>
       </div>
     </div>
@@ -587,8 +588,8 @@
       </div>
 
       <div class="premium-feature">
-        <div class="title">🆘 Botão SOS</div>
-        <div class="desc">Um toque manda sua localização na hora pro contato de emergência, por SMS e e-mail — sem precisar abrir nenhum outro app.</div>
+        <div class="title">🆘 Modo segurança ativo</div>
+        <div class="desc">O botão SOS (gratuito, no ícone 🆘 no topo de Meu Dia) já manda sua localização uma vez. No Premium, ele continua mandando atualizações em intervalo, até você encerrar.</div>
       </div>
 
       <button id="subscribe-btn">Assinar</button>
@@ -639,18 +640,6 @@
         </div>
       </div>
 
-      <div class="premium-feature">
-        <div class="title" id="sos-toggle" style="cursor:pointer; justify-content: space-between;">
-          <span>🆘 Botão SOS</span><span class="chev">›</span>
-        </div>
-        <div id="sos-subcategories" style="display:none;">
-          <div class="desc">Manda sua localização na hora pro contato configurado, por SMS e e-mail (Gmail conectado). Configure antes de precisar usar.</div>
-          <input type="tel" id="sos-telefone-input" placeholder="Telefone (com DDD), ex: 11999999999">
-          <input type="email" id="sos-email-input" placeholder="E-mail de contato" style="margin-top: 8px;">
-          <button id="sos-btn" style="margin-top: 10px; background: var(--c-red, #e53935);">🆘 Enviar SOS agora</button>
-          <div class="result" id="sos-result"></div>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -762,6 +751,43 @@
       </div>
       <div class="account-card">
         <button class="btn-connect" id="changelog-open-btn" style="background: var(--c-border2); color: var(--c-text);">📋 Versão e novidades</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SOS (overlay) — básico gratuito, modo contínuo Premium ============ -->
+<div class="overlay" id="sos-overlay">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <button class="back-btn" id="sos-close-btn">←</button>
+      <h2>🆘 SOS</h2>
+    </div>
+    <div class="account-card">
+      <div class="scope-list" style="margin-bottom: 10px;">
+        Configure uma vez, manda sua localização na hora pro contato, por SMS e
+        e-mail (Gmail conectado) — sem precisar abrir nenhum outro app. Gratuito.
+      </div>
+      <input type="tel" id="sos-telefone-input" placeholder="Telefone (com DDD), ex: 11999999999">
+      <input type="email" id="sos-email-input" placeholder="E-mail de contato" style="margin-top: 8px;">
+      <button id="sos-btn" style="margin-top: 10px; background: var(--c-red, #e53935);">🆘 Enviar SOS agora</button>
+      <div class="result" id="sos-result"></div>
+    </div>
+    <div class="account-card" id="sos-premium-card" style="display:none;">
+      <div class="scope-list" style="margin-bottom: 10px;">
+        <b>Modo segurança ativo (Premium)</b>: continua mandando sua localização
+        em intervalo, sem precisar apertar de novo, até você encerrar ou o tempo acabar.
+      </div>
+      <div class="btn-group" id="sos-modo-options" style="margin-bottom: 10px;">
+        <button type="button" class="btn-opt selected" data-intervalo="15" data-duracao="60">15 em 15 min, por 1 hora</button>
+        <button type="button" class="btn-opt" data-intervalo="30" data-duracao="120">30 em 30 min, por 2 horas</button>
+      </div>
+      <button id="sos-modo-toggle-btn">Iniciar modo segurança</button>
+      <div class="result" id="sos-modo-result"></div>
+    </div>
+    <div class="account-card" id="sos-premium-locked-card">
+      <div class="scope-list" style="opacity: 0.6;">
+        🚧 Modo segurança ativo (atualização contínua de localização) é Premium.
       </div>
     </div>
   </div>
@@ -2002,8 +2028,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 const CHANGELOG = [
+  {
+    version: '2.1', date: '23/06/2026',
+    items: [
+      'Botão SOS agora é gratuito (ícone 🆘 no topo de Meu Dia) — manda localização uma vez por SMS e e-mail',
+      'Novo no Premium: Modo segurança ativo, manda atualização de localização em intervalo (15min/1h ou 30min/2h) até encerrar',
+    ],
+  },
   {
     version: '2.0', date: '23/06/2026',
     items: [
@@ -4435,12 +4468,34 @@ async function sendEmailViaGmail(to, subject, bodyText) {
   }
 }
 
-async function triggerSOS() {
-  const resultEl = document.getElementById('sos-result');
+// Envia SMS + e-mail pro contato configurado — usado tanto pelo SOS único
+// (gratuito) quanto pelo modo segurança contínuo (Premium), que só chama
+// isso de novo em intervalo.
+async function sendSosMessage(mensagem) {
   const fs = getFeatureState('premium', 'sos');
   const telefone = (fs.fields.telefone || '').trim();
   const email = (fs.fields.email || '').trim();
-  if (!telefone && !email) {
+  const falhas = [];
+  if (telefone) {
+    try {
+      if (nativeSms) await nativeSms.send({ to: telefone, message: mensagem });
+      else window.location.href = `sms:${telefone}?body=${encodeURIComponent(mensagem)}`; // sem app nativo, abre o app de mensagens pronto
+    } catch (e) { falhas.push('SMS: ' + e.message); }
+  }
+  if (email) {
+    if (!accessToken) falhas.push('E-mail: conecte sua conta Google em ⚙️ Central de Contas primeiro.');
+    else {
+      try { await sendEmailViaGmail(email, '🆘 SOS - Preciso de ajuda', mensagem); }
+      catch (e) { falhas.push('E-mail: ' + e.message); }
+    }
+  }
+  return falhas;
+}
+
+async function triggerSOS() {
+  const resultEl = document.getElementById('sos-result');
+  const fs = getFeatureState('premium', 'sos');
+  if (!(fs.fields.telefone || '').trim() && !(fs.fields.email || '').trim()) {
     resultEl.textContent = 'Configure um telefone ou e-mail de contato primeiro.';
     return;
   }
@@ -4453,31 +4508,62 @@ async function triggerSOS() {
     resultEl.textContent = 'Não foi possível obter sua localização: ' + e.message;
     return;
   }
-  const mensagem = `🆘 Preciso de ajuda! Minha localização: ${mapsLink}`;
-  const falhas = [];
-
-  if (telefone) {
-    resultEl.textContent = 'Enviando SMS...';
-    try {
-      if (nativeSms) await nativeSms.send({ to: telefone, message: mensagem });
-      else window.location.href = `sms:${telefone}?body=${encodeURIComponent(mensagem)}`; // sem app nativo, abre o app de mensagens pronto
-    } catch (e) { falhas.push('SMS: ' + e.message); }
-  }
-  if (email) {
-    resultEl.textContent = 'Enviando e-mail...';
-    if (!accessToken) {
-      falhas.push('E-mail: conecte sua conta Google em ⚙️ Central de Contas primeiro.');
-    } else {
-      try { await sendEmailViaGmail(email, '🆘 SOS - Preciso de ajuda', mensagem); }
-      catch (e) { falhas.push('E-mail: ' + e.message); }
-    }
-  }
+  resultEl.textContent = 'Enviando...';
+  const falhas = await sendSosMessage(`🆘 Preciso de ajuda! Minha localização: ${mapsLink}`);
   resultEl.textContent = falhas.length === 0 ? 'SOS enviado.' : 'Alguns envios falharam: ' + falhas.join(' | ');
 }
 
-document.getElementById('sos-toggle').addEventListener('click', () => {
-  const el = document.getElementById('sos-subcategories');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+/* ----- Modo segurança ativo (Premium): repete o envio em intervalo ----- */
+let modoSegurancaInterval = null;
+let modoSegurancaTimeout = null;
+let modoSegurancaWakeLock = null;
+let modoSegurancaConfig = { intervalo: 15, duracao: 60 };
+
+async function enviarAtualizacaoSeguranca() {
+  const resultEl = document.getElementById('sos-modo-result');
+  try {
+    const pos = await getCurrentPosition();
+    const mapsLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+    await sendSosMessage(`🆘 Atualização do modo segurança. Localização atual: ${mapsLink}`);
+    resultEl.textContent = `Última atualização enviada: ${new Date().toLocaleTimeString('pt-BR')}.`;
+  } catch (e) { resultEl.textContent = 'Erro na atualização: ' + e.message; }
+}
+
+async function startModoSeguranca() {
+  const resultEl = document.getElementById('sos-modo-result');
+  const fs = getFeatureState('premium', 'sos');
+  if (!(fs.fields.telefone || '').trim() && !(fs.fields.email || '').trim()) {
+    resultEl.textContent = 'Configure um telefone ou e-mail de contato primeiro.';
+    return;
+  }
+  try { if ('wakeLock' in navigator) modoSegurancaWakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+
+  await enviarAtualizacaoSeguranca(); // primeira atualização na hora, não espera o intervalo
+  modoSegurancaInterval = setInterval(enviarAtualizacaoSeguranca, modoSegurancaConfig.intervalo * 60 * 1000);
+  modoSegurancaTimeout = setTimeout(stopModoSeguranca, modoSegurancaConfig.duracao * 60 * 1000);
+
+  document.getElementById('sos-modo-toggle-btn').textContent = 'Encerrar modo segurança';
+}
+
+function stopModoSeguranca() {
+  if (modoSegurancaInterval) { clearInterval(modoSegurancaInterval); modoSegurancaInterval = null; }
+  if (modoSegurancaTimeout) { clearTimeout(modoSegurancaTimeout); modoSegurancaTimeout = null; }
+  if (modoSegurancaWakeLock) { modoSegurancaWakeLock.release().catch(() => {}); modoSegurancaWakeLock = null; }
+  document.getElementById('sos-modo-toggle-btn').textContent = 'Iniciar modo segurança';
+  document.getElementById('sos-modo-result').textContent = 'Modo segurança encerrado.';
+}
+
+document.getElementById('sos-modo-toggle-btn').addEventListener('click', () => {
+  if (modoSegurancaInterval) stopModoSeguranca();
+  else startModoSeguranca();
+});
+
+document.querySelectorAll('#sos-modo-options .btn-opt').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#sos-modo-options .btn-opt').forEach((b) => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    modoSegurancaConfig = { intervalo: parseInt(btn.dataset.intervalo, 10), duracao: parseInt(btn.dataset.duracao, 10) };
+  });
 });
 
 document.getElementById('sos-telefone-input').addEventListener('input', (ev) => {
@@ -4494,6 +4580,16 @@ document.getElementById('sos-btn').addEventListener('click', triggerSOS);
   document.getElementById('sos-telefone-input').value = sosFields.telefone || '';
   document.getElementById('sos-email-input').value = sosFields.email || '';
 }
+
+document.getElementById('sos-header-btn').addEventListener('click', () => {
+  const unlocked = state.premiumUnlocked && !!accessToken;
+  document.getElementById('sos-premium-card').style.display = unlocked ? 'block' : 'none';
+  document.getElementById('sos-premium-locked-card').style.display = unlocked ? 'none' : 'block';
+  document.getElementById('sos-overlay').classList.add('open');
+});
+document.getElementById('sos-close-btn').addEventListener('click', () => {
+  document.getElementById('sos-overlay').classList.remove('open');
+});
 
 /* =========================================================================
    ALARMES DO BRIEFING (local, via Service Worker, sem servidor)
