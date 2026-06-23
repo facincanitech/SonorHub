@@ -1,4 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0f1115"/>
-  <text x="50%" y="58%" font-size="280" text-anchor="middle" dominant-baseline="middle">🔊</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a73e8"/>
+      <stop offset="100%" stop-color="#0d47a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- cone da caixa de som -->
+  <path d="M176 196 L236 196 L296 146 L296 366 L236 316 L176 316 Z" fill="#ffffff"/>
+  <!-- ondas de som -->
+  <path d="M332 196 Q372 256 332 316" stroke="#ffffff" stroke-width="22" stroke-linecap="round" fill="none"/>
+  <path d="M366 166 Q426 256 366 346" stroke="#ffffff" stroke-width="22" stroke-linecap="round" fill="none" opacity="0.85"/>
 </svg>

@@ -2002,8 +2002,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 const CHANGELOG = [
+  {
+    version: '2.0', date: '23/06/2026',
+    items: [
+      'Ícone do app trocado — era o padrão genérico do Capacitor (grade verde), agora é o logo real do InfoHub (caixa de som + ondas)',
+    ],
+  },
   {
     version: '1.9', date: '23/06/2026',
     items: [
