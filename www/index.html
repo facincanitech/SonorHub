@@ -1271,7 +1271,7 @@ const CATEGORY_DEFS = [
       ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada, conecta em ⚙️ Central de Contas' },
       { id: 'agenda', label: 'Agenda de hoje', icon: '📅', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', icon: '🎂', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
-      { id: 'feriados', label: 'Feriados próximos', icon: '🎉', fields: [], hint: 'Feriados nacionais, BrasilAPI, sem chave' },
+      { id: 'feriados', label: 'Feriados próximos', icon: '🎉', fields: [] },
     ],
   },
   {
@@ -1280,10 +1280,10 @@ const CATEGORY_DEFS = [
       { id: 'previsao', label: 'Temperatura, UV e qualidade do ar', icon: '🌡️', fields: [
         { id: 'cidade1', kind: 'text', placeholder: 'Cidade 1 (nome ou CEP)' },
         { id: 'cidade2', kind: 'text', placeholder: 'Cidade 2, opcional' },
-      ], hint: 'Usa OpenWeatherMap' },
+      ] },
       { id: 'alertas', label: 'Alertas climáticos', icon: '⚠️', fields: [
         { id: 'cidade', kind: 'text', placeholder: 'Cidade (nome ou CEP)' },
-      ], hint: 'Frio, calor, tempestade ou chuva forte, calculado da própria previsão, sem custo extra. Só fala se tiver alerta de verdade' },
+      ], hint: 'Frio, calor, tempestade ou chuva forte. Só fala se tiver alerta de verdade.' },
       { id: 'previsao-dias', label: 'Previsão dos próximos dias', icon: '📅', fields: [
         { id: 'cidade', kind: 'text', placeholder: 'Cidade (nome ou CEP)' },
       ], hint: 'Mínima e máxima dos próximos 3 dias' },
@@ -1296,20 +1296,20 @@ const CATEGORY_DEFS = [
       { id: 'series', label: 'Séries lançamentos', icon: '📺', fields: [], hint: 'Lançamentos de streaming' },
       { id: 'jogos', label: 'Jogos', icon: '🕹️', fields: [
         { id: 'tipos', kind: 'buttons', options: ['Lançamentos', 'Curiosidades', 'Mais aguardados'] },
-      ], hint: 'IGN Brasil. Lançamentos/Mais aguardados só falam se achar matéria de verdade sobre isso' },
+      ], hint: 'Lançamentos/Mais aguardados só falam se achar matéria de verdade sobre isso' },
       { id: 'youtube', label: 'Canais do YouTube', icon: '▶️', fields: [
         { id: 'canais', kind: 'tags', placeholder: 'Nome do canal, digite e aperte Enter (até 5)' },
       ], hint: 'Vídeo mais recente de cada canal. Cuidado com erro de digitação, se o nome não bater certinho, o canal não é encontrado.' },
       { id: 'podcasts', label: 'Podcasts', icon: '🎙️', fields: [
         { id: 'nomes', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
-      ], hint: 'Busca pelo nome, sem precisar de link de RSS' },
+      ], hint: 'Busca pelo nome' },
       { id: 'musica', label: 'Música', icon: '🎧', fields: [
         { id: 'nomes', kind: 'tags', placeholder: 'Nome, artista ou gênero, digite e aperte Enter (até 5)' },
-      ], hint: 'Spotify se conectado (ainda desativado), senão YouTube, senão notícia sobre o artista' },
+      ] },
       { id: 'jogo-esportivo', label: 'Esportes: resultado e próximo jogo', icon: '⚽', fields: [
         { id: 'competicao', kind: 'text', placeholder: 'Competição, ex: Brasileirão, Copa do Mundo' },
         { id: 'time', kind: 'text', placeholder: 'Time/seleção, ex: Flamengo, Brasil' },
-      ], hint: 'API-Football' },
+      ] },
     ],
   },
   {
@@ -1317,7 +1317,7 @@ const CATEGORY_DEFS = [
     features: [
       { id: 'keyword', label: 'Notícias por palavra-chave', icon: '🔍', fields: [
         { id: 'termos', kind: 'tags', placeholder: 'Digite e aperte Enter (até 5)' },
-      ], hint: 'Google News RSS' },
+      ] },
     ],
   },
   {
@@ -1326,25 +1326,25 @@ const CATEGORY_DEFS = [
       { id: 'cotacoes', label: 'Cotações', icon: '💱', fields: [
         { id: 'moedas', kind: 'buttons', options: ['Dólar', 'Euro', 'Libra', 'Peso'] },
         { id: 'criptos', kind: 'buttons', options: ['Bitcoin', 'Ethereum', 'Solana', 'BNB'] },
-      ], hint: 'Moedas via Banco Central, criptos via CoinGecko, sem chave' },
+      ] },
       { id: 'indices', label: 'Índices econômicos', icon: '🏠', fields: [
         { id: 'tipos', kind: 'buttons', options: ['Imobiliário', 'Inflação (IPCA)', 'Juros (Selic)'] },
-      ], hint: 'Banco Central, sem chave' },
+      ] },
     ],
   },
   {
     id: 'horoscopo', icon: '🔮', title: 'Místico', color: 'var(--cat-horoscopo)',
     features: [
-      { id: 'fase-lua', label: 'Fase da lua', icon: '🌙', fields: [], hint: 'Calculado localmente, sem API' },
-      { id: 'signo-solar', label: 'Signo solar e dia planetário', icon: '♈', fields: [
+      { id: 'fase-lua', label: 'Fase da lua', icon: '🌙', fields: [] },
+      { id: 'signo-solar', label: 'Horóscopo do dia', icon: '♈', fields: [
         { id: 'nascimento', kind: 'text', placeholder: 'Data de nascimento (DD/MM)' },
-      ], hint: 'Calculado localmente, sem API' },
+      ] },
       { id: 'numerologia', label: 'Numerologia pitagórica', icon: '🔢', fields: [
         { id: 'nome', kind: 'text', placeholder: 'Nome completo' },
         { id: 'nascimento', kind: 'text', placeholder: 'Data de nascimento (DD/MM/AAAA)' },
         { id: 'hora', kind: 'text', placeholder: 'Hora de nascimento (HH:MM), opcional' },
-      ], hint: 'Calculado localmente, sem API' },
-      { id: 'tarot', label: 'Arcano do dia (Tarot)', icon: '🃏', fields: [], hint: 'Calculado localmente, sem API' },
+      ] },
+      { id: 'tarot', label: 'Arcano do dia (Tarot)', icon: '🃏', fields: [] },
     ],
   },
 ];
@@ -2002,8 +2002,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const CHANGELOG = [
+  {
+    version: '1.6', date: '23/06/2026',
+    items: [
+      'Horóscopo do dia de verdade (signo + área da vida que muda todo dia + dia planetário), gerado localmente, sem copiar de nenhum site',
+      'Removidos os avisos técnicos das categorias do Guia (tipo "via tal API") — ninguém precisa saber como funciona por dentro',
+    ],
+  },
   {
     version: '1.5', date: '23/06/2026',
     items: [
@@ -2688,6 +2695,28 @@ const DIAS_PLANETARIOS = {
   6: { planeta: 'Saturno', texto: 'disciplina, limites e responsabilidade. Dia de organizar e encarar o que é sério.' },
 };
 
+// Traço marcante de cada signo, usado pra colorir a área da vida sorteada do
+// dia — não é cópia de site nenhum, é geração nossa combinando regras fixas.
+const SIGNOS_TRACOS = {
+  'Áries': 'impulso e coragem', 'Touro': 'estabilidade e prazer', 'Gêmeos': 'comunicação e curiosidade',
+  'Câncer': 'emoção e proteção', 'Leão': 'brilho e orgulho', 'Virgem': 'precisão e cuidado',
+  'Libra': 'equilíbrio e charme', 'Escorpião': 'intensidade e profundidade', 'Sagitário': 'expansão e liberdade',
+  'Capricórnio': 'ambição e disciplina', 'Aquário': 'originalidade e independência', 'Peixes': 'sensibilidade e imaginação',
+};
+
+const AREAS_VIDA_DIA = [
+  (signo, traco) => `No amor, sua ${traco} pede atenção pra não atropelar quem está do seu lado hoje.`,
+  (signo, traco) => `No trabalho, é dia de usar sua ${traco} a favor de um objetivo concreto.`,
+  (signo, traco) => `Na saúde, escute o corpo — sua ${traco} pode te fazer ignorar sinais de cansaço.`,
+  (signo, traco) => `No dinheiro, pense duas vezes antes de decidir só pela ${traco}, pondere o lado prático.`,
+  (signo, traco) => `Socialmente, sua ${traco} chama atenção hoje — aproveite pra se conectar com gente nova.`,
+];
+
+function getDiaSeedAtual() {
+  const hoje = new Date();
+  return hoje.getFullYear() * 372 + (hoje.getMonth() + 1) * 31 + hoje.getDate();
+}
+
 async function fetchSignoSolarItems(fields) {
   const nascimento = (fields.nascimento || '').trim();
   const match = nascimento.match(/^(\d{1,2})\/(\d{1,2})/);
@@ -2695,17 +2724,19 @@ async function fetchSignoSolarItems(fields) {
   const dia = parseInt(match[1], 10);
   const mes = parseInt(match[2], 10);
   const signo = getSignoSolar(dia, mes);
+  const traco = SIGNOS_TRACOS[signo] || '';
 
   const hoje = new Date();
   const diaSemana = DIAS_PLANETARIOS[hoje.getDay()];
   const nomeDiaSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'][hoje.getDay()];
+  const areaDoDia = AREAS_VIDA_DIA[getDiaSeedAtual() % AREAS_VIDA_DIA.length](signo, traco);
 
-  const full = `Você é de ${signo}. Hoje é ${nomeDiaSemana}, dia de ${diaSemana.planeta}: ${diaSemana.texto}`;
+  const full = `Você é de ${signo}. ${areaDoDia} Hoje é ${nomeDiaSemana}, dia de ${diaSemana.planeta}: ${diaSemana.texto}`;
   return [{
-    category: 'Místico', sub: 'Signo solar',
-    title: `${signo} · dia de ${diaSemana.planeta}`,
+    category: 'Místico', sub: 'Horóscopo do dia',
+    title: `${signo} · ${nomeDiaSemana}`,
     full,
-    quick: `Hoje é dia de ${diaSemana.planeta}: ${diaSemana.texto}`,
+    quick: `${signo}: ${areaDoDia}`,
   }];
 }
 
