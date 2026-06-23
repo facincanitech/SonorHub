@@ -2073,8 +2073,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '2.6';
+const APP_VERSION = '2.7';
 const CHANGELOG = [
+  {
+    version: '2.7', date: '23/06/2026',
+    items: [
+      'Corrigido: GPS travava mudo depois de recalcular a rota (corrida entre o fechamento da navegação antiga e o início da nova)',
+    ],
+  },
   {
     version: '2.6', date: '23/06/2026',
     items: [
@@ -4393,8 +4399,14 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
       if (gpsWatchId !== null) { clearWatchUnified(gpsWatchId); gpsWatchId = null; }
       resultEl.textContent = 'Fora da rota, recalculando...';
       await playVozClip('recalculating');
-      resolve();
-      startGpsRouteTo(destino, resultEl);
+      // Resolve com a PRÓPRIA promise do recálculo (em vez de resolve() solto
+      // + chamada separada) — assim o "await startTurnByTurn(...)" de quem
+      // chamou só recupera depois que a navegação de verdade tiver acabado.
+      // Antes disso, resolve() disparava direto e o `stopGps()` que vem
+      // depois do await em startGpsRouteTo rodava na hora, fechando a tela
+      // de nav e voltando pra busca de endereço no meio do recálculo — a
+      // nova rota corria por baixo, sem watch nenhum, e travava muda.
+      resolve(startGpsRouteTo(destino, resultEl));
     }
 
     async function onPosition(pos) {
