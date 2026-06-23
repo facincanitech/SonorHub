@@ -1,5 +1,12 @@
 package com.facincanitech.infohub;
 
+import android.app.AlarmManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
+
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -33,6 +40,33 @@ public class BriefingAlarmPlugin extends Plugin {
         }
     }
 
+    // Android 12+ (API 31) exige essa permissão especial, liberada manualmente
+    // pelo usuário em Configurações > Apps > Acesso especial > Alarmes e
+    // lembretes — sem ela, alarme exato nunca dispara (silêncio total, sem erro
+    // visível). O JS chama isso antes de agendar pra avisar o usuário a tempo.
+    @PluginMethod
+    public void checkExactAlarmPermission(PluginCall call) {
+        boolean granted = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager am = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+            granted = am.canScheduleExactAlarms();
+        }
+        JSObject ret = new JSObject();
+        ret.put("granted", granted);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void openExactAlarmSettings(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+        }
+        call.resolve();
+    }
+
     @PluginMethod
     public void schedule(PluginCall call) {
         JSArray timesArray = call.getArray("times");
@@ -45,7 +79,12 @@ public class BriefingAlarmPlugin extends Plugin {
             call.reject("Erro ao ler horários: " + e.getMessage());
             return;
         }
-        BriefingAlarmScheduler.scheduleAll(getContext(), times);
+        try {
+            BriefingAlarmScheduler.scheduleAll(getContext(), times);
+        } catch (SecurityException e) {
+            call.reject("Permissão de alarme exato não concedida", e);
+            return;
+        }
         call.resolve();
     }
 

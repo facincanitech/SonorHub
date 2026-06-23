@@ -1047,6 +1047,8 @@
           📧 <b>Últimos e-mails (resumo)</b>: escolhe Google e/ou Hotmail (conecta em
           ⚙️ Central de Contas) e quantos e-mails ler, sempre os mais recentes de cada
           conta marcada.<br>
+          📝 <b>Lembretes personalizados</b>: escreve o que quer lembrar e marca a
+          data, sem precisar de conta nenhuma — fala uma vez, no dia marcado.<br>
           📅 <b>Agenda de hoje</b>: compromissos do dia, via Google.<br>
           🎂 <b>Aniversários</b>: aniversariantes dos seus contatos do Google.<br>
           🎉 <b>Feriados próximos</b>: sem precisar configurar nada.<br><br>
@@ -1330,6 +1332,9 @@ const CATEGORY_DEFS = [
         { id: 'contas', kind: 'buttons', options: ['Google', 'Hotmail'], disabledOptions: OUTLOOK_CLIENT_ID ? [] : ['Hotmail'] },
         { id: 'quantidade', kind: 'dropdown', label: 'Quantidade de e-mails', options: ['5', '10', '15', '20'] },
       ], hint: 'Sempre resumo, dos mais recentes de cada conta selecionada, conecta em ⚙️ Central de Contas' },
+      { id: 'lembretes', label: 'Lembretes personalizados', icon: '📝', fields: [
+        { id: 'itens', kind: 'lembretes' },
+      ], hint: 'Cada lembrete fala no dia marcado, dentro do seu briefing' },
       { id: 'agenda', label: 'Agenda de hoje', icon: '📅', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', icon: '🎂', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'feriados', label: 'Feriados próximos', icon: '🎉', fields: [] },
@@ -1736,6 +1741,72 @@ function renderTagsInput(field, fs) {
   return wrap;
 }
 
+// Lista de lembretes pessoais (texto + data) — guardados em fs.fields.itens,
+// cada um fala uma vez, no dia marcado, dentro do briefing (fetchLembretesItems).
+function renderLembretesInput(field, fs) {
+  const wrap = document.createElement('div');
+  const itens = Array.isArray(fs.fields.itens) ? fs.fields.itens : [];
+  fs.fields.itens = itens;
+
+  const listEl = document.createElement('div');
+  listEl.style.marginBottom = '8px';
+
+  function formatDataBR(iso) {
+    const [ano, mes, dia] = iso.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  function renderList() {
+    listEl.innerHTML = '';
+    itens.slice().sort((a, b) => a.data.localeCompare(b.data)).forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'alarm-item';
+      const span = document.createElement('span');
+      span.className = 'time';
+      span.textContent = `${formatDataBR(item.data)} — ${item.texto}`;
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', () => {
+        const idx = itens.indexOf(item);
+        if (idx !== -1) itens.splice(idx, 1);
+        saveState();
+        renderList();
+      });
+      row.appendChild(span);
+      row.appendChild(delBtn);
+      listEl.appendChild(row);
+    });
+  }
+  renderList();
+
+  const textoInput = document.createElement('input');
+  textoInput.type = 'text';
+  textoInput.placeholder = 'O que lembrar, ex: levar guarda-chuva';
+  const dataInput = document.createElement('input');
+  dataInput.type = 'date';
+  dataInput.style.marginTop = '8px';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = '+ Adicionar lembrete';
+  addBtn.style.marginTop = '8px';
+  addBtn.addEventListener('click', () => {
+    const texto = textoInput.value.trim();
+    if (!texto || !dataInput.value) return;
+    itens.push({ texto, data: dataInput.value });
+    saveState();
+    textoInput.value = '';
+    dataInput.value = '';
+    renderList();
+  });
+
+  wrap.appendChild(listEl);
+  wrap.appendChild(textoInput);
+  wrap.appendChild(dataInput);
+  wrap.appendChild(addBtn);
+  return wrap;
+}
+
 function openCategoryDetail(catId) {
   openCategoryId = catId;
   const cat = CATEGORY_DEFS.find(c => c.id === catId);
@@ -1778,6 +1849,8 @@ function openCategoryDetail(catId) {
         fieldsEl.appendChild(renderButtonGroup(field, fs));
       } else if (field.kind === 'tags') {
         fieldsEl.appendChild(renderTagsInput(field, fs));
+      } else if (field.kind === 'lembretes') {
+        fieldsEl.appendChild(renderLembretesInput(field, fs));
       } else if (field.kind === 'dropdown') {
         if (field.label) {
           const labelEl = document.createElement('div');
@@ -2073,8 +2146,20 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '2.7';
+const APP_VERSION = '2.9';
 const CHANGELOG = [
+  {
+    version: '2.9', date: '23/06/2026',
+    items: [
+      'Corrigido: Briefing automático ficava em silêncio total no Android 12+ sem permissão de "Alarmes e lembretes" — agora avisa e leva direto pra liberar nas configurações',
+    ],
+  },
+  {
+    version: '2.8', date: '23/06/2026',
+    items: [
+      'Novo em Pessoal: Lembretes personalizados — escreve o que quer lembrar e marca a data, fala uma vez no dia certo, sem precisar de conta nenhuma',
+    ],
+  },
   {
     version: '2.7', date: '23/06/2026',
     items: [
@@ -2590,6 +2675,22 @@ async function fetchFeriadosItems(limit) {
     console.error('feriados:', e);
     return [];
   }
+}
+
+// Lembretes personalizados, guardados localmente (sem API) — fala uma vez,
+// no dia exato marcado. Não some sozinho depois (fica no histórico de
+// configuração até você apagar manualmente, igual os horários do alarme).
+async function fetchLembretesItems(itens) {
+  if (!itens || itens.length === 0) return [];
+  const hojeIso = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local, sem fuso
+  return itens
+    .filter((item) => item.data === hojeIso)
+    .map((item) => ({
+      category: 'Pessoal', sub: 'Lembrete',
+      title: item.texto,
+      full: `Lembrete: ${item.texto}`,
+      quick: `Lembrete: ${item.texto}`,
+    }));
 }
 
 /* =========================================================================
@@ -3399,6 +3500,7 @@ async function buildQueue(featureKeys) {
       else if (s.catId === 'pessoal' && s.featId === 'agenda') items = await fetchAgendaItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'aniversarios') items = await fetchAniversariosItems(limit);
       else if (s.catId === 'pessoal' && s.featId === 'feriados') items = await fetchFeriadosItems(limit);
+      else if (s.catId === 'pessoal' && s.featId === 'lembretes') items = await fetchLembretesItems(s.fields.itens);
       else if (s.catId === 'horoscopo' && s.featId === 'fase-lua') items = await fetchFaseLuaItems();
       else if (s.catId === 'horoscopo' && s.featId === 'numerologia') items = await fetchNumerologiaItems(s.fields);
       else if (s.catId === 'horoscopo' && s.featId === 'signo-solar') items = await fetchSignoSolarItems(s.fields);
@@ -4883,7 +4985,12 @@ async function scheduleAllAlarmsNative() {
     await nativeAlarm.cancel().catch((e) => console.error('BriefingAlarm.cancel:', e));
     return;
   }
-  await nativeAlarm.schedule({ times: state.alarmTimes.map((a) => a.time) }).catch((e) => console.error('BriefingAlarm.schedule:', e));
+  try {
+    await nativeAlarm.schedule({ times: state.alarmTimes.map((a) => a.time) });
+  } catch (e) {
+    console.error('BriefingAlarm.schedule:', e);
+    alert('Não foi possível agendar o briefing automático: ' + (e.message || 'permissão de alarme exato pode ter sido revogada, confere em Configurações > Apps > InfoHub > Alarmes e lembretes.'));
+  }
 }
 
 // Quando o alarme dispara e consegue abrir o app (tela bloqueada/ociosa, ou o
@@ -5006,6 +5113,21 @@ renderSavedItems();
 
 alarmsActiveToggle.addEventListener('change', async () => {
   if (alarmsActiveToggle.checked) {
+    // Android 12+ exige uma permissão especial ("Alarmes e lembretes") pra
+    // alarme EXATO funcionar — sem ela, o alarme nunca dispara, sem nenhum
+    // erro visível (silêncio total, mesmo com tag marcada certinho). Checa e
+    // direciona pra Configurações antes de deixar ativar.
+    if (nativeAlarm) {
+      try {
+        const { granted } = await nativeAlarm.checkExactAlarmPermission();
+        if (!granted) {
+          alarmsActiveToggle.checked = false;
+          alert('Pra funcionar de verdade, o InfoHub precisa de permissão de "Alarmes e lembretes" no Android. Vai abrir a tela de configuração — procura o InfoHub e libera, depois volta aqui e ativa de novo.');
+          await nativeAlarm.openExactAlarmSettings();
+          return;
+        }
+      } catch (e) { console.error('checkExactAlarmPermission:', e); }
+    }
     if (nativeNotifications) {
       const perm = await nativeNotifications.requestPermissions();
       if (perm.display !== 'granted') {

@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import java.util.Calendar;
 import java.util.HashSet;
@@ -62,6 +63,14 @@ public class BriefingAlarmScheduler {
         }
 
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        // A partir do Android 12 (API 31), alarme EXATO exige permissão especial
+        // ("Alarmes e lembretes") que o usuário precisa liberar manualmente nas
+        // configurações do sistema — sem ela, setExactAndAllowWhileIdle lança
+        // SecurityException e o alarme simplesmente nunca dispara, em silêncio
+        // total (sem notificação, sem voz, sem erro visível pro usuário).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
+            throw new SecurityException("Permissão de alarme exato não concedida");
+        }
         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, target.getTimeInMillis(), buildPendingIntent(context, time));
     }
 
