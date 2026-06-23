@@ -2073,8 +2073,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 const CHANGELOG = [
+  {
+    version: '2.6', date: '23/06/2026',
+    items: [
+      'Místico (numerologia, tarot, horóscopo, lua) agora fala com voz gravada de verdade nas partes fixas, não só TTS robótico',
+    ],
+  },
   {
     version: '2.5', date: '23/06/2026',
     items: [
@@ -2599,9 +2605,22 @@ function getMoonPhaseName(date) {
   return 'Lua Minguante';
 }
 
+// Gravação real (voz/mistico-lua-*.mp3) só do nome da fase — a frase de
+// introdução continua em TTS porque é curta e não muda.
+const LUA_VOZ_KEYS = {
+  'Lua Nova': 'mistico-lua-nova', 'Lua Crescente': 'mistico-lua-crescente',
+  'Quarto Crescente': 'mistico-lua-quarto-crescente', 'Lua Crescente Gibosa': 'mistico-lua-crescente-gibosa',
+  'Lua Cheia': 'mistico-lua-cheia', 'Lua Minguante Gibosa': 'mistico-lua-minguante-gibosa',
+  'Quarto Minguante': 'mistico-lua-quarto-minguante', 'Lua Minguante': 'mistico-lua-minguante',
+};
+
 async function fetchFaseLuaItems() {
   const fase = getMoonPhaseName(new Date());
-  return [{ category: 'Místico', sub: 'Lua', title: `Fase da lua: ${fase}`, full: `Hoje a fase da lua é: ${fase}.`, quick: `Lua: ${fase}`, vozEnvolvente: true }];
+  return [{
+    category: 'Místico', sub: 'Lua', title: `Fase da lua: ${fase}`, full: `Hoje a fase da lua é: ${fase}.`, quick: `Lua: ${fase}`,
+    vozEnvolvente: true,
+    vozSequence: [{ tts: 'Hoje a fase da lua é:' }, { clip: LUA_VOZ_KEYS[fase] }],
+  }];
 }
 
 /* =========================================================================
@@ -2761,8 +2780,13 @@ async function fetchNumerologiaItems(fields) {
   const infoDia = NUMEROS_SISTEMA[numDia];
 
   // Primeiro acesso: apresenta os números fixos da pessoa (nome/nascimento/hora).
-  // Nos dias seguintes, só o número pessoal do dia (que muda toda data).
+  // Nos dias seguintes, só o número pessoal do dia (que muda toda data). Os
+  // parágrafos de cada número (NUMEROS_SISTEMA[n].voz) e a energia do dia
+  // (ENERGIA_DIA[n]) são voz gravada de verdade (voz/mistico-numero-*.mp3 e
+  // mistico-energia-*.mp3) — só o número falado e os rótulos ficam em TTS,
+  // que é o que muda de pessoa pra pessoa.
   let textoBase = '';
+  const vozSequence = [];
   if (!localStorage.getItem('infohub_num_apresentou')) {
     localStorage.setItem('infohub_num_apresentou', '1');
     // Quando dois (ou os três) números calham de coincidir, agrupa os rótulos
@@ -2781,6 +2805,12 @@ async function fetchNumerologiaItems(fields) {
       const info = NUMEROS_SISTEMA[numero];
       return `${rotulos.join(' e ')} ${numero}: ${info ? info.voz : ''}`;
     }).join(' ') + ' ';
+
+    vozSequence.push({ clip: 'mistico-num-intro' });
+    rotulosPorNumero.forEach((rotulos, numero) => {
+      vozSequence.push({ tts: `${rotulos.join(' e ')} ${numero}:` });
+      vozSequence.push({ clip: `mistico-numero-${numero}` });
+    });
   }
 
   const compat = (infoDia && infoDia.compatibilidade) || {};
@@ -2790,12 +2820,19 @@ async function fetchNumerologiaItems(fields) {
     (melhor ? `Sua energia flui melhor hoje com quem tem número ${melhor}. ` : '') +
     (dificil ? `Mais atenção com energia ${dificil} hoje.` : '');
 
+  vozSequence.push(
+    { clip: 'mistico-num-pessoal-hoje' }, { tts: `${numDia}.` }, { clip: `mistico-energia-${numDia}` },
+  );
+  if (melhor) vozSequence.push({ clip: 'mistico-num-compat-bem' }, { tts: melhor });
+  if (dificil) vozSequence.push({ clip: 'mistico-num-compat-atencao' }, { tts: dificil }, { clip: 'mistico-num-compat-atencao-fim' });
+
   return [{
     category: 'Místico', sub: 'Numerologia pitagórica',
     title: `Número do dia: ${numDia}`,
     full: textoBase + textoDia,
     quick: `Número pessoal hoje: ${numDia}. ${ENERGIA_DIA[numDia] || ''}`,
     vozEnvolvente: true,
+    vozSequence,
   }];
 }
 
@@ -2829,20 +2866,29 @@ const ARCANOS_MAIORES = [
   { nome: 'O Mundo', texto: 'completude e realização. Um ciclo se fecha com sucesso — celebre antes de começar o próximo.' },
 ];
 
-function getArcanoDoDia() {
+function getArcanoIndiceDoDia() {
   const hoje = new Date();
   const seed = hoje.getFullYear() * 372 + (hoje.getMonth() + 1) * 31 + hoje.getDate();
-  return ARCANOS_MAIORES[seed % ARCANOS_MAIORES.length];
+  return seed % ARCANOS_MAIORES.length;
+}
+
+function getArcanoDoDia() {
+  return ARCANOS_MAIORES[getArcanoIndiceDoDia()];
 }
 
 async function fetchTarotItems() {
-  const carta = getArcanoDoDia();
+  const indice = getArcanoIndiceDoDia();
+  const carta = ARCANOS_MAIORES[indice];
+  // Voz gravada de verdade (voz/mistico-tarot-intro.mp3 + mistico-tarot-NN.mp3,
+  // NN = posição da carta, 01 a 22, mesma ordem de ARCANOS_MAIORES).
+  const clipNum = String(indice + 1).padStart(2, '0');
   return [{
     category: 'Místico', sub: 'Tarot',
     title: `Arcano do dia: ${carta.nome}`,
     full: `O arcano de hoje é ${carta.nome}: ${carta.texto}`,
     quick: `Arcano do dia: ${carta.nome}`,
     vozEnvolvente: true,
+    vozSequence: [{ clip: 'mistico-tarot-intro' }, { tts: `${carta.nome}:` }, { clip: `mistico-tarot-${clipNum}` }],
   }];
 }
 
@@ -2948,12 +2994,20 @@ async function fetchSignoSolarItems(fields) {
   const fraseCompat = signoCompativel ? ` Sua energia combina bem hoje com gente de ${signoCompativel}.` : '';
 
   const full = `Você é de ${signo}. ${areaDoDia}${fraseCompat} Hoje é ${nomeDiaSemana}, dia de ${diaSemana.planeta}: ${diaSemana.texto}`;
+  // Voz gravada de verdade (voz/mistico-planeta-*.mp3) só da parte fixa do
+  // planeta do dia — o resto (signo, traço, compatibilidade) muda de pessoa pra
+  // pessoa e fica em TTS.
+  const PLANETA_VOZ_KEYS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
   return [{
     category: 'Místico', sub: 'Horóscopo do dia',
     title: `${signo} · ${nomeDiaSemana}`,
     full,
     quick: `${signo}: combina hoje com ${signoCompativel || '—'}`,
     vozEnvolvente: true,
+    vozSequence: [
+      { tts: `Você é de ${signo}. ${areaDoDia}${fraseCompat} Hoje é ${nomeDiaSemana}, dia de ${diaSemana.planeta}:` },
+      { clip: `mistico-planeta-${PLANETA_VOZ_KEYS[hoje.getDay()]}` },
+    ],
   }];
 }
 
@@ -3616,6 +3670,15 @@ async function speakQueueItem(i) {
     await playYoutubeSnippet(item.videoId);
     if (myToken !== playbackToken) return;
     await speakQueueText('Pra ouvir o resto, clica no link.', rate, pitch);
+  } else if (!state.quickMode && item.vozSequence && item.vozSequence.length > 0) {
+    // Místico com voz gravada de verdade (numerologia, tarot, horóscopo, lua) —
+    // alterna trechos fixos (clipe de áudio real) com trechos dinâmicos (TTS),
+    // só no modo completo; modo rápido continua só com item.quick em TTS.
+    for (const step of item.vozSequence) {
+      if (myToken !== playbackToken) return;
+      if (step.clip) await playVozClip(step.clip);
+      else if (step.tts) await speakQueueText(step.tts, rate, pitch);
+    }
   } else {
     const text = state.quickMode ? (item.quick || item.title) : (item.full || item.title);
     await speakQueueText(text, rate, pitch);
