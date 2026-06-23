@@ -2748,7 +2748,10 @@ async function ensureYtPlayer() {
   });
 }
 
-async function playYoutubeSnippet(videoId, durationMs = 7000) {
+// A API do IFrame do YouTube não deixa detectar/pular propaganda — se o vídeo
+// tiver anúncio, ele toca antes do conteúdo de verdade e come parte da janela.
+// 20s dá folga pra sobrar trecho real mesmo com 1-2 anúncios no meio.
+async function playYoutubeSnippet(videoId, durationMs = 20000) {
   try {
     const player = await ensureYtPlayer();
     player.loadVideoById(videoId);

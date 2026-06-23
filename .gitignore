@@ -11,3 +11,6 @@ android/app/release/
 android/app/debug/
 *.keystore
 *.jks
+
+# Lista de tarefas pessoal, não é código do projeto
+fazer.json
