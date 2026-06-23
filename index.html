@@ -1085,8 +1085,9 @@
           <b>💰 Financeiro</b><br>
           💱 <b>Cotações</b>: marque moedas (Dólar, Euro, Libra, Peso) e/ou
           criptomoedas (Bitcoin, Ethereum, Solana, BNB).<br>
-          🏠 <b>Índices econômicos</b>: Imobiliário, Inflação (IPCA) e/ou Juros
-          (Selic).<br><br>
+          🏠 <b>Índices econômicos</b>: Inflação (IPCA) e/ou Juros (Selic) como
+          botão, e uma caixa pra digitar código de ação/FII (ex: HGLG11) e ver a
+          cotação real dele na B3, até 5 códigos.<br><br>
 
           <b>🔮 Místico</b><br>
           🌙 <b>Fase da lua</b>: sem campo nenhum.<br>
@@ -1388,8 +1389,9 @@ const CATEGORY_DEFS = [
         { id: 'criptos', kind: 'buttons', options: ['Bitcoin', 'Ethereum', 'Solana', 'BNB'] },
       ] },
       { id: 'indices', label: 'Índices econômicos', icon: '🏠', fields: [
-        { id: 'tipos', kind: 'buttons', options: ['Imobiliário', 'Inflação (IPCA)', 'Juros (Selic)'] },
-      ] },
+        { id: 'tipos', kind: 'buttons', options: ['Inflação (IPCA)', 'Juros (Selic)'] },
+        { id: 'tickers', kind: 'tags', placeholder: 'Código da ação/FII, ex: HGLG11 (digite e aperte Enter, até 5)' },
+      ], hint: 'Cotação real do código que você digitar, direto da B3' },
     ],
   },
   {
@@ -2071,8 +2073,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.5';
 const CHANGELOG = [
+  {
+    version: '2.5', date: '23/06/2026',
+    items: [
+      'Índices econômicos: agora dá pra digitar código de ação/FII (ex: HGLG11) e ouvir a cotação real dele na B3, até 5 códigos',
+    ],
+  },
   {
     version: '2.4', date: '23/06/2026',
     items: [
@@ -3264,7 +3272,7 @@ const BCB_SERIES = {
   'Juros (Selic)': { codigo: 432, unidade: '% ao ano', nome: 'Meta Selic' },
 };
 
-async function fetchIndicesEconomicosItems(tipos) {
+async function fetchIndicesEconomicosItems(tipos, tickers) {
   const items = [];
   for (const tipo of (tipos || [])) {
     const info = BCB_SERIES[tipo];
@@ -3275,6 +3283,16 @@ async function fetchIndicesEconomicosItems(tipos) {
       if (!ultimo) continue;
       const title = `${tipo}: ${ultimo.valor} ${info.unidade}`;
       items.push({ category: 'Financeiro', sub: tipo, title, full: `${info.nome}: ${ultimo.valor} ${info.unidade}, referente a ${ultimo.data}.`, quick: title });
+    } catch (e) {}
+  }
+  for (const ticker of (tickers || [])) {
+    try {
+      const { ticker: t, nome, preco, fechamentoAnterior, error } = await callEdgeFunction('b3-quote', { ticker });
+      if (error || typeof preco !== 'number') continue;
+      const variacao = fechamentoAnterior ? (((preco - fechamentoAnterior) / fechamentoAnterior) * 100).toFixed(2) : null;
+      const variacaoTexto = variacao ? `, ${variacao >= 0 ? 'alta' : 'queda'} de ${Math.abs(variacao)}% no dia` : '';
+      const title = `${t}: R$ ${preco.toFixed(2)}`;
+      items.push({ category: 'Financeiro', sub: t, title, full: `${nome}: R$ ${preco.toFixed(2)}${variacaoTexto}.`, quick: title });
     } catch (e) {}
   }
   return items;
@@ -3330,7 +3348,7 @@ async function buildQueue(featureKeys) {
       else if (s.catId === 'clima' && s.featId === 'previsao-dias') items = await fetchPrevisaoDiasItems(s.fields.cidade);
       else if (s.catId === 'noticias' && s.featId === 'keyword') items = await fetchNewsItems(s.fields.termos, limit);
       else if (s.catId === 'financeiro' && s.featId === 'cotacoes') items = await fetchCotacoesItems(s.fields.moedas, s.fields.criptos);
-      else if (s.catId === 'financeiro' && s.featId === 'indices') items = await fetchIndicesEconomicosItems(s.fields.tipos);
+      else if (s.catId === 'financeiro' && s.featId === 'indices') items = await fetchIndicesEconomicosItems(s.fields.tipos, s.fields.tickers);
       else if (s.catId === 'entretenimento' && s.featId === 'filmes') items = await fetchFilmesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'series') items = await fetchSeriesItems(limit);
       else if (s.catId === 'entretenimento' && s.featId === 'musica') items = await fetchMusicaItems(s.fields.nomes, limit);
