@@ -18,9 +18,25 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const local = (url.searchParams.get('local') || '').trim();
   const forecast = (url.searchParams.get('forecast') || '').trim();
+  const lat = url.searchParams.get('lat');
+  const lon = url.searchParams.get('lon');
 
-  if (!apiKey || !local) {
-    return Response.json({ items: [], error: 'Faltando local ou chave OpenWeatherMap no servidor.' }, { headers: CORS_HEADERS });
+  if (!apiKey || (!local && !(lat && lon))) {
+    return Response.json({ items: [], error: 'Faltando local (ou lat/lon) ou chave OpenWeatherMap no servidor.' }, { headers: CORS_HEADERS });
+  }
+
+  // Modo "onde estou": resolve o nome da cidade a partir do GPS (gratuito, já
+  // que o OpenWeatherMap aceita coordenada direto) — usado só pra preencher o
+  // campo de cidade automaticamente, não passa pelo fluxo normal/forecast.
+  if (lat && lon) {
+    const geoUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&units=metric&lang=pt_br&appid=${apiKey}`;
+    try {
+      const data = await fetch(geoUrl).then(r => r.json());
+      if (!data.name) return Response.json({ nomeLocal: null, error: 'Não foi possível identificar a cidade.' }, { headers: CORS_HEADERS });
+      return Response.json({ nomeLocal: data.name, error: null }, { headers: CORS_HEADERS });
+    } catch {
+      return Response.json({ nomeLocal: null, error: 'Falha de rede ao consultar o clima.' }, { headers: CORS_HEADERS });
+    }
   }
 
   const cleaned = local.trim();

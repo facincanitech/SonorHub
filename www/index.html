@@ -3585,6 +3585,21 @@ function startTurnByTurn(steps, resultEl, totalMeters, totalDurationSec, destino
   });
 }
 
+// Premium: ao ativar o GPS, se a Cidade 1 do Clima ainda estiver vazia,
+// preenche sozinho com onde a pessoa está agora — sem custo extra, é a
+// mesma chamada do OpenWeatherMap que já fazemos, só com lat/lon em vez de
+// nome digitado. Não sobrescreve se já tiver uma cidade configurada.
+async function autofillClimaCidadeFromGps(lat, lng) {
+  try {
+    const fs = getFeatureState('clima', 'previsao');
+    if (fs.fields.cidade1) return;
+    const { nomeLocal, error } = await callEdgeFunction('weather', { lat, lon: lng });
+    if (error || !nomeLocal) return;
+    fs.fields.cidade1 = nomeLocal;
+    saveState();
+  } catch (e) { console.error('autofill clima:', e); }
+}
+
 async function startGpsRouteTo(destino, resultEl) {
   if (gpsActive) stopGps();
   if (!destino) {
@@ -3600,6 +3615,7 @@ async function startGpsRouteTo(destino, resultEl) {
     return false;
   }
   const origem = `${pos.coords.latitude},${pos.coords.longitude}`;
+  autofillClimaCidadeFromGps(pos.coords.latitude, pos.coords.longitude);
 
   setGpsButtonState(true);
   resultEl.textContent = 'Calculando rota...';
