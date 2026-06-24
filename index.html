@@ -766,12 +766,12 @@
     </div>
     <div class="account-card">
       <div class="scope-list" style="margin-bottom: 10px;">
-        Configure uma vez, manda sua localização na hora pro contato, por SMS e
-        e-mail (Gmail conectado) — sem precisar abrir nenhum outro app. Gratuito.
+        Telefone e e-mail de contato ficam no Guia → Pessoal → SOS. O disparo de
+        verdade é segurando o ícone 🆘 (aqui no topo de Meu Dia) por 5 segundos —
+        vibra quando confirma e manda localização, SMS, e-mail com um áudio
+        gravado de ~15s. Esse botão abaixo é só pra testar sem precisar segurar.
       </div>
-      <input type="tel" id="sos-telefone-input" placeholder="Telefone (com DDD), ex: 11999999999">
-      <input type="email" id="sos-email-input" placeholder="E-mail de contato" style="margin-top: 8px;">
-      <button id="sos-btn" style="margin-top: 10px; background: var(--c-red, #e53935);">🆘 Enviar SOS agora</button>
+      <button id="sos-btn" style="background: var(--c-red, #e53935);">🧪 Testar envio agora</button>
       <div class="result" id="sos-result"></div>
     </div>
     <div class="account-card" id="sos-premium-card" style="display:none;">
@@ -1049,6 +1049,9 @@
           conta marcada.<br>
           📝 <b>Lembretes personalizados</b>: escreve o que quer lembrar e marca a
           data, sem precisar de conta nenhuma — fala uma vez, no dia marcado.<br>
+          🆘 <b>SOS (contato de emergência)</b>: configure telefone e/ou e-mail aqui —
+          o disparo de verdade é segurando o ícone 🆘 em Meu Dia, veja o item "SOS"
+          mais abaixo.<br>
           📅 <b>Agenda de hoje</b>: compromissos do dia, via Google.<br>
           🎂 <b>Aniversários</b>: aniversariantes dos seus contatos do Google.<br>
           🎉 <b>Feriados próximos</b>: sem precisar configurar nada.<br><br>
@@ -1184,10 +1187,12 @@
           <span class="chev">›</span>
         </div>
         <div class="help-section-body">
-          Gratuito pra todo mundo. O ícone 🆘 no topo da aba Meu Dia abre a tela do SOS:
-          configure um telefone e/ou e-mail de contato, e o botão "Enviar SOS agora"
-          manda sua localização na hora, por SMS e e-mail (Gmail conectado) — um toque
-          só, sem precisar confirmar nada depois.<br><br>
+          Gratuito pra todo mundo. Configure o telefone e/ou e-mail de contato no Guia
+          → Pessoal → SOS. Pra disparar de verdade: <b>segure o ícone 🆘</b> no topo da
+          aba Meu Dia por 5 segundos — o celular vibra confirmando, e manda sua
+          localização, SMS, e-mail (Gmail conectado) com um áudio gravado de ~15s
+          anexado. Toque rápido (sem segurar) só abre o painel, com um botão de teste
+          e o Modo segurança (Premium).<br><br>
           Quem é Premium tem uma extensão: <b>Modo segurança ativo</b>, que repete o
           envio automaticamente em intervalo até você encerrar (veja em "Premium, guia
           completo" abaixo).
@@ -1335,6 +1340,10 @@ const CATEGORY_DEFS = [
       { id: 'lembretes', label: 'Lembretes personalizados', icon: '📝', fields: [
         { id: 'itens', kind: 'lembretes' },
       ], hint: 'Cada lembrete fala no dia marcado, dentro do seu briefing' },
+      { id: 'sos', label: 'SOS (contato de emergência)', icon: '🆘', fields: [
+        { id: 'telefone', kind: 'text', placeholder: 'Telefone (com DDD), ex: 11999999999' },
+        { id: 'email', kind: 'text', placeholder: 'E-mail de contato' },
+      ], hint: 'Configura aqui; o disparo é segurando o ícone 🆘 por 5 segundos em Meu Dia' },
       { id: 'agenda', label: 'Agenda de hoje', icon: '📅', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'aniversarios', label: 'Aniversários', icon: '🎂', fields: [], hint: 'Conecta em ⚙️ Central de Contas' },
       { id: 'feriados', label: 'Feriados próximos', icon: '🎉', fields: [] },
@@ -2146,8 +2155,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.1';
+const APP_VERSION = '3.2';
 const CHANGELOG = [
+  {
+    version: '3.2', date: '24/06/2026',
+    items: [
+      'SOS reorganizado: telefone/e-mail de contato agora se configura no Guia → Pessoal → SOS',
+      'Segurar o ícone 🆘 por 5 segundos dispara o SOS direto (vibra pra confirmar), sem abrir tela nenhuma',
+      'SOS agora grava ~15s de áudio e manda anexado no e-mail, além de localização e SMS',
+    ],
+  },
   {
     version: '3.1', date: '23/06/2026',
     items: [
@@ -4842,8 +4859,23 @@ document.getElementById('drive-view-btn').addEventListener('click', async () => 
    ========================================================================= */
 const nativeSms = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Sms;
 
-async function sendEmailViaGmail(to, subject, bodyText) {
-  const raw = [`To: ${to}`, `Subject: ${subject}`, 'Content-Type: text/plain; charset=utf-8', '', bodyText].join('\r\n');
+// attachment (opcional): { blob, filename, mimeType } — usado pelo SOS pra
+// anexar o áudio gravado, sem precisar de outra function só pra isso.
+async function sendEmailViaGmail(to, subject, bodyText, attachment) {
+  let raw;
+  if (attachment) {
+    const boundary = 'infohub_' + Date.now();
+    const attachmentB64 = base64UrlEncode(await attachment.blob.arrayBuffer()).replace(/-/g, '+').replace(/_/g, '/');
+    raw = [
+      `To: ${to}`, `Subject: ${subject}`, `Content-Type: multipart/mixed; boundary="${boundary}"`, '',
+      `--${boundary}`, 'Content-Type: text/plain; charset=utf-8', '', bodyText, '',
+      `--${boundary}`, `Content-Type: ${attachment.mimeType}`, 'Content-Transfer-Encoding: base64',
+      `Content-Disposition: attachment; filename="${attachment.filename}"`, '', attachmentB64, '',
+      `--${boundary}--`,
+    ].join('\r\n');
+  } else {
+    raw = [`To: ${to}`, `Subject: ${subject}`, 'Content-Type: text/plain; charset=utf-8', '', bodyText].join('\r\n');
+  }
   const rawEncoded = base64UrlEncode(new TextEncoder().encode(raw));
   const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
@@ -4856,11 +4888,37 @@ async function sendEmailViaGmail(to, subject, bodyText) {
   }
 }
 
+// Grava um áudio curto (microfone já usado pelo "Pergunte algo", mesma
+// permissão) — usado pelo SOS pra anexar no e-mail. Se o microfone falhar
+// (sem permissão, sem hardware), resolve com null e o SOS segue sem áudio,
+// nunca trava o resto do envio por causa disso.
+async function recordAudioBlob(durationMs) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    const chunks = [];
+    recorder.ondataavailable = (ev) => chunks.push(ev.data);
+    const done = new Promise((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
+    });
+    recorder.start();
+    await new Promise((resolve) => setTimeout(resolve, durationMs));
+    recorder.stop();
+    const blob = await done;
+    stream.getTracks().forEach((t) => t.stop());
+    return blob;
+  } catch (e) {
+    console.error('recordAudioBlob:', e);
+    return null;
+  }
+}
+
 // Envia SMS + e-mail pro contato configurado — usado tanto pelo SOS único
 // (gratuito) quanto pelo modo segurança contínuo (Premium), que só chama
-// isso de novo em intervalo.
-async function sendSosMessage(mensagem) {
-  const fs = getFeatureState('premium', 'sos');
+// isso de novo em intervalo. audioBlob (opcional) só vai pro e-mail — SMS não
+// aceita anexo.
+async function sendSosMessage(mensagem, audioBlob) {
+  const fs = getFeatureState('pessoal', 'sos');
   const telefone = (fs.fields.telefone || '').trim();
   const email = (fs.fields.email || '').trim();
   const falhas = [];
@@ -4873,7 +4931,8 @@ async function sendSosMessage(mensagem) {
   if (email) {
     if (!accessToken) falhas.push('E-mail: conecte sua conta Google em ⚙️ Central de Contas primeiro.');
     else {
-      try { await sendEmailViaGmail(email, '🆘 SOS - Preciso de ajuda', mensagem); }
+      const attachment = audioBlob ? { blob: audioBlob, filename: 'audio-sos.webm', mimeType: audioBlob.type || 'audio/webm' } : undefined;
+      try { await sendEmailViaGmail(email, '🆘 SOS - Preciso de ajuda', mensagem, attachment); }
       catch (e) { falhas.push('E-mail: ' + e.message); }
     }
   }
@@ -4882,22 +4941,24 @@ async function sendSosMessage(mensagem) {
 
 async function triggerSOS() {
   const resultEl = document.getElementById('sos-result');
-  const fs = getFeatureState('premium', 'sos');
+  const fs = getFeatureState('pessoal', 'sos');
   if (!(fs.fields.telefone || '').trim() && !(fs.fields.email || '').trim()) {
     resultEl.textContent = 'Configure um telefone ou e-mail de contato primeiro.';
     return;
   }
-  resultEl.textContent = 'Obtendo localização...';
+  resultEl.textContent = 'Obtendo localização e gravando áudio (15s)...';
   let mapsLink = '';
+  let audioBlob = null;
   try {
-    const pos = await getCurrentPosition();
+    const [pos, audio] = await Promise.all([getCurrentPosition(), recordAudioBlob(15000)]);
     mapsLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+    audioBlob = audio; // null se o microfone falhar — segue sem áudio, não trava o resto
   } catch (e) {
     resultEl.textContent = 'Não foi possível obter sua localização: ' + e.message;
     return;
   }
   resultEl.textContent = 'Enviando...';
-  const falhas = await sendSosMessage(`🆘 Preciso de ajuda! Minha localização: ${mapsLink}`);
+  const falhas = await sendSosMessage(`🆘 Preciso de ajuda! Minha localização: ${mapsLink}`, audioBlob);
   resultEl.textContent = falhas.length === 0 ? 'SOS enviado.' : 'Alguns envios falharam: ' + falhas.join(' | ');
 }
 
@@ -4919,7 +4980,7 @@ async function enviarAtualizacaoSeguranca() {
 
 async function startModoSeguranca() {
   const resultEl = document.getElementById('sos-modo-result');
-  const fs = getFeatureState('premium', 'sos');
+  const fs = getFeatureState('pessoal', 'sos');
   if (!(fs.fields.telefone || '').trim() && !(fs.fields.email || '').trim()) {
     resultEl.textContent = 'Configure um telefone ou e-mail de contato primeiro.';
     return;
@@ -4954,22 +5015,35 @@ document.querySelectorAll('#sos-modo-options .btn-opt').forEach((btn) => {
   });
 });
 
-document.getElementById('sos-telefone-input').addEventListener('input', (ev) => {
-  getFeatureState('premium', 'sos').fields.telefone = ev.target.value;
-  saveState();
-});
-document.getElementById('sos-email-input').addEventListener('input', (ev) => {
-  getFeatureState('premium', 'sos').fields.email = ev.target.value;
-  saveState();
-});
 document.getElementById('sos-btn').addEventListener('click', triggerSOS);
-{
-  const sosFields = getFeatureState('premium', 'sos').fields;
-  document.getElementById('sos-telefone-input').value = sosFields.telefone || '';
-  document.getElementById('sos-email-input').value = sosFields.email || '';
+
+// Segura 5s no ícone 🆘 (Meu Dia) pra disparar o SOS de verdade, sem abrir
+// tela nenhuma — vibra quando completa o tempo, pra confirmar sem precisar
+// olhar. Toque rápido (menos de 5s) só abre o painel (teste manual + modo
+// segurança Premium), não dispara nada.
+let sosHoldTimeoutId = null;
+let sosHoldFired = false;
+const sosHeaderBtn = document.getElementById('sos-header-btn');
+
+function startSosHold() {
+  sosHoldFired = false;
+  sosHoldTimeoutId = setTimeout(() => {
+    sosHoldFired = true;
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+    triggerSOS();
+  }, 5000);
+}
+function cancelSosHold() {
+  if (sosHoldTimeoutId) { clearTimeout(sosHoldTimeoutId); sosHoldTimeoutId = null; }
 }
 
-document.getElementById('sos-header-btn').addEventListener('click', () => {
+sosHeaderBtn.addEventListener('pointerdown', startSosHold);
+sosHeaderBtn.addEventListener('pointerup', cancelSosHold);
+sosHeaderBtn.addEventListener('pointerleave', cancelSosHold);
+sosHeaderBtn.addEventListener('pointercancel', cancelSosHold);
+
+sosHeaderBtn.addEventListener('click', () => {
+  if (sosHoldFired) return; // já disparou pelo hold, não abre o painel também
   const unlocked = state.premiumUnlocked && !!accessToken;
   document.getElementById('sos-premium-card').style.display = unlocked ? 'block' : 'none';
   document.getElementById('sos-premium-locked-card').style.display = unlocked ? 'none' : 'block';
