@@ -1424,6 +1424,17 @@ const CATEGORY_DEFS = [
       { id: 'tarot', label: 'Arcano do dia (Tarot)', icon: '🃏', fields: [] },
     ],
   },
+  {
+    id: 'player', icon: '🎵', title: 'Player', color: 'var(--c-accent-blue)',
+    features: [
+      { id: 'radio', label: 'Rádio', icon: '📻', fields: [
+        { id: 'estacoes', kind: 'radio-stations' },
+      ], hint: 'Toca de verdade em segundo plano, abrindo no navegador (não trava ao trocar de app)' },
+      { id: 'musica-link', label: 'Música (YouTube Music, Spotify, etc)', icon: '🎶', fields: [
+        { id: 'url', kind: 'text', placeholder: 'Cole o link (ex: music.youtube.com/watch?v=...)' },
+      ], hint: 'Mesmo princípio: abre no navegador, toca em segundo plano de verdade' },
+    ],
+  },
 ];
 
 function parseList(value) {
@@ -1755,6 +1766,86 @@ function renderTagsInput(field, fs) {
 
 // Lista de lembretes pessoais (texto + data) — guardados em fs.fields.itens,
 // cada um fala uma vez, no dia marcado, dentro do briefing (fetchLembretesItems).
+// Player (Rádio/Música) — abre a URL no navegador de verdade (Browser plugin,
+// Chrome nativo via Custom Tabs), não no WebView do app. Resolve o corte de
+// áudio em segundo plano de uma vez: o WebView do app é suspenso quando você
+// troca de app/apaga a tela, mas o Chrome sustenta áudio normalmente, com
+// notificação de mídia e tudo, igual qualquer aba dele.
+const nativeBrowser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+async function tocarNoNavegador(url) {
+  if (!url) return;
+  if (nativeBrowser) await nativeBrowser.open({ url });
+  else window.open(url, '_blank');
+}
+
+function renderRadioStationsInput(field, fs) {
+  const wrap = document.createElement('div');
+  const estacoes = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
+  fs.fields.estacoes = estacoes;
+
+  const listEl = document.createElement('div');
+  listEl.style.marginBottom = '8px';
+
+  function renderList() {
+    listEl.innerHTML = '';
+    estacoes.forEach((est) => {
+      const row = document.createElement('div');
+      row.className = 'alarm-item';
+      const playBtn = document.createElement('button');
+      playBtn.type = 'button';
+      playBtn.textContent = '▶️';
+      playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
+      playBtn.addEventListener('click', () => tocarNoNavegador(est.url));
+      const span = document.createElement('span');
+      span.className = 'time';
+      span.style.flex = '1';
+      span.textContent = est.nome;
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', () => {
+        const idx = estacoes.indexOf(est);
+        if (idx !== -1) estacoes.splice(idx, 1);
+        saveState();
+        renderList();
+      });
+      row.appendChild(playBtn);
+      row.appendChild(span);
+      row.appendChild(delBtn);
+      listEl.appendChild(row);
+    });
+  }
+  renderList();
+
+  const nomeInput = document.createElement('input');
+  nomeInput.type = 'text';
+  nomeInput.placeholder = 'Nome da rádio';
+  const urlInput = document.createElement('input');
+  urlInput.type = 'text';
+  urlInput.placeholder = 'URL do stream (.mp3, .m3u8, ou link de rádio online)';
+  urlInput.style.marginTop = '8px';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = '+ Adicionar rádio';
+  addBtn.style.marginTop = '8px';
+  addBtn.addEventListener('click', () => {
+    const nome = nomeInput.value.trim();
+    const url = urlInput.value.trim();
+    if (!nome || !url) return;
+    estacoes.push({ nome, url });
+    saveState();
+    nomeInput.value = '';
+    urlInput.value = '';
+    renderList();
+  });
+
+  wrap.appendChild(listEl);
+  wrap.appendChild(nomeInput);
+  wrap.appendChild(urlInput);
+  wrap.appendChild(addBtn);
+  return wrap;
+}
+
 function renderLembretesInput(field, fs) {
   const wrap = document.createElement('div');
   const itens = Array.isArray(fs.fields.itens) ? fs.fields.itens : [];
@@ -1863,6 +1954,8 @@ function openCategoryDetail(catId) {
         fieldsEl.appendChild(renderTagsInput(field, fs));
       } else if (field.kind === 'lembretes') {
         fieldsEl.appendChild(renderLembretesInput(field, fs));
+      } else if (field.kind === 'radio-stations') {
+        fieldsEl.appendChild(renderRadioStationsInput(field, fs));
       } else if (field.kind === 'dropdown') {
         if (field.label) {
           const labelEl = document.createElement('div');
@@ -1905,6 +1998,15 @@ function openCategoryDetail(catId) {
 
     if (cat.id === 'pessoal' && feat.id === 'sos') {
       fieldsEl.appendChild(buildSosExtraCard());
+    }
+
+    if (cat.id === 'player' && feat.id === 'musica-link') {
+      const playBtn = document.createElement('button');
+      playBtn.type = 'button';
+      playBtn.textContent = '▶️ Tocar (abre no navegador)';
+      playBtn.style.marginTop = '8px';
+      playBtn.addEventListener('click', () => tocarNoNavegador((fs.fields.url || '').trim()));
+      fieldsEl.appendChild(playBtn);
     }
 
     featEl.appendChild(fieldsEl);
@@ -2180,8 +2282,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.13';
+const APP_VERSION = '3.14';
 const CHANGELOG = [
+  {
+    version: '3.14', date: '24/06/2026',
+    items: [
+      'Novo: categoria Player no Guia — Rádio (adicione suas estações de stream) e Música (cole um link do YouTube Music/Spotify/etc), os dois abrem no navegador de verdade pra tocar em segundo plano sem cortar',
+    ],
+  },
   {
     version: '3.13', date: '24/06/2026',
     items: [
