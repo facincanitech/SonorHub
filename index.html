@@ -290,15 +290,8 @@
     touch-action: none;
   }
   .skip-btn:hover { background: var(--c-border); }
-  .skip-btn-wrap { position: relative; }
-  .badge-btn {
-    position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--c-surface); color: var(--c-text); border: 2px solid var(--c-bg);
-    font-size: 0.8rem; display: flex; align-items: center; justify-content: center; padding: 0;
-    -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none;
-    -webkit-user-select: none; -moz-user-select: none; user-select: none;
-    touch-action: none;
-  }
+  .sos-mic-row { display: flex; justify-content: space-between; padding: 0 6px; margin-bottom: 14px; }
+  #sos-badge-btn, #mic-badge-btn { touch-action: none; }
   .progress-bar { width: 100%; height: 6px; background: var(--c-border); border-radius: 6px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: var(--c-accent-blue); transition: width .25s; }
   .history-list { width: 100%; margin-top: 22px; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
@@ -561,20 +554,18 @@
     <div class="briefing-wrap">
       <div id="briefing-label">Configure suas categorias na aba Guia</div>
       <div id="briefing-sub"></div>
+      <div class="sos-mic-row">
+        <button class="icon-btn" id="sos-badge-btn" style="color: var(--c-red, #e53935);">🆘</button>
+        <button class="icon-btn" id="mic-badge-btn">🎤</button>
+      </div>
       <div class="play-controls">
-        <div class="skip-btn-wrap">
-          <button class="skip-btn" id="prev-btn">⏮</button>
-          <button class="badge-btn" id="sos-badge-btn" style="color: var(--c-red, #e53935);">🆘</button>
-        </div>
+        <button class="skip-btn" id="prev-btn">⏮</button>
         <div class="play-wrap" id="play-wrap">
           <div class="play-ring"></div>
           <div class="play-ring r2"></div>
           <div class="play-circle" id="play-circle">▶</div>
         </div>
-        <div class="skip-btn-wrap">
-          <button class="skip-btn" id="next-btn">⏭</button>
-          <button class="badge-btn" id="mic-badge-btn">🎤</button>
-        </div>
+        <button class="skip-btn" id="next-btn">⏭</button>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
 
@@ -2190,8 +2181,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.9';
+const APP_VERSION = '3.10';
 const CHANGELOG = [
+  {
+    version: '3.10', date: '24/06/2026',
+    items: [
+      'Corrigido de novo: 🆘 e 🎤 agora ficam numa linha própria, entre o texto e os botões de tocar — não mais em cima de nenhum botão',
+    ],
+  },
   {
     version: '3.9', date: '24/06/2026',
     items: [
