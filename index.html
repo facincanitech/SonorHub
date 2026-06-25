@@ -285,6 +285,9 @@
   .skip-btn {
     width: 52px; height: 52px; border-radius: 50%; background: var(--c-surface); color: var(--c-text);
     font-size: 1.4rem; display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none;
+    -webkit-user-select: none; -moz-user-select: none; user-select: none;
+    touch-action: none;
   }
   .skip-btn:hover { background: var(--c-border); }
   .progress-bar { width: 100%; height: 6px; background: var(--c-border); border-radius: 6px; overflow: hidden; }
@@ -301,6 +304,8 @@
   }
   .item-action-menu { display: none; gap: 6px; margin-top: 6px; }
   .item-action-menu.open { display: flex; }
+  #more-menu { position: absolute; top: 40px; right: 0; flex-direction: column; z-index: 50; background: var(--c-surface); padding: 8px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  #more-menu .item-action-menu-opt { text-align: left; }
   .item-action-menu-opt {
     background: var(--c-border2); border: none; border-radius: 8px;
     color: var(--c-text); padding: 8px 10px; font-size: 0.76rem; white-space: nowrap;
@@ -461,12 +466,13 @@
   <section class="tab active" id="tab-briefing">
     <div class="screen-header">
       <h1>▶ Meu Dia</h1>
-      <div class="header-actions">
-        <button class="icon-btn" data-action="voice">🎤</button>
-        <button class="icon-btn" data-action="help">❓</button>
+      <div class="header-actions" style="position: relative;">
         <button class="icon-btn" id="saved-header-btn">💾</button>
-        <button class="icon-btn" id="sos-header-btn" style="color: var(--c-red, #e53935); touch-action: none;">🆘</button>
-        <button class="icon-btn" data-action="gear">⚙️</button>
+        <button class="icon-btn" id="more-menu-btn">⋯</button>
+        <div class="item-action-menu" id="more-menu">
+          <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+          <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
+        </div>
       </div>
     </div>
 
@@ -500,6 +506,18 @@
         <div class="settings-row">
           <div class="label">Velocidade</div>
           <input type="range" id="briefing-rate" min="0.6" max="1.6" step="0.1" value="1">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="label">Narrador (voz gravada)</div>
+            <div class="desc">Místico, GPS e saudações usam gravações de verdade desse narrador, quando existir; senão cai pro robô sozinho.</div>
+          </div>
+          <select id="narrador-select">
+            <option value="auto">Automático (troca toda semana)</option>
+            <option value="vagner">Vagner</option>
+            <option value="james">James (Místico só, GPS fica robô)</option>
+            <option value="robo">Robô (sem voz gravada)</option>
+          </select>
         </div>
       </div>
     </div>
@@ -1420,6 +1438,7 @@ function loadState() {
     features: saved.features || {}, // { 'pessoal.email': { enabled, fields: {} } }
     briefingRate: saved.briefingRate || 1,
     voiceName: saved.voiceName || null,
+    vozNarrador: saved.vozNarrador || 'auto', // auto | vagner | james | robo
     activeClimateCity: saved.activeClimateCity || 1,
     theme: saved.theme || 'dark',
     premiumUnlocked: saved.premiumUnlocked || false,
@@ -1954,6 +1973,13 @@ briefingRateInput.addEventListener('input', () => {
   saveState();
 });
 
+const narradorSelect = document.getElementById('narrador-select');
+narradorSelect.value = state.vozNarrador;
+narradorSelect.addEventListener('change', () => {
+  state.vozNarrador = narradorSelect.value;
+  saveState();
+});
+
 // Bug conhecido do Chrome/Edge DESKTOP: speechSynthesis trava sozinho em falas
 // longas (~15s+) se não receber pause()/resume() periodicamente. No celular,
 // porém, esse mesmo pause()/resume() costuma travar a fala de vez (não retoma)
@@ -2136,8 +2162,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.6';
+const APP_VERSION = '3.7';
 const CHANGELOG = [
+  {
+    version: '3.7', date: '24/06/2026',
+    items: [
+      'Novo: seletor de narrador (Automático/Vagner/James/Robô) nas configurações — escolhe a voz gravada do Místico/GPS, estilo Waze',
+      'Meu Dia reorganizado: 🆘 e 🎤 agora vivem nos círculos ao lado do play (aparecem quando parado; tocando, voltam a ser voltar/avançar item)',
+      '❓ Ajuda foi pra dentro do novo menu "⋯", junto com ⚙️ Configurações',
+    ],
+  },
   {
     version: '3.6', date: '24/06/2026',
     items: [
@@ -3111,6 +3145,7 @@ function getDiaSeedAtual() {
 // gente; o primeiro nome é o narrador original (sempre existe, é o fallback).
 const NARRADORES_MISTICO = ['vagner', 'james'];
 function getNarradorMisticoAtivo() {
+  if (state.vozNarrador && state.vozNarrador !== 'auto') return state.vozNarrador; // escolha manual (Waze-style), trava nesse narrador
   const semana = Math.floor(getDiaSeedAtual() / 7);
   return NARRADORES_MISTICO[semana % NARRADORES_MISTICO.length];
 }
@@ -3634,6 +3669,10 @@ function setPlayingVisual(playing) {
   playCircle.classList.toggle('playing', playing);
   playWrap.classList.toggle('playing', playing);
   playCircle.innerHTML = playing ? '<span class="stop-square"></span>' : '▶';
+  // Parado: os círculos dos lados viram gatilho de SOS (segura 5s) e mic —
+  // tocando: voltam a ser voltar/avançar item da fila, função original.
+  document.getElementById('prev-btn').textContent = playing ? '⏮' : '🆘';
+  document.getElementById('next-btn').textContent = playing ? '⏭' : '🎤';
 }
 
 let voiceHistoryItems = []; // perguntas/respostas do "Pergunte algo", mais recente primeiro
@@ -3644,6 +3683,14 @@ function closeAllItemActionMenus() {
   document.querySelectorAll('.item-action-menu.open').forEach((m) => m.classList.remove('open'));
 }
 document.addEventListener('click', closeAllItemActionMenus);
+
+document.getElementById('more-menu-btn').addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  const wasOpen = document.getElementById('more-menu').classList.contains('open');
+  closeAllItemActionMenus();
+  if (!wasOpen) document.getElementById('more-menu').classList.add('open');
+});
+document.getElementById('more-menu').addEventListener('click', (ev) => ev.stopPropagation());
 
 // showSave=false na tela de "Salvos" (não tem porque salvar de novo o que já
 // tá salvo) — lá usa só compartilhar/copiar, com remover separado.
@@ -3903,6 +3950,18 @@ function getSaudacaoVozKey() {
   return 'good-evening';
 }
 
+const SAUDACAO_FALADA = {
+  'good-dawn': 'Boa madrugada.', 'good-morning': 'Bom dia.',
+  'good-afternoon': 'Boa tarde.', 'good-evening': 'Boa noite.',
+};
+
+// "Robô" nas configurações pula a gravação e fala a saudação por TTS normal.
+async function playSaudacao() {
+  const key = getSaudacaoVozKey();
+  if (state.vozNarrador === 'robo') await speakAndWait(SAUDACAO_FALADA[key]);
+  else await playVozClip(key);
+}
+
 function getHorarioFalado() {
   const agora = new Date();
   const h = agora.getHours();
@@ -3944,7 +4003,7 @@ async function startBriefingPlayback(automatic = false, featureKeys) {
   // Só no disparo automático (alarme), não quando a pessoa aperta o play na mão.
   if (automatic) {
     briefingLabel.textContent = 'Briefing automático';
-    await playVozClip(getSaudacaoVozKey());
+    await playSaudacao();
     await speakAndWait(`${getHorarioFalado()}. Essas são as informações do seu briefing automático.`);
   }
   speakQueueItem(0);
@@ -3961,6 +4020,7 @@ playCircle.addEventListener('click', () => {
 });
 
 document.getElementById('prev-btn').addEventListener('click', () => {
+  if (!isPlaying) return; // parado: o clique sozinho não faz nada, SOS precisa do hold (5s)
   if (currentQueue.length === 0) return;
   isPlaying = false;
   speechSynthesis.cancel();
@@ -3970,6 +4030,14 @@ document.getElementById('prev-btn').addEventListener('click', () => {
 });
 
 document.getElementById('next-btn').addEventListener('click', () => {
+  if (!isPlaying) {
+    // Parado: o círculo virou mic, abre o assistente de voz em vez de avançar item.
+    const btn = document.getElementById('next-btn');
+    if (!btn.classList.contains('listening')) {
+      if (nativeSTT) listenWithNativeSTT(btn); else listenWithBrowserSTT(btn);
+    }
+    return;
+  }
   if (currentQueue.length === 0) return;
   isPlaying = false;
   speechSynthesis.cancel();
@@ -4348,8 +4416,11 @@ const MANEUVER_VOZ_KEYS = {
 
 async function announceManeuver(maneuver) {
   const key = maneuver && MANEUVER_VOZ_KEYS[maneuver];
-  if (key) await playVozClip(key);
-  else await speakAndWait(maneuverToSpokenPhrase(maneuver)); // rotatória cai aqui
+  // "Robô" escolhido nas configurações força TTS mesmo quando existe clipe
+  // gravado (só o Vagner tem manobra de GPS gravada hoje, sem variação por
+  // narrador) — senão usa a gravação normalmente.
+  if (key && state.vozNarrador !== 'robo') await playVozClip(key);
+  else await speakAndWait(maneuverToSpokenPhrase(maneuver)); // rotatória também cai aqui
 }
 
 // Compõe "em X metros/quilômetros" só com gravações que já temos — pra isso,
@@ -5074,13 +5145,14 @@ function buildSosExtraCard() {
   return wrap;
 }
 
-// Segura 5s no ícone 🆘 (Meu Dia) pra disparar o SOS — sem abrir tela
-// nenhuma, o ícone ali é só gatilho. Vibra ~1s quando completa, pra
-// confirmar sem precisar olhar a tela. Soltar antes dos 5s cancela.
+// Parado, o círculo da esquerda (prev-btn) é o gatilho do SOS — segura 5s,
+// vibra ~1s confirmando, dispara. Tocando, o mesmo elemento volta a ser
+// "item anterior" (clique normal, sem hold). Soltar antes dos 5s cancela.
 let sosHoldTimeoutId = null;
-const sosHeaderBtn = document.getElementById('sos-header-btn');
+const sosHoldBtn = document.getElementById('prev-btn');
 
 function startSosHold() {
+  if (isPlaying) return; // tocando, esse botão é "item anterior", não SOS
   sosHoldTimeoutId = setTimeout(() => {
     if (navigator.vibrate) navigator.vibrate(1000);
     triggerSOS();
@@ -5090,15 +5162,15 @@ function cancelSosHold() {
   if (sosHoldTimeoutId) { clearTimeout(sosHoldTimeoutId); sosHoldTimeoutId = null; }
 }
 
-// Bloquear o menu de contexto evita que o toque-e-segure padrão do
-// Android/WebView (menu de copiar/compartilhar) cancele nosso gesto no meio
-// do caminho, antes de completar os 5s.
-sosHeaderBtn.addEventListener('contextmenu', (ev) => ev.preventDefault());
-sosHeaderBtn.addEventListener('selectstart', (ev) => ev.preventDefault());
-sosHeaderBtn.addEventListener('pointerdown', startSosHold);
-sosHeaderBtn.addEventListener('pointerup', cancelSosHold);
-sosHeaderBtn.addEventListener('pointerleave', cancelSosHold);
-sosHeaderBtn.addEventListener('pointercancel', cancelSosHold);
+// Bloquear o menu de contexto e seleção de texto evita que o toque-e-segure
+// padrão do Android/WebView cancele nosso gesto no meio do caminho, antes
+// de completar os 5s (já tem reforço via CSS no .icon-btn, isso é extra).
+sosHoldBtn.addEventListener('contextmenu', (ev) => ev.preventDefault());
+sosHoldBtn.addEventListener('selectstart', (ev) => ev.preventDefault());
+sosHoldBtn.addEventListener('pointerdown', startSosHold);
+sosHoldBtn.addEventListener('pointerup', cancelSosHold);
+sosHoldBtn.addEventListener('pointerleave', cancelSosHold);
+sosHoldBtn.addEventListener('pointercancel', cancelSosHold);
 
 /* =========================================================================
    ALARMES DO BRIEFING (local, via Service Worker, sem servidor)
