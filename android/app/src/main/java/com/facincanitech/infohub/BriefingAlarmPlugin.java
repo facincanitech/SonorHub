@@ -94,6 +94,23 @@ public class BriefingAlarmPlugin extends Plugin {
         call.resolve();
     }
 
+    // JS chama isso toda vez que monta um briefing novo (Meu Dia), guardando
+    // o texto completo — assim o alarme em segundo plano (usando outro app)
+    // pode falar o conteúdo de verdade, não só "seu briefing está pronto".
+    @PluginMethod
+    public void cacheBriefingText(PluginCall call) {
+        String text = call.getString("text", "");
+        BriefingAlarmScheduler.saveLastBriefingText(getContext(), text);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setFalarCompleto(PluginCall call) {
+        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", false));
+        BriefingAlarmScheduler.setFalarCompleto(getContext(), enabled);
+        call.resolve();
+    }
+
     // Chamado pelo JS assim que o app carrega, pra saber se foi aberto por
     // causa do alarme (app estava fechado, full-screen intent abriu ele).
     @PluginMethod

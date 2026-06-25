@@ -53,9 +53,10 @@ public class BriefingAlarmReceiver extends BroadcastReceiver {
                 BriefingAlarmPlugin.emitAlarmFiredIfActive(time);
             } else {
                 // Desbloqueado usando outro app: Android não deixa abrir por
-                // cima sem avisar — só fala o aviso curto nativo.
+                // cima sem avisar — fala nativo (curto, ou o briefing completo
+                // guardado da última montagem, conforme a opção escolhida).
                 showNotification(context, time, false);
-                speakShortAnnouncement(context, time, wakeLock);
+                speakInBackground(context, time, wakeLock);
                 return; // wakeLock liberado dentro do callback da fala, não no finally
             }
             BriefingAlarmScheduler.scheduleNext(context, time); // reagenda pro dia seguinte
@@ -64,23 +65,48 @@ public class BriefingAlarmReceiver extends BroadcastReceiver {
         }
     }
 
-    private void speakShortAnnouncement(Context context, String time, PowerManager.WakeLock wakeLock) {
+    // Texto curto sempre fala primeiro ("são X horas, etc") — se a opção
+    // "falar completo" estiver ativa e tiver um briefing guardado, continua
+    // falando ele inteiro depois; senão, para aqui mesmo (comportamento de
+    // sempre). Quebra o texto completo em pedaços de ~3500 caracteres, porque
+    // o TextToSpeech nativo trunca utterance muito longa silenciosamente.
+    private void speakInBackground(Context context, String time, PowerManager.WakeLock wakeLock) {
         final TextToSpeech[] ttsHolder = new TextToSpeech[1];
+        final boolean falarCompleto = BriefingAlarmScheduler.getFalarCompleto(context);
+        final String completo = falarCompleto ? BriefingAlarmScheduler.getLastBriefingText(context) : null;
+
         ttsHolder[0] = new TextToSpeech(context, status -> {
             try {
                 if (status == TextToSpeech.SUCCESS) {
                     ttsHolder[0].setLanguage(new Locale("pt", "BR"));
                     ttsHolder[0].setOnUtteranceProgressListener(new UtteranceProgressListener() {
                         @Override public void onStart(String utteranceId) {}
-                        @Override public void onDone(String utteranceId) { finish(); }
                         @Override public void onError(String utteranceId) { finish(); }
+                        @Override public void onDone(String utteranceId) {
+                            if (!"infohub_alarm_final".equals(utteranceId)) return; // ainda tem pedaço fora
+                            finish();
+                        }
                         private void finish() {
                             ttsHolder[0].shutdown();
                             BriefingAlarmScheduler.scheduleNext(context, time);
                             if (wakeLock.isHeld()) wakeLock.release();
                         }
                     });
-                    ttsHolder[0].speak("Seu briefing das " + time + " está pronto.", TextToSpeech.QUEUE_FLUSH, null, "infohub_alarm_announce");
+
+                    boolean temCompleto = completo != null && !completo.isEmpty();
+                    String aviso = "Seu briefing das " + time + (temCompleto ? ":" : " está pronto.");
+                    // Sem texto completo, o próprio aviso já é o último (e único)
+                    // trecho — ganha o id "final" direto, sem precisar de pedaço extra.
+                    ttsHolder[0].speak(aviso, TextToSpeech.QUEUE_FLUSH, null, temCompleto ? "infohub_alarm_announce" : "infohub_alarm_final");
+                    if (temCompleto) {
+                        int max = 3500;
+                        int total = (completo.length() + max - 1) / max;
+                        for (int i = 0; i < total; i++) {
+                            String pedaco = completo.substring(i * max, Math.min((i + 1) * max, completo.length()));
+                            String id = (i == total - 1) ? "infohub_alarm_final" : "infohub_alarm_chunk_" + i;
+                            ttsHolder[0].speak(pedaco, TextToSpeech.QUEUE_ADD, null, id);
+                        }
+                    }
                 } else {
                     BriefingAlarmScheduler.scheduleNext(context, time);
                     if (wakeLock.isHeld()) wakeLock.release();

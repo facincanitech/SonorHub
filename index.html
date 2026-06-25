@@ -509,6 +509,13 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="settings-row">
+          <div class="label">Se eu estiver usando outro app, falar o briefing completo (não só avisar)</div>
+          <label class="switch">
+            <input type="checkbox" id="alarms-falar-completo-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
         <div id="alarms-list"></div>
         <div class="settings-row">
           <input type="time" id="new-alarm-time-input" value="07:00" lang="pt-BR" style="flex:1; max-width: 160px;">
@@ -1413,6 +1420,7 @@ function loadState() {
     premiumUnlocked: saved.premiumUnlocked || false,
     premiumLastVerified: saved.premiumLastVerified || 0,
     alarmsActive: saved.alarmsActive || false,
+    alarmFalarCompleto: saved.alarmFalarCompleto || false,
     // Cada horário tem sua própria lista de tags (catId.featId) que tocam nele —
     // migra o formato antigo (array de strings "HH:MM", tocava tudo sempre) pra
     // {time, features}, preenchendo com tudo que já tava ativo pra não silenciar
@@ -2123,8 +2131,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.4';
+const APP_VERSION = '3.5';
 const CHANGELOG = [
+  {
+    version: '3.5', date: '24/06/2026',
+    items: [
+      'Briefing automático: nova opção "falar o briefing completo" quando o alarme dispara com você em outro app, em vez de só avisar que está pronto',
+    ],
+  },
   {
     version: '3.4', date: '24/06/2026',
     items: [
@@ -3906,6 +3920,15 @@ async function startBriefingPlayback(automatic = false, featureKeys) {
     briefingSub.textContent = 'Verifique as configurações das suas categorias ativas';
     return;
   }
+  // Guarda o texto completo desse briefing pro nativo poder falar ele
+  // inteiro se o alarme disparar de novo com o app em segundo plano (opção
+  // "falar completo") — sempre atualiza, automático ou manual, pra ficar o
+  // mais recente possível.
+  if (nativeAlarm) {
+    const textoCompleto = currentQueue.map((item) => item.full || item.title).join(' ');
+    nativeAlarm.cacheBriefingText({ text: textoCompleto }).catch(() => {});
+  }
+
   // Só no disparo automático (alarme), não quando a pessoa aperta o play na mão.
   if (automatic) {
     briefingLabel.textContent = 'Briefing automático';
@@ -5316,6 +5339,17 @@ alarmsActiveToggle.addEventListener('change', async () => {
   saveState();
   scheduleAllAlarms();
   updateAlarmsTileStatus();
+});
+
+// "Falar completo" só importa pro nativo (é ele quem fala sozinho quando o
+// app não está na tela) — o JS só guarda a preferência e avisa o plugin.
+const alarmsFalarCompletoToggle = document.getElementById('alarms-falar-completo-toggle');
+alarmsFalarCompletoToggle.checked = state.alarmFalarCompleto;
+if (nativeAlarm) nativeAlarm.setFalarCompleto({ enabled: state.alarmFalarCompleto }).catch(() => {});
+alarmsFalarCompletoToggle.addEventListener('change', () => {
+  state.alarmFalarCompleto = alarmsFalarCompletoToggle.checked;
+  saveState();
+  if (nativeAlarm) nativeAlarm.setFalarCompleto({ enabled: state.alarmFalarCompleto }).catch(() => {});
 });
 
 const BENTO_TILE_DETAIL_IDS = { 'custom-tile': 'custom-detail', 'alarms-tile': 'alarms-detail' };

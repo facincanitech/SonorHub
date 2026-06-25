@@ -26,6 +26,30 @@ public class BriefingAlarmScheduler {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putStringSet(KEY_TIMES, times).apply();
     }
 
+    // Texto completo do último briefing montado pelo JS, guardado aqui pra
+    // o aviso falado em segundo plano (usando outro app) poder falar o
+    // conteúdo de verdade, não só "seu briefing está pronto" — pode estar um
+    // pouco desatualizado (não busca nada novo na hora do alarme), mas é
+    // bem melhor que só o aviso curto.
+    private static final String KEY_LAST_TEXT = "last_briefing_text";
+    private static final String KEY_FALAR_COMPLETO = "falar_completo";
+
+    public static void saveLastBriefingText(Context context, String text) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_LAST_TEXT, text).apply();
+    }
+
+    public static String getLastBriefingText(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_TEXT, null);
+    }
+
+    public static void setFalarCompleto(Context context, boolean enabled) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_FALAR_COMPLETO, enabled).apply();
+    }
+
+    public static boolean getFalarCompleto(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_FALAR_COMPLETO, false);
+    }
+
     public static void scheduleAll(Context context, Set<String> times) {
         cancelAll(context, getTimes(context));
         saveTimes(context, new HashSet<>(times));
