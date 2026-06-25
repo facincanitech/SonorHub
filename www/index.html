@@ -290,6 +290,15 @@
     touch-action: none;
   }
   .skip-btn:hover { background: var(--c-border); }
+  .skip-btn-wrap { position: relative; }
+  .badge-btn {
+    position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--c-surface); color: var(--c-text); border: 2px solid var(--c-bg);
+    font-size: 0.8rem; display: flex; align-items: center; justify-content: center; padding: 0;
+    -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none;
+    -webkit-user-select: none; -moz-user-select: none; user-select: none;
+    touch-action: none;
+  }
   .progress-bar { width: 100%; height: 6px; background: var(--c-border); border-radius: 6px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: var(--c-accent-blue); transition: width .25s; }
   .history-list { width: 100%; margin-top: 22px; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
@@ -553,13 +562,19 @@
       <div id="briefing-label">Configure suas categorias na aba Guia</div>
       <div id="briefing-sub"></div>
       <div class="play-controls">
-        <button class="skip-btn" id="prev-btn">🆘</button>
+        <div class="skip-btn-wrap">
+          <button class="skip-btn" id="prev-btn">⏮</button>
+          <button class="badge-btn" id="sos-badge-btn" style="color: var(--c-red, #e53935);">🆘</button>
+        </div>
         <div class="play-wrap" id="play-wrap">
           <div class="play-ring"></div>
           <div class="play-ring r2"></div>
           <div class="play-circle" id="play-circle">▶</div>
         </div>
-        <button class="skip-btn" id="next-btn">🎤</button>
+        <div class="skip-btn-wrap">
+          <button class="skip-btn" id="next-btn">⏭</button>
+          <button class="badge-btn" id="mic-badge-btn">🎤</button>
+        </div>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
 
@@ -2175,8 +2190,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.8';
+const APP_VERSION = '3.9';
 const CHANGELOG = [
+  {
+    version: '3.9', date: '24/06/2026',
+    items: [
+      'Corrigido: 🆘 e 🎤 ocupavam o círculo inteiro de voltar/avançar — agora são selinhos pequenos no canto desses botões, sem tomar o lugar deles',
+    ],
+  },
   {
     version: '3.8', date: '24/06/2026',
     items: [
@@ -3689,10 +3710,6 @@ function setPlayingVisual(playing) {
   playCircle.classList.toggle('playing', playing);
   playWrap.classList.toggle('playing', playing);
   playCircle.innerHTML = playing ? '<span class="stop-square"></span>' : '▶';
-  // Parado: os círculos dos lados viram gatilho de SOS (segura 5s) e mic —
-  // tocando: voltam a ser voltar/avançar item da fila, função original.
-  document.getElementById('prev-btn').textContent = playing ? '⏮' : '🆘';
-  document.getElementById('next-btn').textContent = playing ? '⏭' : '🎤';
 }
 
 let voiceHistoryItems = []; // perguntas/respostas do "Pergunte algo", mais recente primeiro
@@ -4040,7 +4057,6 @@ playCircle.addEventListener('click', () => {
 });
 
 document.getElementById('prev-btn').addEventListener('click', () => {
-  if (!isPlaying) return; // parado: o clique sozinho não faz nada, SOS precisa do hold (5s)
   if (currentQueue.length === 0) return;
   isPlaying = false;
   speechSynthesis.cancel();
@@ -4050,20 +4066,18 @@ document.getElementById('prev-btn').addEventListener('click', () => {
 });
 
 document.getElementById('next-btn').addEventListener('click', () => {
-  if (!isPlaying) {
-    // Parado: o círculo virou mic, abre o assistente de voz em vez de avançar item.
-    const btn = document.getElementById('next-btn');
-    if (!btn.classList.contains('listening')) {
-      if (nativeSTT) listenWithNativeSTT(btn); else listenWithBrowserSTT(btn);
-    }
-    return;
-  }
   if (currentQueue.length === 0) return;
   isPlaying = false;
   speechSynthesis.cancel();
   stopYoutubeSnippetPlayback();
   setPlayingVisual(true);
   speakQueueItem(Math.min(currentQueueIndex + 1, currentQueue.length - 1));
+});
+
+document.getElementById('mic-badge-btn').addEventListener('click', () => {
+  const btn = document.getElementById('mic-badge-btn');
+  if (btn.classList.contains('listening')) return;
+  if (nativeSTT) listenWithNativeSTT(btn); else listenWithBrowserSTT(btn);
 });
 
 /* =========================================================================
@@ -5165,14 +5179,13 @@ function buildSosExtraCard() {
   return wrap;
 }
 
-// Parado, o círculo da esquerda (prev-btn) é o gatilho do SOS — segura 5s,
-// vibra ~1s confirmando, dispara. Tocando, o mesmo elemento volta a ser
-// "item anterior" (clique normal, sem hold). Soltar antes dos 5s cancela.
+// Selo no canto do botão de retroceder é o gatilho do SOS — segura 5s, vibra
+// ~1s confirmando, dispara. Soltar antes dos 5s cancela. Independente do
+// botão ⏮ embaixo, que continua voltando item normalmente a qualquer momento.
 let sosHoldTimeoutId = null;
-const sosHoldBtn = document.getElementById('prev-btn');
+const sosHoldBtn = document.getElementById('sos-badge-btn');
 
 function startSosHold() {
-  if (isPlaying) return; // tocando, esse botão é "item anterior", não SOS
   sosHoldTimeoutId = setTimeout(() => {
     if (navigator.vibrate) navigator.vibrate(1000);
     triggerSOS();
