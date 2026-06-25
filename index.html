@@ -686,6 +686,7 @@
     <div class="navbar-inner">
       <button class="nav-btn active" data-tab="briefing"><span class="ic">▶</span>Meu Dia</button>
       <button class="nav-btn" data-tab="gratis"><span class="ic">🎚️</span>Guia</button>
+      <button class="nav-btn" id="player-nav-btn"><span class="ic">🎵</span>Player</button>
       <button class="nav-btn" data-tab="premium"><span class="ic">⭐</span>Premium</button>
     </div>
   </nav>
@@ -918,6 +919,51 @@
     <div class="nav-stat"><div class="nav-val" id="nav-eta-val">—</div><div class="nav-lbl">chegada</div></div>
     <div class="nav-stat"><div class="nav-val" id="nav-dist-total">—</div><div class="nav-lbl">restante</div></div>
     <div class="nav-stat"><div class="nav-val" id="nav-speed-val">—</div><div class="nav-lbl">velocidade</div></div>
+  </div>
+</div>
+
+<!-- ============ PLAYER (Música/Vídeo/Rádio, tela cheia) ============ -->
+<div class="nav-overlay" id="player-overlay">
+  <div class="nav-top-bar">
+    <button class="nav-back-btn" id="player-close-btn">←</button>
+    <div style="font-weight:600;">🎵 Player</div>
+    <span style="width:30px;"></span>
+  </div>
+
+  <div id="player-now-playing" style="display:none; padding: 14px 20px; border-bottom: 1px solid #222;">
+    <div style="font-size:0.7rem; opacity:0.6; margin-bottom: 2px;">Tocando agora (no navegador)</div>
+    <div id="player-now-playing-title" style="font-weight:600;"></div>
+    <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7;"></div>
+    <button id="player-now-playing-stop" style="margin-top:8px; background:#222; color:#fff; padding:6px 12px; font-size:0.78rem;">Encerrar exibição</button>
+  </div>
+
+  <div id="player-tab-musica" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px;">
+    <div style="display:flex; gap:8px; margin-bottom: 12px;">
+      <input type="text" id="player-musica-search" placeholder="Buscar artista/música" style="flex:1;">
+      <button id="player-musica-search-btn">🔍</button>
+    </div>
+    <div id="player-musica-results"></div>
+  </div>
+
+  <div id="player-tab-video" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px; display:none;">
+    <div style="display:flex; gap:8px; margin-bottom: 12px;">
+      <input type="text" id="player-video-search" placeholder="Buscar vídeo" style="flex:1;">
+      <button id="player-video-search-btn">🔍</button>
+    </div>
+    <div id="player-video-results"></div>
+  </div>
+
+  <div id="player-tab-radio" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px; display:none;">
+    <div id="player-radio-list" style="margin-bottom: 10px;"></div>
+    <input type="text" id="player-radio-nome" placeholder="Nome da rádio" style="margin-bottom: 8px;">
+    <input type="text" id="player-radio-url" placeholder="URL do stream (.mp3, .m3u8, ou link de rádio online)">
+    <button id="player-radio-add-btn" style="margin-top: 8px;">+ Adicionar rádio</button>
+  </div>
+
+  <div style="display:flex; border-top: 1px solid #222;">
+    <button class="player-tab-btn active" id="player-tab-btn-musica" style="flex:1; background:none; color:#fff; padding:12px; opacity:1;">🎶 Música</button>
+    <button class="player-tab-btn" id="player-tab-btn-video" style="flex:1; background:none; color:#fff; padding:12px; opacity:0.5;">🎬 Vídeo</button>
+    <button class="player-tab-btn" id="player-tab-btn-radio" style="flex:1; background:none; color:#fff; padding:12px; opacity:0.5;">📻 Rádio</button>
   </div>
 </div>
 
@@ -1422,17 +1468,6 @@ const CATEGORY_DEFS = [
         { id: 'hora', kind: 'text', placeholder: 'Hora de nascimento (HH:MM), opcional' },
       ] },
       { id: 'tarot', label: 'Arcano do dia (Tarot)', icon: '🃏', fields: [] },
-    ],
-  },
-  {
-    id: 'player', icon: '🎵', title: 'Player', color: 'var(--c-accent-blue)',
-    features: [
-      { id: 'radio', label: 'Rádio', icon: '📻', fields: [
-        { id: 'estacoes', kind: 'radio-stations' },
-      ], hint: 'Toca de verdade em segundo plano, abrindo no navegador (não trava ao trocar de app)' },
-      { id: 'musica-link', label: 'Música (YouTube Music, Spotify, etc)', icon: '🎶', fields: [
-        { id: 'url', kind: 'text', placeholder: 'Cole o link (ex: music.youtube.com/watch?v=...)' },
-      ], hint: 'Mesmo princípio: abre no navegador, toca em segundo plano de verdade' },
     ],
   },
 ];
@@ -2282,8 +2317,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.14';
+const APP_VERSION = '3.15';
 const CHANGELOG = [
+  {
+    version: '3.15', date: '24/06/2026',
+    items: [
+      'Player saiu do Guia e virou tela própria (ícone 🎵 na navbar) — abas Música/Vídeo/Rádio, busca de artista/vídeo, "tocando agora" e lista de rádios, tudo tocando de verdade no navegador em segundo plano',
+    ],
+  },
   {
     version: '3.14', date: '24/06/2026',
     items: [
@@ -3850,6 +3891,151 @@ document.getElementById('more-menu-btn').addEventListener('click', (ev) => {
   if (!wasOpen) document.getElementById('more-menu').classList.add('open');
 });
 document.getElementById('more-menu').addEventListener('click', (ev) => ev.stopPropagation());
+
+/* =========================================================================
+   PLAYER, tela cheia (Música/Vídeo/Rádio) — joga tudo pra abrir no
+   navegador (tocarNoNavegador), que sustenta áudio em segundo plano de
+   verdade. Não tem como controlar play/pause/pular de dentro do app depois
+   de abrir — isso exigiria uma ponte nativa (MediaSession) que não foi
+   construída ainda; "Encerrar exibição" só limpa o card local, não fecha
+   a aba do navegador.
+   ========================================================================= */
+document.getElementById('player-nav-btn').addEventListener('click', () => {
+  document.getElementById('player-overlay').classList.add('open');
+  renderPlayerRadioList();
+});
+document.getElementById('player-close-btn').addEventListener('click', () => {
+  document.getElementById('player-overlay').classList.remove('open');
+});
+
+function setPlayerNowPlaying(title, sub) {
+  document.getElementById('player-now-playing').style.display = 'block';
+  document.getElementById('player-now-playing-title').textContent = title;
+  document.getElementById('player-now-playing-sub').textContent = sub || '';
+}
+document.getElementById('player-now-playing-stop').addEventListener('click', () => {
+  document.getElementById('player-now-playing').style.display = 'none';
+});
+
+const PLAYER_TABS = ['musica', 'video', 'radio'];
+function switchPlayerTab(tab) {
+  PLAYER_TABS.forEach((t) => {
+    document.getElementById(`player-tab-${t}`).style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById(`player-tab-btn-${t}`);
+    btn.style.opacity = t === tab ? '1' : '0.5';
+  });
+}
+PLAYER_TABS.forEach((t) => {
+  document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
+});
+
+async function buscarPlayerVideo(termo) {
+  if (!termo) return null;
+  try {
+    const { video, error } = await callEdgeFunction('youtube-music', { name: termo });
+    if (error || !video) return null;
+    return video; // { videoId, title, channelTitle }
+  } catch (e) { console.error('player search:', e); return null; }
+}
+
+function renderPlayerResultRow(container, video, urlBase, tipoLabel) {
+  container.innerHTML = '';
+  if (!video) {
+    container.innerHTML = `<div class="hint">Nada encontrado.</div>`;
+    return;
+  }
+  const row = document.createElement('div');
+  row.className = 'alarm-item';
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.textContent = '▶️';
+  playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
+  playBtn.addEventListener('click', () => {
+    tocarNoNavegador(`${urlBase}${video.videoId}`);
+    setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
+  });
+  const span = document.createElement('span');
+  span.className = 'time';
+  span.style.flex = '1';
+  span.textContent = `${video.title} — ${video.channelTitle}`;
+  row.appendChild(playBtn);
+  row.appendChild(span);
+  container.appendChild(row);
+}
+
+async function fazerBuscaPlayerMusica() {
+  const termo = document.getElementById('player-musica-search').value.trim();
+  const resultsEl = document.getElementById('player-musica-results');
+  resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
+  const video = await buscarPlayerVideo(termo);
+  renderPlayerResultRow(resultsEl, video, 'https://music.youtube.com/watch?v=', 'Música');
+}
+document.getElementById('player-musica-search-btn').addEventListener('click', fazerBuscaPlayerMusica);
+document.getElementById('player-musica-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMusica(); });
+
+async function fazerBuscaPlayerVideo() {
+  const termo = document.getElementById('player-video-search').value.trim();
+  const resultsEl = document.getElementById('player-video-results');
+  resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
+  const video = await buscarPlayerVideo(termo);
+  renderPlayerResultRow(resultsEl, video, 'https://www.youtube.com/watch?v=', 'Vídeo');
+}
+document.getElementById('player-video-search-btn').addEventListener('click', fazerBuscaPlayerVideo);
+document.getElementById('player-video-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerVideo(); });
+
+function renderPlayerRadioList() {
+  const fs = getFeatureState('player', 'radio');
+  const estacoes = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
+  fs.fields.estacoes = estacoes;
+  const listEl = document.getElementById('player-radio-list');
+  listEl.innerHTML = '';
+  if (estacoes.length === 0) {
+    listEl.innerHTML = `<div class="hint">Nenhuma rádio adicionada ainda.</div>`;
+    return;
+  }
+  estacoes.forEach((est) => {
+    const row = document.createElement('div');
+    row.className = 'alarm-item';
+    const playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.textContent = '▶️';
+    playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
+    playBtn.addEventListener('click', () => {
+      tocarNoNavegador(est.url);
+      setPlayerNowPlaying(est.nome, 'Rádio');
+    });
+    const span = document.createElement('span');
+    span.className = 'time';
+    span.style.flex = '1';
+    span.textContent = est.nome;
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => {
+      const idx = estacoes.indexOf(est);
+      if (idx !== -1) estacoes.splice(idx, 1);
+      saveState();
+      renderPlayerRadioList();
+    });
+    row.appendChild(playBtn);
+    row.appendChild(span);
+    row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+document.getElementById('player-radio-add-btn').addEventListener('click', () => {
+  const nomeInput = document.getElementById('player-radio-nome');
+  const urlInput = document.getElementById('player-radio-url');
+  const nome = nomeInput.value.trim();
+  const url = urlInput.value.trim();
+  if (!nome || !url) return;
+  const fs = getFeatureState('player', 'radio');
+  fs.fields.estacoes.push({ nome, url });
+  saveState();
+  nomeInput.value = '';
+  urlInput.value = '';
+  renderPlayerRadioList();
+});
 
 // showSave=false na tela de "Salvos" (não tem porque salvar de novo o que já
 // tá salvo) — lá usa só compartilhar/copiar, com remover separado.
