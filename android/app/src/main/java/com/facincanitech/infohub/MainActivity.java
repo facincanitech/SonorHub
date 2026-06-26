@@ -1,6 +1,12 @@
 package com.facincanitech.infohub;
 
+import android.app.PictureInPictureParams;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.getcapacitor.BridgeActivity;
@@ -15,11 +21,44 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {}
 
+    private boolean pipReceiverRegistered = false;
+    private final BroadcastReceiver pipControlReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String control = intent.getStringExtra(PlayerPipPlugin.EXTRA_CONTROL);
+            if (control != null) PlayerPipPlugin.emitControlIfActive(control);
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(BriefingAlarmPlugin.class);
         registerPlugin(SmsPlugin.class);
+        registerPlugin(PlayerPipPlugin.class);
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!pipReceiverRegistered) {
+            IntentFilter filter = new IntentFilter(PlayerPipPlugin.ACTION_PIP_CONTROL);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(pipControlReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(pipControlReceiver, filter);
+            }
+            pipReceiverRegistered = true;
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (pipReceiverRegistered) {
+            unregisterReceiver(pipControlReceiver);
+            pipReceiverRegistered = false;
+        }
     }
 
     @Override
@@ -32,6 +71,32 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     public void onPause() {
         super.onPause();
         AppState.isForeground = false;
+    }
+
+    // Disparado quando o usuário sai do app (home, troca de app) — se tem
+    // mídia tocando no Player, entra em PiP em vez de só minimizar normal.
+    @Override
+    public void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (PlayerPipPlugin.isPlaybackActive() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
+            } catch (Exception e) {
+                // aparelho sem suporte de verdade a PiP, ou app já em background — ignora
+            }
+        }
+    }
+
+    // PiP foi fechado (usuário arrastou pro X) enquanto a mídia ainda devia
+    // tocar — quem decide "ainda devia tocar" é o JS via setActive(); aqui só
+    // avisamos que saiu do PiP pra começar o Foreground Service com a
+    // notificação, se for o caso.
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+        if (!isInPictureInPictureMode && PlayerPipPlugin.isPlaybackActive()) {
+            PlayerForegroundService.start(this);
+        }
     }
 
     // App já estava aberto (singleTask) quando o alarme disparou — avisa o JS

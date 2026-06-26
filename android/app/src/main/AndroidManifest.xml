@@ -15,6 +15,8 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
             android:exported="true">
 
             <intent-filter>
@@ -23,6 +25,13 @@
             </intent-filter>
 
         </activity>
+
+        <!-- Mantém Música/Vídeo/Rádio tocando quando o PiP é fechado de
+             propósito — vira notificação com controle de mídia. -->
+        <service
+            android:name=".PlayerForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -64,4 +73,6 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 </manifest>
