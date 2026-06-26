@@ -64,6 +64,16 @@ public class PlayerPipPlugin extends Plugin {
     @PluginMethod
     public void setPaused(PluginCall call) {
         isPaused = Boolean.TRUE.equals(call.getBoolean("paused", false));
+        // Os botões da janelinha PiP (RemoteAction) só existem com o ícone que
+        // tinham no momento de entrar em PiP — sem atualizar de novo aqui, o
+        // ícone de pausa nunca trocava pra "play" mesmo já pausado de verdade.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && getActivity() != null && getActivity().isInPictureInPictureMode()) {
+            try {
+                getActivity().setPictureInPictureParams(buildPipParams(getActivity()));
+            } catch (Exception e) {
+                // fora de PiP ou aparelho sem suporte — ignora
+            }
+        }
         call.resolve();
     }
 

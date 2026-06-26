@@ -2333,8 +2333,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.21';
+const APP_VERSION = '3.22';
 const CHANGELOG = [
+  {
+    version: '3.22', date: '26/06/2026',
+    items: [
+      'Corrigido: vibração do SOS parava antes da hora (conta errada na duração do padrão)',
+      'Corrigido: vídeo do Player às vezes vinha em branco (criava o player antes de mostrar a tela)',
+      'Corrigido: ícone de play/pausa na janelinha PiP não trocava quando pausava de verdade',
+    ],
+  },
   {
     version: '3.21', date: '26/06/2026',
     items: [
@@ -4072,13 +4080,16 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
   if (tab) playerActiveTab = tab; // faltava essa linha — era por isso que voltar pra aba escondia tudo
+  // Mostra o card ANTES de criar/carregar o player — um iframe criado dentro
+  // de algo com display:none não inicializa direito (fica em branco mesmo
+  // depois de aparecer). Era por isso que vídeo às vezes vinha vazio.
+  setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
+  document.getElementById('player-now-playing').style.display = 'block';
   const player = await ensurePlayerYt();
   player.loadVideoById(video.videoId);
   player.playVideo();
   playerIsPaused = false;
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
-  setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
-  document.getElementById('player-now-playing').style.display = 'block';
   if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
 }
 
@@ -5652,7 +5663,7 @@ const sosHoldBtn = document.getElementById('sos-badge-btn');
 // Vibração intermitente (liga/desliga) durante todo o segurar, não só uma
 // vibração no final — confirma visualmente (sem precisar olhar) que está
 // contando, e some na hora se soltar antes dos 5s.
-const SOS_VIBRATE_PATTERN = Array(13).fill(200); // 200ms on, 200ms off, repete ~5s
+const SOS_VIBRATE_PATTERN = Array(25).fill(200); // 200ms on, 200ms off × 25 = 5000ms (13 dava só 2.6s, parava antes da hora)
 
 function startSosHold() {
   if (navigator.vibrate) navigator.vibrate(SOS_VIBRATE_PATTERN);
