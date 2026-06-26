@@ -727,7 +727,9 @@
     </div>
 
     <div id="player-now-playing" style="display:none; margin-bottom: 16px;">
-      <div style="display:flex; justify-content:flex-end; margin-bottom: 8px;">
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom: 8px;">
+        <button id="player-ctrl-favorite" style="background: var(--c-surface); border: 1px solid var(--c-border2); color: var(--c-text); font-size:1.1rem; width:40px; height:40px; border-radius:50%; padding:0; display:none;">☆</button>
+        <button id="player-ctrl-share" style="background: var(--c-surface); border: 1px solid var(--c-border2); color: var(--c-text); font-size:1.1rem; width:40px; height:40px; border-radius:50%; padding:0; display:none;">📤</button>
         <button id="player-ctrl-video-toggle" style="background: var(--c-surface); border: 1px solid var(--c-border2); color: var(--c-text); font-size:1.1rem; width:40px; height:40px; border-radius:50%; padding:0; display:none;">📺</button>
       </div>
       <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);">
@@ -754,6 +756,8 @@
     </div>
 
     <div id="player-tab-media" class="player-tab-content">
+      <div class="hint" style="margin-bottom: 6px;">⭐ Favoritos</div>
+      <div id="player-media-favoritos" style="margin-bottom: 16px;"></div>
       <div id="player-media-results"></div>
     </div>
 
@@ -2362,8 +2366,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.8';
+const APP_VERSION = '4.9';
 const CHANGELOG = [
+  {
+    version: '4.9', date: '26/06/2026',
+    items: [
+      'MultiSonor: novo ☆ na linha do 📺/🎧 pra favoritar música/vídeo tocando — favoritos aparecem na aba Música/Vídeo',
+      'MultiSonor: novo 📤 pra compartilhar a música/vídeo tocando (com assinatura e link do SonorHub)',
+    ],
+  },
   {
     version: '4.8', date: '26/06/2026',
     items: [
@@ -4137,6 +4148,7 @@ document.getElementById('more-menu').addEventListener('click', (ev) => ev.stopPr
    ========================================================================= */
 document.getElementById('player-nav-btn').addEventListener('click', () => {
   renderPlayerRadioFavoritos();
+  renderPlayerMediaFavoritos();
   switchPlayerTab(playerActiveTab || 'media');
 });
 
@@ -4375,6 +4387,7 @@ let playerYtApiLoadPromise = null;
 let playerCurrentLista = [];
 let playerCurrentIndex = 0;
 let playerCurrentTipoLabel = '';
+let playerCurrentVideoObj = null;
 let playerIsPaused = false;
 
 function loadPlayerYtApi() {
@@ -4504,6 +4517,7 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   playerCurrentLista = lista || [video];
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
+  playerCurrentVideoObj = video;
   playerActiveTab = tab || 'media';
   playerViewTab = playerActiveTab;
   playerShowResults = false; // toca algo novo: some a lista, o player grande toma o espaço
@@ -4514,6 +4528,9 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   document.getElementById('player-ctrl-prev').style.display = '';
   document.getElementById('player-ctrl-next').style.display = '';
   document.getElementById('player-ctrl-video-toggle').style.display = 'flex';
+  document.getElementById('player-ctrl-favorite').style.display = 'flex';
+  document.getElementById('player-ctrl-share').style.display = 'flex';
+  updatePlayerFavoriteIcon();
   document.getElementById('player-progress-row').style.display = 'flex';
   const player = await ensurePlayerYt();
   player.loadVideoById(video.videoId);
@@ -4624,6 +4641,8 @@ function playRadioStation(est) {
   document.getElementById('player-ctrl-prev').style.display = 'none';
   document.getElementById('player-ctrl-next').style.display = 'none';
   document.getElementById('player-ctrl-video-toggle').style.display = 'none';
+  document.getElementById('player-ctrl-favorite').style.display = 'none';
+  document.getElementById('player-ctrl-share').style.display = 'none';
   document.getElementById('player-progress-row').style.display = 'none';
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
   // Rádio não tem vídeo pra mostrar no PiP — desliga o gatilho de PiP
@@ -4715,6 +4734,80 @@ function renderPlayerRadioFavoritos() {
     listEl.appendChild(row);
   });
 }
+
+/* ----- Favoritos de Música/Vídeo + compartilhar — mesma linha do 📺/🎧 ----- */
+function getPlayerMediaFavoritos() {
+  const fs = getFeatureState('player', 'media');
+  const favoritos = Array.isArray(fs.fields.favoritos) ? fs.fields.favoritos : [];
+  fs.fields.favoritos = favoritos;
+  return favoritos;
+}
+
+function updatePlayerFavoriteIcon() {
+  const btn = document.getElementById('player-ctrl-favorite');
+  if (!playerCurrentVideoObj) { btn.textContent = '☆'; return; }
+  const isFav = getPlayerMediaFavoritos().some((f) => f.videoId === playerCurrentVideoObj.videoId);
+  btn.textContent = isFav ? '⭐' : '☆';
+}
+
+document.getElementById('player-ctrl-favorite').addEventListener('click', () => {
+  if (!playerCurrentVideoObj) return;
+  const favoritos = getPlayerMediaFavoritos();
+  const idx = favoritos.findIndex((f) => f.videoId === playerCurrentVideoObj.videoId);
+  if (idx !== -1) {
+    favoritos.splice(idx, 1);
+  } else {
+    favoritos.unshift({
+      videoId: playerCurrentVideoObj.videoId,
+      title: playerCurrentVideoObj.title,
+      channelTitle: playerCurrentVideoObj.channelTitle,
+      thumbnail: playerCurrentVideoObj.thumbnail,
+    });
+  }
+  saveState();
+  updatePlayerFavoriteIcon();
+  renderPlayerMediaFavoritos();
+});
+
+function renderPlayerMediaFavoritos() {
+  const favoritos = getPlayerMediaFavoritos();
+  const listEl = document.getElementById('player-media-favoritos');
+  listEl.innerHTML = '';
+  if (favoritos.length === 0) {
+    listEl.innerHTML = `<div class="hint">Nenhum favorito ainda — toque em ☆ enquanto algo tocar.</div>`;
+    return;
+  }
+  favoritos.forEach((v, i) => {
+    const row = buildPlayerResultRow(v, 'Música/Vídeo', 'media', favoritos, i);
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => {
+      const idx = favoritos.indexOf(v);
+      if (idx !== -1) favoritos.splice(idx, 1);
+      saveState();
+      updatePlayerFavoriteIcon();
+      renderPlayerMediaFavoritos();
+    });
+    row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+
+document.getElementById('player-ctrl-share').addEventListener('click', async () => {
+  if (!playerCurrentVideoObj) return;
+  const link = `https://www.youtube.com/watch?v=${playerCurrentVideoObj.videoId}`;
+  const attribution = `📲 Compartilhado usando o app SonorHub — ${APP_DOWNLOAD_LINK}`;
+  const text = [attribution, `${playerCurrentVideoObj.title} — ${playerCurrentVideoObj.channelTitle}`].join('\n\n');
+  if (nativeShare) {
+    try { await nativeShare.share({ text, url: link }); } catch (e) {}
+  } else if (navigator.share) {
+    try { await navigator.share({ text, url: link }); } catch (e) {}
+  } else {
+    await navigator.clipboard.writeText([text, link].join('\n\n'));
+    showVoiceToast('Compartilhamento não disponível, copiado pra área de transferência.');
+  }
+});
 
 document.getElementById('player-radio-search-btn').addEventListener('click', async () => {
   const termo = document.getElementById('player-radio-search').value.trim();
