@@ -926,7 +926,11 @@
   </div>
 </div>
 
-<!-- ============ PLAYER (Música/Vídeo/Rádio, tela cheia) ============ -->
+<!-- ============ PLAYER (Música/Vídeo/Rádio, tela cheia) ============
+     Busca fica sempre fixa no topo de cada aba — tocando algo ou não. Quando
+     toca, o player grande ocupa o resto do espaço (nada de lista embaixo);
+     apertar buscar de novo volta a mostrar os resultados, sem parar o que
+     tá tocando. O navbar de abas (Música/Vídeo vs Rádio) embaixo nunca some. -->
 <div class="nav-overlay" id="player-overlay">
   <div class="nav-top-bar">
     <button class="nav-back-btn" id="player-close-btn">←</button>
@@ -936,45 +940,48 @@
 
   <audio id="player-radio-audio" style="display:none;"></audio>
 
-  <div id="player-now-playing" style="display:none; padding: 18px 24px; border-bottom: 1px solid #222; background: color-mix(in srgb, var(--c-accent-blue) 8%, transparent);">
-    <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.6);">
-      <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
-      <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
-      <button id="player-ctrl-video-toggle" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.55); color:#fff; font-size:1.1rem; width:36px; height:36px; border-radius:50%; padding:0; display:none;">👁</button>
-    </div>
-    <div id="player-now-playing-title" style="font-weight:600; text-align:center; font-size:1.05rem;"></div>
-    <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:12px; text-align:center;"></div>
-    <div id="player-progress-row" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-      <span id="player-time-current" style="font-size:0.72rem; opacity:0.7; min-width:34px;">0:00</span>
-      <div id="player-progress-bar" style="flex:1; height:4px; background:#333; border-radius:2px; overflow:hidden;">
-        <div id="player-progress-fill" style="height:100%; width:0%; background: var(--c-accent-blue);"></div>
-      </div>
-      <span id="player-time-total" style="font-size:0.72rem; opacity:0.7; min-width:34px; text-align:right;">0:00</span>
-    </div>
-    <div style="display:flex; justify-content:center; align-items:center; gap:26px; margin-top:8px;">
-      <button id="player-ctrl-prev" style="background:none; font-size:1.6rem; color:#fff;">⏮</button>
-      <button id="player-ctrl-playpause" style="background:#fff; color:#000; width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
-      <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:#fff;">⏭</button>
-    </div>
-    <div class="hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
-  </div>
-
-  <div id="player-tab-media" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px;">
-    <div style="display:flex; gap:8px; margin-bottom: 12px;">
+  <div style="flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;">
+    <div id="player-media-searchbar" style="padding: 14px 20px 10px; display:flex; gap:8px; flex-shrink:0;">
       <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" style="flex:1;">
       <button id="player-media-search-btn">🔍</button>
     </div>
-    <div id="player-media-results"></div>
-  </div>
-
-  <div id="player-tab-radio" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px; display:none;">
-    <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
-    <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
-    <div style="display:flex; gap:8px; margin-bottom: 12px;">
+    <div id="player-radio-searchbar" style="padding: 14px 20px 10px; display:none; gap:8px; flex-shrink:0;">
       <input type="text" id="player-radio-search" placeholder="Buscar rádio (nome, cidade, gênero)" style="flex:1;">
       <button id="player-radio-search-btn">🔍</button>
     </div>
-    <div id="player-radio-results"></div>
+
+    <div id="player-now-playing" style="display:none; flex:1; overflow-y:auto; padding: 4px 24px 18px;">
+      <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.6);">
+        <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+        <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
+        <button id="player-ctrl-video-toggle" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.55); color:#fff; font-size:1.1rem; width:36px; height:36px; border-radius:50%; padding:0; display:none;">👁</button>
+      </div>
+      <div id="player-now-playing-title" style="font-weight:600; text-align:center; font-size:1.05rem;"></div>
+      <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:12px; text-align:center;"></div>
+      <div id="player-progress-row" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span id="player-time-current" style="font-size:0.72rem; opacity:0.7; min-width:34px;">0:00</span>
+        <div id="player-progress-bar" style="flex:1; height:4px; background:#333; border-radius:2px; overflow:hidden;">
+          <div id="player-progress-fill" style="height:100%; width:0%; background: var(--c-accent-blue);"></div>
+        </div>
+        <span id="player-time-total" style="font-size:0.72rem; opacity:0.7; min-width:34px; text-align:right;">0:00</span>
+      </div>
+      <div style="display:flex; justify-content:center; align-items:center; gap:26px; margin-top:8px;">
+        <button id="player-ctrl-prev" style="background:none; font-size:1.6rem; color:#fff;">⏮</button>
+        <button id="player-ctrl-playpause" style="background:#fff; color:#000; width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
+        <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:#fff;">⏭</button>
+      </div>
+      <div class="hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
+    </div>
+
+    <div id="player-tab-media" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 0 20px 14px;">
+      <div id="player-media-results"></div>
+    </div>
+
+    <div id="player-tab-radio" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 0 20px 14px; display:none;">
+      <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
+      <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
+      <div id="player-radio-results"></div>
+    </div>
   </div>
 
   <div style="display:flex; border-top: 1px solid #222;">
@@ -2340,8 +2347,17 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.25';
+const APP_VERSION = '3.26';
 const CHANGELOG = [
+  {
+    version: '3.26', date: '26/06/2026',
+    items: [
+      'Player: busca agora fica fixa no topo, mesmo com algo tocando',
+      'Player: quando toca algo, some a lista e o player ocupa o resto da tela',
+      'Player: buscar de novo enquanto algo toca volta a mostrar a lista, sem parar a música',
+      'Rádio: erro de busca agora mostra o motivo real, pra investigar se continuar zerando',
+    ],
+  },
   {
     version: '3.25', date: '26/06/2026',
     items: [
@@ -4012,6 +4028,7 @@ document.getElementById('more-menu').addEventListener('click', (ev) => ev.stopPr
 document.getElementById('player-nav-btn').addEventListener('click', () => {
   document.getElementById('player-overlay').classList.add('open');
   renderPlayerRadioFavoritos();
+  switchPlayerTab(playerActiveTab || 'media'); // reabre mostrando o que já tava tocando, se tiver
 });
 document.getElementById('player-close-btn').addEventListener('click', () => {
   document.getElementById('player-overlay').classList.remove('open');
@@ -4021,15 +4038,31 @@ document.getElementById('player-close-btn').addEventListener('click', () => {
 // vale tanto pra "qual aba mostrar" quanto "o que tá tocando agora", já que
 // cada aba corresponde a exatamente um tipo de player.
 const PLAYER_TABS = ['media', 'radio'];
-let playerActiveTab = null;
-function switchPlayerTab(tab) {
+let playerViewTab = 'media'; // qual aba o usuário tá vendo agora
+let playerActiveTab = null; // qual tipo (media/radio) tá tocando (null = nada)
+let playerShowResults = false; // true = usuário apertou buscar de novo enquanto algo tocava, quer ver a lista de novo
+
+// Decide o que mostrar na aba aberta: busca fixa sempre no topo (já é HTML
+// estático), e por baixo dela ou o player grande (algo tocando aqui e o
+// usuário não pediu pra buscar de novo) ou a lista de resultados.
+function updatePlayerBodyVisibility() {
   PLAYER_TABS.forEach((t) => {
-    document.getElementById(`player-tab-${t}`).style.display = t === tab ? 'block' : 'none';
-    const btn = document.getElementById(`player-tab-btn-${t}`);
-    btn.style.opacity = t === tab ? '1' : '0.5';
+    document.getElementById(`player-${t}-searchbar`).style.display = (t === playerViewTab) ? 'flex' : 'none';
+    const showingPlayerHere = (t === playerViewTab) && (playerActiveTab === t) && !playerShowResults;
+    document.getElementById(`player-tab-${t}`).style.display = (t === playerViewTab && !showingPlayerHere) ? 'block' : 'none';
   });
-  document.getElementById('player-now-playing').style.display = (tab === playerActiveTab) ? 'block' : 'none';
-  if (tab === playerActiveTab && playerActiveTab === 'media') setTimeout(updatePipVideoRect, 100);
+  const showPlayer = (playerActiveTab === playerViewTab) && !playerShowResults;
+  document.getElementById('player-now-playing').style.display = showPlayer ? 'block' : 'none';
+  if (showPlayer && playerActiveTab === 'media') setTimeout(updatePipVideoRect, 100);
+}
+
+function switchPlayerTab(tab) {
+  playerViewTab = tab;
+  playerShowResults = false; // trocar de aba volta a mostrar o player dela, se tiver algo tocando
+  PLAYER_TABS.forEach((t) => {
+    document.getElementById(`player-tab-btn-${t}`).style.opacity = t === tab ? '1' : '0.5';
+  });
+  updatePlayerBodyVisibility();
 }
 PLAYER_TABS.forEach((t) => {
   document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
@@ -4236,8 +4269,10 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
   playerActiveTab = tab || 'media';
+  playerViewTab = playerActiveTab;
+  playerShowResults = false; // toca algo novo: some a lista, o player grande toma o espaço
   setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
-  document.getElementById('player-now-playing').style.display = 'block';
+  updatePlayerBodyVisibility(); // precisa mostrar #player-now-playing ANTES do ensurePlayerYt (precisa de tamanho real pra criar o iframe)
   document.getElementById('player-cover-img').src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
   document.getElementById('player-yt-container').style.display = 'block'; // precisa estar visível pra criar o iframe certo
   document.getElementById('player-ctrl-prev').style.display = '';
@@ -4255,7 +4290,6 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
 }
 
 function setPlayerNowPlaying(title, sub) {
-  document.getElementById('player-now-playing').style.display = 'block';
   document.getElementById('player-now-playing-title').textContent = title;
   document.getElementById('player-now-playing-sub').textContent = sub || '';
 }
@@ -4300,6 +4334,8 @@ if (nativePlayerPip) {
 async function fazerBuscaPlayerMedia() {
   const termo = document.getElementById('player-media-search').value.trim();
   if (!termo) return;
+  playerShowResults = true; // buscar de novo enquanto algo toca: volta a mostrar a lista, sem parar o player
+  updatePlayerBodyVisibility();
   const resultsEl = document.getElementById('player-media-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
   let artists = [], videos = [], error = null;
@@ -4336,12 +4372,14 @@ function playRadioStation(est) {
   stopMediaForExclusivity();
   stopPlayerProgressLoop();
   playerActiveTab = 'radio';
+  playerViewTab = 'radio';
+  playerShowResults = false;
   const url = est.url_resolved || est.url;
   if (!url) return;
   playerRadioAudio.src = url;
   playerRadioAudio.play().catch((e) => console.error('radio play:', e));
   setPlayerNowPlaying(est.name || est.nome, `📻 Rádio${est.country ? ' · ' + est.country : ''}`);
-  document.getElementById('player-now-playing').style.display = 'block';
+  updatePlayerBodyVisibility();
   // Rádio não tem capa nem vídeo — mostra um ícone simples no lugar da capa.
   document.getElementById('player-cover-img').src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#222"/><text x="50" y="62" font-size="46" text-anchor="middle">📻</text></svg>');
   document.getElementById('player-cover-img').style.display = 'block';
@@ -4359,12 +4397,15 @@ function playRadioStation(est) {
 }
 
 async function buscarRadios(termo) {
-  if (!termo) return [];
+  if (!termo) return { estacoes: [], error: null };
   try {
     const resp = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(termo)}&limit=15&hidebroken=true&order=clickcount&reverse=true`);
-    if (!resp.ok) return [];
-    return await resp.json();
-  } catch (e) { console.error('radio search:', e); return []; }
+    if (!resp.ok) return { estacoes: [], error: `Radio Browser respondeu erro ${resp.status}.` };
+    return { estacoes: await resp.json(), error: null };
+  } catch (e) {
+    console.error('radio search:', e);
+    return { estacoes: [], error: 'Falha de conexão com a Radio Browser: ' + e.message };
+  }
 }
 
 function renderPlayerRadioResultRow(est) {
@@ -4384,11 +4425,11 @@ function renderPlayerRadioResultRow(est) {
   return row;
 }
 
-function renderPlayerRadioResults(estacoes) {
+function renderPlayerRadioResults(estacoes, error) {
   const container = document.getElementById('player-radio-results');
   container.innerHTML = '';
   if (!estacoes.length) {
-    container.innerHTML = `<div class="hint">Nenhuma rádio encontrada.</div>`;
+    container.innerHTML = `<div class="hint">${error || 'Nenhuma rádio encontrada.'}</div>`;
     return;
   }
   estacoes.forEach((est) => {
@@ -4441,9 +4482,13 @@ function renderPlayerRadioFavoritos() {
 
 document.getElementById('player-radio-search-btn').addEventListener('click', async () => {
   const termo = document.getElementById('player-radio-search').value.trim();
+  if (!termo) return;
+  playerShowResults = true; // buscar de novo enquanto tocava: volta a mostrar a lista
+  updatePlayerBodyVisibility();
   const resultsEl = document.getElementById('player-radio-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
-  renderPlayerRadioResults(await buscarRadios(termo));
+  const { estacoes, error } = await buscarRadios(termo);
+  renderPlayerRadioResults(estacoes, error);
 });
 document.getElementById('player-radio-search').addEventListener('keydown', (ev) => {
   if (ev.key === 'Enter') document.getElementById('player-radio-search-btn').click();
