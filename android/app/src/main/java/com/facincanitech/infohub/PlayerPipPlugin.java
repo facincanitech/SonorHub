@@ -4,6 +4,7 @@ import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.util.Rational;
@@ -31,6 +32,7 @@ public class PlayerPipPlugin extends Plugin {
     private static PlayerPipPlugin activeInstance;
     private static boolean playbackActive = false;
     private static boolean isPaused = false;
+    private static Rect videoRect = null; // último retângulo (em px de tela) do vídeo, pra recortar o PiP nele
 
     @Override
     public void load() {
@@ -77,6 +79,23 @@ public class PlayerPipPlugin extends Plugin {
         call.resolve();
     }
 
+    // JS manda o retângulo (em px de tela, já multiplicado pelo devicePixelRatio)
+    // de onde o vídeo está desenhado na tela normal — sem isso o PiP recorta a
+    // Activity inteira (por isso só aparecia o título "Player" escrito).
+    @PluginMethod
+    public void setVideoRect(PluginCall call) {
+        Integer left = call.getInt("left");
+        Integer top = call.getInt("top");
+        Integer right = call.getInt("right");
+        Integer bottom = call.getInt("bottom");
+        if (left != null && top != null && right != null && bottom != null && right > left && bottom > top) {
+            videoRect = new Rect(left, top, right, bottom);
+        } else {
+            videoRect = null;
+        }
+        call.resolve();
+    }
+
     // Chamado pela MainActivity bem antes de entrar em PiP, pra montar os
     // botões com o ícone certo (play vs pause) no momento.
     public static PictureInPictureParams buildPipParams(Context context) {
@@ -86,6 +105,9 @@ public class PlayerPipPlugin extends Plugin {
             builder.setAutoEnterEnabled(false); // controlado manualmente em onUserLeaveHint
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder.setActions(buildActions(context));
+        }
+        if (videoRect != null) {
+            builder.setSourceRectHint(videoRect);
         }
         builder.setAspectRatio(new Rational(16, 9));
         return builder.build();

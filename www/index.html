@@ -2333,8 +2333,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.22';
+const APP_VERSION = '3.23';
 const CHANGELOG = [
+  {
+    version: '3.23', date: '26/06/2026',
+    items: [
+      'Corrigido: botão de SOS parou de funcionar (vibração podia falhar e travar o gatilho)',
+      'Modo Música do Player agora não mostra mais a imagem do vídeo, só o som',
+      'Corrigido: janelinha PiP do Vídeo mostrava só o texto "Player" em vez do vídeo',
+    ],
+  },
   {
     version: '3.22', date: '26/06/2026',
     items: [
@@ -3996,6 +4004,7 @@ function switchPlayerTab(tab) {
   // O card "tocando agora" (player embutido + controles) só aparece na aba
   // que disparou ele — antes ficava fixo fora das abas e vazava pras outras.
   document.getElementById('player-now-playing').style.display = (tab === playerActiveTab) ? 'block' : 'none';
+  if (tab === playerActiveTab) setTimeout(updatePipVideoRect, 100);
 }
 PLAYER_TABS.forEach((t) => {
   document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
@@ -4034,6 +4043,24 @@ function renderPlayerResultRow(container, video, urlBase, tipoLabel, tab) {
 
 /* ----- Player embutido de verdade (Música/Vídeo), com PiP ----- */
 const nativePlayerPip = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayerPip;
+
+// Sem isso o PiP recorta a Activity inteira (por isso só aparecia o título
+// "Player" escrito) — manda pro nativo onde o vídeo está desenhado na tela
+// normal, em px de tela real (CSS px × devicePixelRatio).
+function updatePipVideoRect() {
+  if (!nativePlayerPip) return;
+  const el = document.getElementById('player-yt-container');
+  if (!el || el.offsetParent === null) return;
+  const rect = el.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  nativePlayerPip.setVideoRect({
+    left: Math.round(rect.left * dpr),
+    top: Math.round(rect.top * dpr),
+    right: Math.round(rect.right * dpr),
+    bottom: Math.round(rect.bottom * dpr),
+  });
+}
+window.addEventListener('resize', updatePipVideoRect);
 let playerYtInstance = null;
 let playerYtApiLoadPromise = null;
 let playerCurrentLista = [];
@@ -4090,7 +4117,14 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   player.playVideo();
   playerIsPaused = false;
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
+  // Música não precisa mostrar a imagem do vídeo, só o som — encolhe o
+  // player quase a zero (continua tocando áudio normalmente), Vídeo mostra
+  // ele do tamanho normal. O PiP usa o tamanho de tela cheia de qualquer
+  // forma (ver sourceRectHint), então isso só afeta a tela normal.
+  document.getElementById('player-yt-container').style.height = (tab === 'musica') ? '1px' : '';
+  if (tab === 'musica') ensurePlayerYt().then((p) => { if (p.getIframe) p.getIframe().style.height = '1px'; });
   if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
+  setTimeout(updatePipVideoRect, 200); // espera o layout assentar antes de medir
 }
 
 function setPlayerNowPlaying(title, sub) {
@@ -5666,7 +5700,10 @@ const sosHoldBtn = document.getElementById('sos-badge-btn');
 const SOS_VIBRATE_PATTERN = Array(25).fill(200); // 200ms on, 200ms off × 25 = 5000ms (13 dava só 2.6s, parava antes da hora)
 
 function startSosHold() {
-  if (navigator.vibrate) navigator.vibrate(SOS_VIBRATE_PATTERN);
+  // Isolado num try/catch — se vibrar falhar/travar em algum aparelho, o
+  // agendamento do disparo (a parte que importa de verdade) não pode
+  // depender disso pra acontecer.
+  try { if (navigator.vibrate) navigator.vibrate(SOS_VIBRATE_PATTERN); } catch (e) { console.error('vibrate:', e); }
   sosHoldTimeoutId = setTimeout(() => {
     triggerSOS();
   }, 5000);
