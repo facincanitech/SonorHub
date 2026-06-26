@@ -2087,6 +2087,13 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 const nativeApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
 if (nativeApp) {
   nativeApp.addListener('backButton', () => {
+    // Player e GPS usam a classe .nav-overlay (tela cheia escura), não
+    // .overlay — o botão físico nunca fechava essas duas telas por isso.
+    const openNavOverlay = document.querySelector('.nav-overlay.open');
+    if (openNavOverlay) {
+      openNavOverlay.classList.remove('open');
+      return;
+    }
     const openOverlay = document.querySelector('.overlay.open');
     if (openOverlay) {
       openOverlay.classList.remove('open');
@@ -3952,7 +3959,7 @@ async function buscarPlayerVideo(termo) {
   } catch (e) { console.error('player search:', e); return null; }
 }
 
-function renderPlayerResultRow(container, video, urlBase, tipoLabel, lista) {
+function renderPlayerResultRow(container, video, urlBase, tipoLabel, tab) {
   container.innerHTML = '';
   if (!video) {
     container.innerHTML = `<div class="hint">Nada encontrado.</div>`;
@@ -3964,7 +3971,7 @@ function renderPlayerResultRow(container, video, urlBase, tipoLabel, lista) {
   playBtn.type = 'button';
   playBtn.textContent = '▶️';
   playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
-  playBtn.addEventListener('click', () => playInEmbeddedPlayer(video, tipoLabel, lista || [video], 0));
+  playBtn.addEventListener('click', () => playInEmbeddedPlayer(video, tipoLabel, [video], 0, tab));
   const span = document.createElement('span');
   span.className = 'time';
   span.style.flex = '1';
@@ -4017,16 +4024,18 @@ async function ensurePlayerYt() {
   });
 }
 
-async function playInEmbeddedPlayer(video, tipoLabel, lista, index) {
+async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   playerCurrentLista = lista || [video];
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
+  if (tab) playerActiveTab = tab; // faltava essa linha — era por isso que voltar pra aba escondia tudo
   const player = await ensurePlayerYt();
   player.loadVideoById(video.videoId);
   player.playVideo();
   playerIsPaused = false;
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
   setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
+  document.getElementById('player-now-playing').style.display = 'block';
   if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
 }
 
@@ -4050,7 +4059,7 @@ function playerSkip(direction) {
   if (playerCurrentLista.length === 0) return;
   playerCurrentIndex = (playerCurrentIndex + direction + playerCurrentLista.length) % playerCurrentLista.length;
   const video = playerCurrentLista[playerCurrentIndex];
-  playInEmbeddedPlayer(video, playerCurrentTipoLabel, playerCurrentLista, playerCurrentIndex);
+  playInEmbeddedPlayer(video, playerCurrentTipoLabel, playerCurrentLista, playerCurrentIndex, playerActiveTab);
 }
 
 document.getElementById('player-ctrl-playpause').addEventListener('click', playerTogglePlayPause);
