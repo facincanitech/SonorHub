@@ -685,6 +685,73 @@
     </div>
   </section>
 
+  <!-- ============ TAB: MULTISONOR (Música/Vídeo/Rádio) ============
+       Era uma tela cheia separada (.nav-overlay) que cobria até o navbar de
+       baixo — virou aba normal igual Meu Dia/Guia/Premium, então o navbar
+       principal continua visível, e o botão físico de voltar não fica mais
+       "perdido" tentando fechar uma camada que não existe mais. O switcher
+       Música/Vídeo vs Rádio mora no topo (onde antes tinha a barra com a
+       setinha de voltar), busca fica sempre fixa logo abaixo dele. -->
+  <section class="tab" id="tab-player">
+    <div class="screen-header">
+      <h1>🎵 MultiSonor</h1>
+      <div class="header-actions">
+        <button class="icon-btn" data-action="voice">🎤</button>
+        <button class="icon-btn" data-action="help">❓</button>
+        <button class="icon-btn" data-action="gear">⚙️</button>
+      </div>
+    </div>
+
+    <div style="display:flex; border-bottom: 1px solid var(--c-border2); margin-bottom: 14px;">
+      <button class="player-tab-btn active" id="player-tab-btn-media" style="flex:1; background:none; color:var(--c-text); padding:10px; opacity:1;">🎵 Música/Vídeo</button>
+      <button class="player-tab-btn" id="player-tab-btn-radio" style="flex:1; background:none; color:var(--c-text); padding:10px; opacity:0.5;">📻 Rádio</button>
+    </div>
+
+    <audio id="player-radio-audio" style="display:none;"></audio>
+
+    <div id="player-media-searchbar" style="display:flex; gap:8px; margin-bottom: 14px;">
+      <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" style="flex:1;">
+      <button id="player-media-search-btn">🔍</button>
+    </div>
+    <div id="player-radio-searchbar" style="display:none; gap:8px; margin-bottom: 14px;">
+      <input type="text" id="player-radio-search" placeholder="Buscar rádio (nome, cidade, gênero)" style="flex:1;">
+      <button id="player-radio-search-btn">🔍</button>
+    </div>
+
+    <div id="player-now-playing" style="display:none; margin-bottom: 16px;">
+      <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);">
+        <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+        <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
+        <button id="player-ctrl-video-toggle" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.55); color:#fff; font-size:1.1rem; width:36px; height:36px; border-radius:50%; padding:0; display:none;">👁</button>
+      </div>
+      <div id="player-now-playing-title" style="font-weight:600; text-align:center; font-size:1.05rem;"></div>
+      <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:12px; text-align:center;"></div>
+      <div id="player-progress-row" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span id="player-time-current" style="font-size:0.72rem; opacity:0.7; min-width:34px;">0:00</span>
+        <div id="player-progress-bar" style="flex:1; height:4px; background: var(--c-border2); border-radius:2px; overflow:hidden;">
+          <div id="player-progress-fill" style="height:100%; width:0%; background: var(--c-accent-blue);"></div>
+        </div>
+        <span id="player-time-total" style="font-size:0.72rem; opacity:0.7; min-width:34px; text-align:right;">0:00</span>
+      </div>
+      <div style="display:flex; justify-content:center; align-items:center; gap:26px; margin-top:8px;">
+        <button id="player-ctrl-prev" style="background:none; font-size:1.6rem; color:var(--c-text);">⏮</button>
+        <button id="player-ctrl-playpause" style="background: var(--c-accent-blue); color: var(--c-on-accent); width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
+        <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:var(--c-text);">⏭</button>
+      </div>
+      <div class="hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
+    </div>
+
+    <div id="player-tab-media" class="player-tab-content">
+      <div id="player-media-results"></div>
+    </div>
+
+    <div id="player-tab-radio" class="player-tab-content" style="display:none;">
+      <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
+      <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
+      <div id="player-radio-results"></div>
+    </div>
+  </section>
+
   <!-- ============ NAV BAR ============ -->
   <nav class="navbar">
     <div class="navbar-inner">
@@ -925,73 +992,6 @@
     <div class="nav-stat"><div class="nav-val" id="nav-speed-val">—</div><div class="nav-lbl">velocidade</div></div>
   </div>
 </div>
-
-<!-- ============ TAB: MULTISONOR (Música/Vídeo/Rádio) ============
-     Era uma tela cheia separada (.nav-overlay) que cobria até o navbar de
-     baixo — virou aba normal igual Meu Dia/Guia/Premium, então o navbar
-     principal continua visível, e o botão físico de voltar não fica mais
-     "perdido" tentando fechar uma camada que não existe mais. O switcher
-     Música/Vídeo vs Rádio mora no topo (onde antes tinha a barra com a
-     setinha de voltar), busca fica sempre fixa logo abaixo dele. -->
-<section class="tab" id="tab-player">
-  <div class="screen-header">
-    <h1>🎵 MultiSonor</h1>
-    <div class="header-actions">
-      <button class="icon-btn" data-action="voice">🎤</button>
-      <button class="icon-btn" data-action="help">❓</button>
-      <button class="icon-btn" data-action="gear">⚙️</button>
-    </div>
-  </div>
-
-  <div style="display:flex; border-bottom: 1px solid var(--c-border2); margin-bottom: 14px;">
-    <button class="player-tab-btn active" id="player-tab-btn-media" style="flex:1; background:none; color:var(--c-text); padding:10px; opacity:1;">🎵 Música/Vídeo</button>
-    <button class="player-tab-btn" id="player-tab-btn-radio" style="flex:1; background:none; color:var(--c-text); padding:10px; opacity:0.5;">📻 Rádio</button>
-  </div>
-
-  <audio id="player-radio-audio" style="display:none;"></audio>
-
-  <div id="player-media-searchbar" style="display:flex; gap:8px; margin-bottom: 14px;">
-    <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" style="flex:1;">
-    <button id="player-media-search-btn">🔍</button>
-  </div>
-  <div id="player-radio-searchbar" style="display:none; gap:8px; margin-bottom: 14px;">
-    <input type="text" id="player-radio-search" placeholder="Buscar rádio (nome, cidade, gênero)" style="flex:1;">
-    <button id="player-radio-search-btn">🔍</button>
-  </div>
-
-  <div id="player-now-playing" style="display:none; margin-bottom: 16px;">
-    <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);">
-      <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
-      <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
-      <button id="player-ctrl-video-toggle" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.55); color:#fff; font-size:1.1rem; width:36px; height:36px; border-radius:50%; padding:0; display:none;">👁</button>
-    </div>
-    <div id="player-now-playing-title" style="font-weight:600; text-align:center; font-size:1.05rem;"></div>
-    <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:12px; text-align:center;"></div>
-    <div id="player-progress-row" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-      <span id="player-time-current" style="font-size:0.72rem; opacity:0.7; min-width:34px;">0:00</span>
-      <div id="player-progress-bar" style="flex:1; height:4px; background: var(--c-border2); border-radius:2px; overflow:hidden;">
-        <div id="player-progress-fill" style="height:100%; width:0%; background: var(--c-accent-blue);"></div>
-      </div>
-      <span id="player-time-total" style="font-size:0.72rem; opacity:0.7; min-width:34px; text-align:right;">0:00</span>
-    </div>
-    <div style="display:flex; justify-content:center; align-items:center; gap:26px; margin-top:8px;">
-      <button id="player-ctrl-prev" style="background:none; font-size:1.6rem; color:var(--c-text);">⏮</button>
-      <button id="player-ctrl-playpause" style="background: var(--c-accent-blue); color: var(--c-on-accent); width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
-      <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:var(--c-text);">⏭</button>
-    </div>
-    <div class="hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
-  </div>
-
-  <div id="player-tab-media" class="player-tab-content">
-    <div id="player-media-results"></div>
-  </div>
-
-  <div id="player-tab-radio" class="player-tab-content" style="display:none;">
-    <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
-    <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
-    <div id="player-radio-results"></div>
-  </div>
-</section>
 
 <!-- ============ SALVOS (overlay) ============ -->
 <div class="overlay" id="saved-overlay">
@@ -2350,8 +2350,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.4';
+const APP_VERSION = '4.5';
 const CHANGELOG = [
+  {
+    version: '4.5', date: '26/06/2026',
+    items: [
+      'Corrigido: clicar em MultiSonor abria tela preta (a aba tinha ficado fora do container do app por engano)',
+    ],
+  },
   {
     version: '4.4', date: '26/06/2026',
     items: [
