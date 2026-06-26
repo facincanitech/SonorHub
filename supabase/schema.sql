@@ -1,4 +1,4 @@
--- Tabela de usuários premium do InfoHub.
+-- Tabela de usuários premium do SunoHub.
 -- Cole isso no SQL Editor do painel do Supabase (Project → SQL Editor → New query → Run).
 
 create table if not exists public.users (

@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const res = await fetch(target, { headers: { 'User-Agent': 'InfoHub/1.0 (briefing app; +https://github.com/facincanitech/InfoHub)' } });
+    const res = await fetch(target, { headers: { 'User-Agent': 'SunoHub/1.0 (briefing app; +https://github.com/facincanitech/SunoHub)' } });
     if (!res.ok) {
       return Response.json({ items: [], error: `Feed retornou ${res.status}.` }, { headers: CORS_HEADERS });
     }

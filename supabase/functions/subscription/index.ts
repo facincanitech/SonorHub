@@ -28,9 +28,9 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        reason: 'InfoHub Premium',
+        reason: 'SunoHub Premium',
         payer_email: email,
-        back_url: backUrl || 'https://facincanitech.github.io/InfoHub/',
+        back_url: backUrl || 'https://facincanitech.github.io/SunoHub/',
         auto_recurring: {
           frequency: 1,
           frequency_type: 'months',

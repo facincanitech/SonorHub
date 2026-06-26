@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">InfoHub</string>
-    <string name="title_activity_main">InfoHub</string>
-    <string name="package_name">com.facincanitech.infohub</string>
-    <string name="custom_url_scheme">com.facincanitech.infohub</string>
+    <string name="app_name">SunoHub</string>
+    <string name="title_activity_main">SunoHub</string>
+    <string name="package_name">com.facincanitech.sunohub</string>
+    <string name="custom_url_scheme">com.facincanitech.sunohub</string>
 </resources>

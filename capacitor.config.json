@@ -1,6 +1,6 @@
 {
-  "appId": "com.facincanitech.infohub",
-  "appName": "InfoHub",
+  "appId": "com.facincanitech.sunohub",
+  "appName": "SunoHub",
   "webDir": "www",
   "plugins": {
     "SocialLogin": {

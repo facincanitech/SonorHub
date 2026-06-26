@@ -1,6 +1,6 @@
 {
-  "name": "InfoHub",
-  "short_name": "InfoHub",
+  "name": "SunoHub",
+  "short_name": "SunoHub",
   "description": "Seu dia em voz alta.",
   "start_url": "./index.html",
   "scope": "./",
