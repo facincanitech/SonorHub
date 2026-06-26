@@ -2340,8 +2340,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.24';
+const APP_VERSION = '3.25';
 const CHANGELOG = [
+  {
+    version: '3.25', date: '26/06/2026',
+    items: [
+      'Player: busca de música agora mostra vários artistas e várias músicas (não só 1)',
+      'Player: clicar num artista mostra as músicas dele, igual o Descobertas do YT Music',
+      'Corrigido: busca de rádio não achava nada (endereço da Radio Browser tinha mudado)',
+    ],
+  },
   {
     version: '3.24', date: '26/06/2026',
     items: [
@@ -4027,35 +4035,95 @@ PLAYER_TABS.forEach((t) => {
   document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
 });
 
-async function buscarPlayerVideo(termo) {
-  if (!termo) return null;
-  try {
-    const { video, error } = await callEdgeFunction('youtube-music', { name: termo });
-    if (error || !video) return null;
-    return video; // { videoId, title, channelTitle }
-  } catch (e) { console.error('player search:', e); return null; }
-}
-
-function renderPlayerResultRow(container, video, tipoLabel, tab) {
-  container.innerHTML = '';
-  if (!video) {
-    container.innerHTML = `<div class="hint">Nada encontrado.</div>`;
-    return;
-  }
+function buildPlayerResultRow(video, tipoLabel, tab, lista, index) {
   const row = document.createElement('div');
   row.className = 'alarm-item';
   const playBtn = document.createElement('button');
   playBtn.type = 'button';
   playBtn.textContent = '▶️';
   playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
-  playBtn.addEventListener('click', () => playInEmbeddedPlayer(video, tipoLabel, [video], 0, tab));
+  playBtn.addEventListener('click', () => playInEmbeddedPlayer(video, tipoLabel, lista, index, tab));
   const span = document.createElement('span');
   span.className = 'time';
   span.style.flex = '1';
   span.textContent = `${video.title} — ${video.channelTitle}`;
   row.appendChild(playBtn);
   row.appendChild(span);
-  container.appendChild(row);
+  return row;
+}
+
+// Resultado misto de busca: grade de artistas (estilo "Descobertas" do YT
+// Music) + lista de músicas/vídeos que bateram direto com o termo. Clicar
+// num artista busca os vídeos daquele canal (abrirArtistaPlayerMedia).
+function renderPlayerMediaSearchResults(artists, videos, error) {
+  const container = document.getElementById('player-media-results');
+  container.innerHTML = '';
+  if (!artists.length && !videos.length) {
+    container.innerHTML = `<div class="hint">${error || 'Nada encontrado.'}</div>`;
+    return;
+  }
+  if (artists.length) {
+    const label = document.createElement('div');
+    label.className = 'hint';
+    label.style.margin = '4px 0 8px';
+    label.textContent = 'Artistas';
+    container.appendChild(label);
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:flex; gap:14px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;';
+    artists.forEach((art) => {
+      const tile = document.createElement('div');
+      tile.style.cssText = 'flex:0 0 84px; text-align:center; cursor:pointer;';
+      tile.innerHTML = `
+        <img src="${art.thumbnail || ''}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#222;">
+        <div style="font-size:0.72rem; margin-top:6px; line-height:1.2;">${art.title}</div>
+      `;
+      tile.addEventListener('click', () => abrirArtistaPlayerMedia(art));
+      grid.appendChild(tile);
+    });
+    container.appendChild(grid);
+  }
+  if (videos.length) {
+    const label = document.createElement('div');
+    label.className = 'hint';
+    label.style.margin = '4px 0 8px';
+    label.textContent = 'Músicas/vídeos';
+    container.appendChild(label);
+    videos.forEach((v, i) => container.appendChild(buildPlayerResultRow(v, 'Música/Vídeo', 'media', videos, i)));
+  }
+}
+
+async function abrirArtistaPlayerMedia(art) {
+  const container = document.getElementById('player-media-results');
+  container.innerHTML = `<div class="hint">Carregando músicas de ${art.title}...</div>`;
+  let videos = [];
+  let error = null;
+  try {
+    const resp = await callEdgeFunction('youtube-music', { channelId: art.channelId });
+    videos = resp.videos || [];
+    error = resp.error;
+  } catch (e) { error = 'Falha ao buscar: ' + e.message; }
+
+  container.innerHTML = '';
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.textContent = '← Voltar pra busca';
+  backBtn.style.cssText = 'margin-bottom: 12px;';
+  backBtn.addEventListener('click', fazerBuscaPlayerMedia);
+  container.appendChild(backBtn);
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-weight:600; margin-bottom:10px;';
+  header.textContent = art.title;
+  container.appendChild(header);
+
+  if (!videos.length) {
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = error || 'Nenhuma música encontrada pra esse artista.';
+    container.appendChild(hint);
+    return;
+  }
+  videos.forEach((v, i) => container.appendChild(buildPlayerResultRow(v, 'Música/Vídeo', 'media', videos, i)));
 }
 
 /* ----- Player embutido de verdade (Música/Vídeo), com PiP ----- */
@@ -4231,10 +4299,17 @@ if (nativePlayerPip) {
 
 async function fazerBuscaPlayerMedia() {
   const termo = document.getElementById('player-media-search').value.trim();
+  if (!termo) return;
   const resultsEl = document.getElementById('player-media-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
-  const video = await buscarPlayerVideo(termo);
-  renderPlayerResultRow(resultsEl, video, 'Música/Vídeo', 'media');
+  let artists = [], videos = [], error = null;
+  try {
+    const resp = await callEdgeFunction('youtube-music', { name: termo });
+    artists = resp.artists || [];
+    videos = resp.videos || [];
+    error = resp.error;
+  } catch (e) { error = 'Falha ao buscar: ' + e.message; }
+  renderPlayerMediaSearchResults(artists, videos, error);
 }
 document.getElementById('player-media-search-btn').addEventListener('click', fazerBuscaPlayerMedia);
 document.getElementById('player-media-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMedia(); });
@@ -4286,7 +4361,7 @@ function playRadioStation(est) {
 async function buscarRadios(termo) {
   if (!termo) return [];
   try {
-    const resp = await fetch(`https://api.radio-browser.info/json/stations/search?name=${encodeURIComponent(termo)}&limit=15&hidebroken=true&order=clickcount&reverse=true`);
+    const resp = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(termo)}&limit=15&hidebroken=true&order=clickcount&reverse=true`);
     if (!resp.ok) return [];
     return await resp.json();
   } catch (e) { console.error('radio search:', e); return []; }

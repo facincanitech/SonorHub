@@ -1,7 +1,8 @@
-// Supabase Edge Function — busca um vídeo de música de um artista/banda pelo
-// nome. Primeiro tenta restringir à categoria "Música" do YouTube (melhor pra
-// artista conhecido); se não achar nada (banda desconhecida/pequena, sem
-// categoria certa), tenta de novo sem restrição nenhuma.
+// Supabase Edge Function — busca de música/vídeo no YouTube pro Player.
+// Dois modos:
+//  - sem channelId: busca mista (artistas + vídeos) pelo termo, pra mostrar
+//    a grade de artistas + lista de músicas (estilo "Descobertas" do YT Music).
+//  - com channelId: lista os vídeos/músicas daquele canal (clicou num artista).
 // Deploy: cole essa função numa function chamada "youtube-music" no painel do Supabase.
 // Secret: YOUTUBE_API_KEY (mesma chave já usada em "Canais do YouTube")
 
@@ -10,19 +11,55 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function searchVideo(apiKey: string, query: string, restrictMusic: boolean) {
-  const params = new URLSearchParams({
-    part: 'snippet', q: query, type: 'video', order: 'relevance', maxResults: '1', key: apiKey,
-  });
-  if (restrictMusic) params.set('videoCategoryId', '10');
-  const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
-  const found = resp.items && resp.items[0];
-  if (!found) return null;
+function mapVideoItem(it: any) {
   return {
-    title: found.snippet.title,
-    channelTitle: found.snippet.channelTitle,
-    videoId: found.id.videoId,
+    videoId: it.id.videoId,
+    title: it.snippet.title,
+    channelTitle: it.snippet.channelTitle,
+    thumbnail: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url,
   };
+}
+
+function mapChannelItem(it: any) {
+  return {
+    channelId: it.id.channelId || it.snippet.channelId,
+    title: it.snippet.channelTitle || it.snippet.title,
+    thumbnail: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url,
+  };
+}
+
+// Busca mista: um único search.list com type=video,channel — sai mais barato
+// de quota (um request só) do que buscar separado.
+async function buscarMisto(apiKey: string, termo: string) {
+  const params = new URLSearchParams({
+    part: 'snippet', q: termo, type: 'video,channel', order: 'relevance', maxResults: '20', key: apiKey,
+  });
+  const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
+  const artists: any[] = [];
+  const videos: any[] = [];
+  for (const it of resp.items || []) {
+    if (it.id.kind === 'youtube#channel') artists.push(mapChannelItem(it));
+    else if (it.id.kind === 'youtube#video') videos.push(mapVideoItem(it));
+  }
+  return { artists, videos };
+}
+
+async function buscarMusicasDoCanal(apiKey: string, channelId: string) {
+  const params = new URLSearchParams({
+    part: 'snippet', channelId, type: 'video', order: 'date', maxResults: '25',
+    videoCategoryId: '10', key: apiKey,
+  });
+  let resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
+  let items = resp.items || [];
+  if (items.length === 0) {
+    // Canal sem vídeos marcados certo na categoria "Música" — tenta sem o filtro.
+    const params2 = new URLSearchParams({
+      part: 'snippet', channelId, type: 'video', order: 'date', maxResults: '25', key: apiKey,
+    });
+    resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params2}`).then((r) => r.json());
+    items = resp.items || [];
+  }
+  return items.map(mapVideoItem);
 }
 
 Deno.serve(async (req: Request) => {
@@ -31,20 +68,31 @@ Deno.serve(async (req: Request) => {
   const apiKey = Deno.env.get('YOUTUBE_API_KEY');
   const url = new URL(req.url);
   const name = (url.searchParams.get('name') || '').trim();
+  const channelId = (url.searchParams.get('channelId') || '').trim();
 
-  if (!apiKey || !name) {
-    return Response.json({ video: null, error: 'Faltando nome do artista ou chave do YouTube no servidor.' }, { headers: CORS_HEADERS });
+  if (!apiKey) {
+    return Response.json({ artists: [], videos: [], error: 'Faltando chave do YouTube no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
-    let video = await searchVideo(apiKey, `${name} música`, true);
-    if (!video) video = await searchVideo(apiKey, name, false); // sem filtro: pega qualquer coisa, banda pequena inclusive
-
-    if (!video) {
-      return Response.json({ video: null, error: `Nada encontrado no YouTube pra "${name}".` }, { headers: CORS_HEADERS });
+    if (channelId) {
+      const videos = await buscarMusicasDoCanal(apiKey, channelId);
+      return Response.json({
+        artists: [], videos,
+        error: videos.length ? null : 'Esse artista não tem vídeos encontráveis.',
+      }, { headers: CORS_HEADERS });
     }
-    return Response.json({ video, error: null }, { headers: CORS_HEADERS });
+
+    if (!name) {
+      return Response.json({ artists: [], videos: [], error: 'Faltando termo de busca.' }, { headers: CORS_HEADERS });
+    }
+
+    const { artists, videos } = await buscarMisto(apiKey, name);
+    return Response.json({
+      artists, videos,
+      error: (artists.length || videos.length) ? null : `Nada encontrado pra "${name}".`,
+    }, { headers: CORS_HEADERS });
   } catch (e) {
-    return Response.json({ video: null, error: 'Erro ao consultar YouTube: ' + e.message }, { headers: CORS_HEADERS });
+    return Response.json({ artists: [], videos: [], error: 'Erro ao consultar YouTube: ' + e.message }, { headers: CORS_HEADERS });
   }
 });
