@@ -71,6 +71,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     public void onPause() {
         super.onPause();
         AppState.isForeground = false;
+        // onUserLeaveHint() não dispara em todo caminho de minimizar (alguns
+        // aparelhos/gestos não chamam ele) — tenta de novo aqui como reforço,
+        // já que entrar em PiP enquanto já está em PiP é inofensivo (a chamada
+        // simplesmente não faz nada/lança, cai no catch).
+        tryEnterPip();
     }
 
     // Disparado quando o usuário sai do app (home, troca de app) — se tem
@@ -78,12 +83,15 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onUserLeaveHint() {
         super.onUserLeaveHint();
-        if (PlayerPipPlugin.isPlaybackActive() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
-            } catch (Exception e) {
-                // aparelho sem suporte de verdade a PiP, ou app já em background — ignora
-            }
+        tryEnterPip();
+    }
+
+    private void tryEnterPip() {
+        if (!PlayerPipPlugin.isPlaybackActive() || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        try {
+            enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
+        } catch (Exception e) {
+            android.util.Log.e("InfoHubPip", "Falha ao entrar em PiP: " + e.getMessage(), e);
         }
     }
 

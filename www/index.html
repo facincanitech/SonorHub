@@ -931,7 +931,7 @@
   </div>
 
   <div id="player-now-playing" style="display:none; padding: 14px 20px; border-bottom: 1px solid #222;">
-    <div id="player-yt-container" style="width:100%; aspect-ratio:16/9; background:#000; margin-bottom:8px;"></div>
+    <div id="player-yt-container" style="width:100%; background:#000; margin-bottom:8px; overflow:hidden;"></div>
     <div id="player-now-playing-title" style="font-weight:600;"></div>
     <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:10px;"></div>
     <div style="display:flex; justify-content:center; align-items:center; gap:22px;">
@@ -2322,8 +2322,16 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.16';
+const APP_VERSION = '3.17';
 const CHANGELOG = [
+  {
+    version: '3.17', date: '24/06/2026',
+    items: [
+      'Corrigido: card "tocando agora" do Player vazava pras outras abas (Vídeo/Rádio) em vez de ficar só na aba que disparou',
+      'Corrigido: vídeo do player cobria os botões de controle (tamanho calculado errado)',
+      'PiP ganhou uma segunda tentativa de entrada (alguns aparelhos não disparam o gatilho principal)',
+    ],
+  },
   {
     version: '3.16', date: '24/06/2026',
     items: [
@@ -3920,12 +3928,16 @@ document.getElementById('player-close-btn').addEventListener('click', () => {
 });
 
 const PLAYER_TABS = ['musica', 'video', 'radio'];
+let playerActiveTab = null; // qual aba (musica/video) tem o player embutido tocando agora
 function switchPlayerTab(tab) {
   PLAYER_TABS.forEach((t) => {
     document.getElementById(`player-tab-${t}`).style.display = t === tab ? 'block' : 'none';
     const btn = document.getElementById(`player-tab-btn-${t}`);
     btn.style.opacity = t === tab ? '1' : '0.5';
   });
+  // O card "tocando agora" (player embutido + controles) só aparece na aba
+  // que disparou ele — antes ficava fixo fora das abas e vazava pras outras.
+  document.getElementById('player-now-playing').style.display = (tab === playerActiveTab) ? 'block' : 'none';
 }
 PLAYER_TABS.forEach((t) => {
   document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
@@ -3989,6 +4001,13 @@ function loadPlayerYtApi() {
 async function ensurePlayerYt() {
   await loadPlayerYtApi();
   if (playerYtInstance) return playerYtInstance;
+  // O YT.Player com '100%'/'100%' precisa que o container já tenha um tamanho
+  // em pixel de verdade nesse instante — depender só do aspect-ratio do CSS
+  // não é suficiente (o iframe nasce grande demais e cobre os botões embaixo).
+  // Calcula a altura certa (16:9) a partir da largura real antes de criar.
+  const container = document.getElementById('player-yt-container');
+  const width = container.clientWidth || 320;
+  container.style.height = `${Math.round(width * 9 / 16)}px`;
   return new Promise((resolve) => {
     playerYtInstance = new YT.Player('player-yt-container', {
       height: '100%', width: '100%',
@@ -4053,7 +4072,7 @@ async function fazerBuscaPlayerMusica() {
   const resultsEl = document.getElementById('player-musica-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
   const video = await buscarPlayerVideo(termo);
-  renderPlayerResultRow(resultsEl, video, 'https://music.youtube.com/watch?v=', 'Música');
+  renderPlayerResultRow(resultsEl, video, 'https://music.youtube.com/watch?v=', 'Música', 'musica');
 }
 document.getElementById('player-musica-search-btn').addEventListener('click', fazerBuscaPlayerMusica);
 document.getElementById('player-musica-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMusica(); });
@@ -4063,7 +4082,7 @@ async function fazerBuscaPlayerVideo() {
   const resultsEl = document.getElementById('player-video-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
   const video = await buscarPlayerVideo(termo);
-  renderPlayerResultRow(resultsEl, video, 'https://www.youtube.com/watch?v=', 'Vídeo');
+  renderPlayerResultRow(resultsEl, video, 'https://www.youtube.com/watch?v=', 'Vídeo', 'video');
 }
 document.getElementById('player-video-search-btn').addEventListener('click', fazerBuscaPlayerVideo);
 document.getElementById('player-video-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerVideo(); });
