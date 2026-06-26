@@ -28,19 +28,33 @@ function mapChannelItem(it: any) {
   };
 }
 
-// Busca mista: um único search.list com type=video,channel — sai mais barato
-// de quota (um request só) do que buscar separado.
-async function buscarMisto(apiKey: string, termo: string) {
+// Antes era um search.list só com type=video,channel misturado, pra economizar
+// quota — só que nessa combinação o YouTube devolve majoritariamente canais
+// pra busca de nome de artista, e os vídeos quase não apareciam (às vezes
+// zero) competindo pelas mesmas 20 vagas. Agora são 2 buscas separadas: uma
+// de canais (relevância) e uma de vídeos (mais recentes primeiro, já que pra
+// vídeo "o que saiu agora" importa mais do que pra música).
+async function buscarArtistas(apiKey: string, termo: string) {
   const params = new URLSearchParams({
-    part: 'snippet', q: termo, type: 'video,channel', order: 'relevance', maxResults: '20', key: apiKey,
+    part: 'snippet', q: termo, type: 'channel', order: 'relevance', maxResults: '8', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
-  const artists: any[] = [];
-  const videos: any[] = [];
-  for (const it of resp.items || []) {
-    if (it.id.kind === 'youtube#channel') artists.push(mapChannelItem(it));
-    else if (it.id.kind === 'youtube#video') videos.push(mapVideoItem(it));
-  }
+  return (resp.items || []).map(mapChannelItem);
+}
+
+async function buscarVideos(apiKey: string, termo: string) {
+  const params = new URLSearchParams({
+    part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '15', key: apiKey,
+  });
+  const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
+  return (resp.items || []).map(mapVideoItem);
+}
+
+async function buscarMisto(apiKey: string, termo: string) {
+  const [artists, videos] = await Promise.all([
+    buscarArtistas(apiKey, termo),
+    buscarVideos(apiKey, termo),
+  ]);
   return { artists, videos };
 }
 

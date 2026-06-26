@@ -690,7 +690,7 @@
     <div class="navbar-inner">
       <button class="nav-btn active" data-tab="briefing"><span class="ic">▶</span>Meu Dia</button>
       <button class="nav-btn" data-tab="gratis"><span class="ic">🎚️</span>Guia</button>
-      <button class="nav-btn" id="player-nav-btn"><span class="ic">🎵</span>Player</button>
+      <button class="nav-btn" id="player-nav-btn"><span class="ic">🎵</span>MultiSonor</button>
       <button class="nav-btn" data-tab="premium"><span class="ic">⭐</span>Premium</button>
     </div>
   </nav>
@@ -934,7 +934,7 @@
 <div class="nav-overlay" id="player-overlay">
   <div class="nav-top-bar">
     <button class="nav-back-btn" id="player-close-btn">←</button>
-    <div style="font-weight:600;">🎵 Player</div>
+    <div style="font-weight:600;">🎵 MultiSonor</div>
     <span style="width:30px;"></span>
   </div>
 
@@ -2347,8 +2347,17 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.2';
+const APP_VERSION = '4.3';
 const CHANGELOG = [
+  {
+    version: '4.3', date: '26/06/2026',
+    items: [
+      'Player virou MultiSonor — nome novo pra refletir que já mistura música, vídeo e rádio',
+      'Corrigido: busca quase nunca trazia vídeo, só artista (canais lotavam as 20 vagas da busca)',
+      'Vídeos da busca agora priorizam os mais recentes',
+      'Resultados de busca agora mostram a miniatura (capa/thumbnail), não só o texto',
+    ],
+  },
   {
     version: '4.2', date: '26/06/2026',
     items: [
@@ -4086,6 +4095,12 @@ PLAYER_TABS.forEach((t) => {
 function buildPlayerResultRow(video, tipoLabel, tab, lista, index) {
   const row = document.createElement('div');
   row.className = 'alarm-item';
+  if (video.thumbnail) {
+    const thumb = document.createElement('img');
+    thumb.src = video.thumbnail;
+    thumb.style.cssText = 'width:46px; height:46px; border-radius:6px; object-fit:cover; flex-shrink:0;';
+    row.appendChild(thumb);
+  }
   const playBtn = document.createElement('button');
   playBtn.type = 'button';
   playBtn.textContent = '▶️';
