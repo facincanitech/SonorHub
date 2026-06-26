@@ -934,44 +934,51 @@
     <span style="width:30px;"></span>
   </div>
 
-  <div id="player-now-playing" style="display:none; padding: 14px 20px; border-bottom: 1px solid #222;">
-    <div id="player-yt-container" style="width:100%; background:#000; margin-bottom:8px; overflow:hidden;"></div>
-    <div id="player-now-playing-title" style="font-weight:600;"></div>
-    <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:10px;"></div>
-    <div style="display:flex; justify-content:center; align-items:center; gap:22px;">
+  <audio id="player-radio-audio" style="display:none;"></audio>
+
+  <div id="player-now-playing" style="display:none; padding: 18px 24px; border-bottom: 1px solid #222; background: color-mix(in srgb, var(--c-accent-blue) 8%, transparent);">
+    <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.6);">
+      <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+      <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
+      <button id="player-ctrl-video-toggle" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.55); color:#fff; font-size:1.1rem; width:36px; height:36px; border-radius:50%; padding:0; display:none;">👁</button>
+    </div>
+    <div id="player-now-playing-title" style="font-weight:600; text-align:center; font-size:1.05rem;"></div>
+    <div id="player-now-playing-sub" style="font-size:0.8rem; opacity:0.7; margin-bottom:12px; text-align:center;"></div>
+    <div id="player-progress-row" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span id="player-time-current" style="font-size:0.72rem; opacity:0.7; min-width:34px;">0:00</span>
+      <div id="player-progress-bar" style="flex:1; height:4px; background:#333; border-radius:2px; overflow:hidden;">
+        <div id="player-progress-fill" style="height:100%; width:0%; background: var(--c-accent-blue);"></div>
+      </div>
+      <span id="player-time-total" style="font-size:0.72rem; opacity:0.7; min-width:34px; text-align:right;">0:00</span>
+    </div>
+    <div style="display:flex; justify-content:center; align-items:center; gap:26px; margin-top:8px;">
       <button id="player-ctrl-prev" style="background:none; font-size:1.6rem; color:#fff;">⏮</button>
-      <button id="player-ctrl-playpause" style="background:#fff; color:#000; width:52px; height:52px; border-radius:50%; font-size:1.3rem;">⏸</button>
+      <button id="player-ctrl-playpause" style="background:#fff; color:#000; width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
       <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:#fff;">⏭</button>
     </div>
-    <div class="hint" style="text-align:center; margin-top:8px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
+    <div class="hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
   </div>
 
-  <div id="player-tab-musica" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px;">
+  <div id="player-tab-media" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px;">
     <div style="display:flex; gap:8px; margin-bottom: 12px;">
-      <input type="text" id="player-musica-search" placeholder="Buscar artista/música" style="flex:1;">
-      <button id="player-musica-search-btn">🔍</button>
+      <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" style="flex:1;">
+      <button id="player-media-search-btn">🔍</button>
     </div>
-    <div id="player-musica-results"></div>
-  </div>
-
-  <div id="player-tab-video" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px; display:none;">
-    <div style="display:flex; gap:8px; margin-bottom: 12px;">
-      <input type="text" id="player-video-search" placeholder="Buscar vídeo" style="flex:1;">
-      <button id="player-video-search-btn">🔍</button>
-    </div>
-    <div id="player-video-results"></div>
+    <div id="player-media-results"></div>
   </div>
 
   <div id="player-tab-radio" class="player-tab-content" style="flex:1; overflow-y:auto; padding: 14px 20px; display:none;">
-    <div id="player-radio-list" style="margin-bottom: 10px;"></div>
-    <input type="text" id="player-radio-nome" placeholder="Nome da rádio" style="margin-bottom: 8px;">
-    <input type="text" id="player-radio-url" placeholder="URL do stream (.mp3, .m3u8, ou link de rádio online)">
-    <button id="player-radio-add-btn" style="margin-top: 8px;">+ Adicionar rádio</button>
+    <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
+    <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
+    <div style="display:flex; gap:8px; margin-bottom: 12px;">
+      <input type="text" id="player-radio-search" placeholder="Buscar rádio (nome, cidade, gênero)" style="flex:1;">
+      <button id="player-radio-search-btn">🔍</button>
+    </div>
+    <div id="player-radio-results"></div>
   </div>
 
   <div style="display:flex; border-top: 1px solid #222;">
-    <button class="player-tab-btn active" id="player-tab-btn-musica" style="flex:1; background:none; color:#fff; padding:12px; opacity:1;">🎶 Música</button>
-    <button class="player-tab-btn" id="player-tab-btn-video" style="flex:1; background:none; color:#fff; padding:12px; opacity:0.5;">🎬 Vídeo</button>
+    <button class="player-tab-btn active" id="player-tab-btn-media" style="flex:1; background:none; color:#fff; padding:12px; opacity:1;">🎵 Música/Vídeo</button>
     <button class="player-tab-btn" id="player-tab-btn-radio" style="flex:1; background:none; color:#fff; padding:12px; opacity:0.5;">📻 Rádio</button>
   </div>
 </div>
@@ -2333,8 +2340,17 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '3.23';
+const APP_VERSION = '3.24';
 const CHANGELOG = [
+  {
+    version: '3.24', date: '26/06/2026',
+    items: [
+      'Player: Música e Vídeo agora são uma aba só, com botão 👁 pra mostrar/escoder o vídeo',
+      'Player: layout novo com capa grande e barra de progresso, estilo YouTube Music',
+      'Rádio: agora busca rádios de verdade por nome (sem precisar colar link), com favoritas ⭐',
+      'Player: só um (Música/Vídeo ou Rádio) toca por vez — tocar um pausa o outro',
+    ],
+  },
   {
     version: '3.23', date: '26/06/2026',
     items: [
@@ -3987,24 +4003,25 @@ document.getElementById('more-menu').addEventListener('click', (ev) => ev.stopPr
    ========================================================================= */
 document.getElementById('player-nav-btn').addEventListener('click', () => {
   document.getElementById('player-overlay').classList.add('open');
-  renderPlayerRadioList();
+  renderPlayerRadioFavoritos();
 });
 document.getElementById('player-close-btn').addEventListener('click', () => {
   document.getElementById('player-overlay').classList.remove('open');
 });
 
-const PLAYER_TABS = ['musica', 'video', 'radio'];
-let playerActiveTab = null; // qual aba (musica/video) tem o player embutido tocando agora
+// Só uma aba toca por vez (Música/Vídeo unificados vs Rádio) — playerActiveTab
+// vale tanto pra "qual aba mostrar" quanto "o que tá tocando agora", já que
+// cada aba corresponde a exatamente um tipo de player.
+const PLAYER_TABS = ['media', 'radio'];
+let playerActiveTab = null;
 function switchPlayerTab(tab) {
   PLAYER_TABS.forEach((t) => {
     document.getElementById(`player-tab-${t}`).style.display = t === tab ? 'block' : 'none';
     const btn = document.getElementById(`player-tab-btn-${t}`);
     btn.style.opacity = t === tab ? '1' : '0.5';
   });
-  // O card "tocando agora" (player embutido + controles) só aparece na aba
-  // que disparou ele — antes ficava fixo fora das abas e vazava pras outras.
   document.getElementById('player-now-playing').style.display = (tab === playerActiveTab) ? 'block' : 'none';
-  if (tab === playerActiveTab) setTimeout(updatePipVideoRect, 100);
+  if (tab === playerActiveTab && playerActiveTab === 'media') setTimeout(updatePipVideoRect, 100);
 }
 PLAYER_TABS.forEach((t) => {
   document.getElementById(`player-tab-btn-${t}`).addEventListener('click', () => switchPlayerTab(t));
@@ -4019,7 +4036,7 @@ async function buscarPlayerVideo(termo) {
   } catch (e) { console.error('player search:', e); return null; }
 }
 
-function renderPlayerResultRow(container, video, urlBase, tipoLabel, tab) {
+function renderPlayerResultRow(container, video, tipoLabel, tab) {
   container.innerHTML = '';
   if (!video) {
     container.innerHTML = `<div class="hint">Nada encontrado.</div>`;
@@ -4089,10 +4106,9 @@ async function ensurePlayerYt() {
   // O YT.Player com '100%'/'100%' precisa que o container já tenha um tamanho
   // em pixel de verdade nesse instante — depender só do aspect-ratio do CSS
   // não é suficiente (o iframe nasce grande demais e cobre os botões embaixo).
-  // Calcula a altura certa (16:9) a partir da largura real antes de criar.
+  const wrap = document.getElementById('player-cover-wrap');
   const container = document.getElementById('player-yt-container');
-  const width = container.clientWidth || 320;
-  container.style.height = `${Math.round(width * 9 / 16)}px`;
+  container.style.height = `${wrap.clientHeight || wrap.clientWidth || 280}px`;
   return new Promise((resolve) => {
     playerYtInstance = new YT.Player('player-yt-container', {
       height: '100%', width: '100%',
@@ -4102,29 +4118,72 @@ async function ensurePlayerYt() {
   });
 }
 
+// Música e Vídeo agora são a mesma aba/busca — abre sempre mostrando a capa
+// (estilo YouTube Music) e o usuário decide se quer ver o vídeo de verdade
+// apertando o 👁 no canto da capa.
+let playerVideoVisible = false;
+
+function setPlayerVideoVisible(visible) {
+  playerVideoVisible = visible;
+  const wrap = document.getElementById('player-cover-wrap');
+  const container = document.getElementById('player-yt-container');
+  wrap.style.aspectRatio = visible ? '16/9' : '1/1';
+  container.style.display = visible ? 'block' : 'none';
+  document.getElementById('player-cover-img').style.display = visible ? 'none' : 'block';
+  document.getElementById('player-ctrl-video-toggle').textContent = visible ? '🙈' : '👁';
+  if (visible) {
+    requestAnimationFrame(() => {
+      container.style.height = `${wrap.clientHeight}px`;
+      setTimeout(updatePipVideoRect, 150);
+    });
+  }
+}
+document.getElementById('player-ctrl-video-toggle').addEventListener('click', () => setPlayerVideoVisible(!playerVideoVisible));
+
+function formatPlayerTime(s) {
+  s = Math.floor(s || 0);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+let playerProgressInterval = null;
+function startPlayerProgressLoop() {
+  stopPlayerProgressLoop();
+  playerProgressInterval = setInterval(() => {
+    if (!playerYtInstance || typeof playerYtInstance.getCurrentTime !== 'function') return;
+    const cur = playerYtInstance.getCurrentTime() || 0;
+    const dur = playerYtInstance.getDuration() || 0;
+    document.getElementById('player-progress-fill').style.width = dur ? `${(cur / dur) * 100}%` : '0%';
+    document.getElementById('player-time-current').textContent = formatPlayerTime(cur);
+    document.getElementById('player-time-total').textContent = formatPlayerTime(dur);
+  }, 500);
+}
+function stopPlayerProgressLoop() {
+  if (playerProgressInterval) { clearInterval(playerProgressInterval); playerProgressInterval = null; }
+}
+
 async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
+  stopRadioForExclusivity(); // só um player toca por vez — Música/Vídeo e Rádio se excluem
   playerCurrentLista = lista || [video];
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
-  if (tab) playerActiveTab = tab; // faltava essa linha — era por isso que voltar pra aba escondia tudo
-  // Mostra o card ANTES de criar/carregar o player — um iframe criado dentro
-  // de algo com display:none não inicializa direito (fica em branco mesmo
-  // depois de aparecer). Era por isso que vídeo às vezes vinha vazio.
+  playerActiveTab = tab || 'media';
   setPlayerNowPlaying(video.title, `${tipoLabel} · ${video.channelTitle}`);
   document.getElementById('player-now-playing').style.display = 'block';
+  document.getElementById('player-cover-img').src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+  document.getElementById('player-yt-container').style.display = 'block'; // precisa estar visível pra criar o iframe certo
+  document.getElementById('player-ctrl-prev').style.display = '';
+  document.getElementById('player-ctrl-next').style.display = '';
+  document.getElementById('player-ctrl-video-toggle').style.display = 'flex';
+  document.getElementById('player-progress-row').style.display = 'flex';
   const player = await ensurePlayerYt();
   player.loadVideoById(video.videoId);
   player.playVideo();
   playerIsPaused = false;
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
-  // Música não precisa mostrar a imagem do vídeo, só o som — encolhe o
-  // player quase a zero (continua tocando áudio normalmente), Vídeo mostra
-  // ele do tamanho normal. O PiP usa o tamanho de tela cheia de qualquer
-  // forma (ver sourceRectHint), então isso só afeta a tela normal.
-  document.getElementById('player-yt-container').style.height = (tab === 'musica') ? '1px' : '';
-  if (tab === 'musica') ensurePlayerYt().then((p) => { if (p.getIframe) p.getIframe().style.height = '1px'; });
+  setPlayerVideoVisible(false); // sempre começa só com a capa/áudio
+  startPlayerProgressLoop();
   if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
-  setTimeout(updatePipVideoRect, 200); // espera o layout assentar antes de medir
 }
 
 function setPlayerNowPlaying(title, sub) {
@@ -4134,6 +4193,11 @@ function setPlayerNowPlaying(title, sub) {
 }
 
 function playerTogglePlayPause() {
+  if (playerActiveTab === 'radio') {
+    if (playerRadioAudio.paused) playerRadioAudio.play(); else playerRadioAudio.pause();
+    document.getElementById('player-ctrl-playpause').textContent = playerRadioAudio.paused ? '▶️' : '⏸';
+    return;
+  }
   if (!playerYtInstance) return;
   playerIsPaused = !playerIsPaused;
   if (playerIsPaused) playerYtInstance.pauseVideo(); else playerYtInstance.playVideo();
@@ -4143,8 +4207,9 @@ function playerTogglePlayPause() {
 
 // "Avançar/voltar" pula pra próxima música/vídeo da última lista de busca —
 // não existe uma fila real, é só andar pelos resultados que já apareceram.
+// Rádio não tem isso (os botões ficam escondidos enquanto ela toca).
 function playerSkip(direction) {
-  if (playerCurrentLista.length === 0) return;
+  if (playerActiveTab === 'radio' || playerCurrentLista.length === 0) return;
   playerCurrentIndex = (playerCurrentIndex + direction + playerCurrentLista.length) % playerCurrentLista.length;
   const video = playerCurrentLista[playerCurrentIndex];
   playInEmbeddedPlayer(video, playerCurrentTipoLabel, playerCurrentLista, playerCurrentIndex, playerActiveTab);
@@ -4164,78 +4229,149 @@ if (nativePlayerPip) {
   });
 }
 
-async function fazerBuscaPlayerMusica() {
-  const termo = document.getElementById('player-musica-search').value.trim();
-  const resultsEl = document.getElementById('player-musica-results');
+async function fazerBuscaPlayerMedia() {
+  const termo = document.getElementById('player-media-search').value.trim();
+  const resultsEl = document.getElementById('player-media-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
   const video = await buscarPlayerVideo(termo);
-  renderPlayerResultRow(resultsEl, video, 'https://music.youtube.com/watch?v=', 'Música', 'musica');
+  renderPlayerResultRow(resultsEl, video, 'Música/Vídeo', 'media');
 }
-document.getElementById('player-musica-search-btn').addEventListener('click', fazerBuscaPlayerMusica);
-document.getElementById('player-musica-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMusica(); });
+document.getElementById('player-media-search-btn').addEventListener('click', fazerBuscaPlayerMedia);
+document.getElementById('player-media-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMedia(); });
 
-async function fazerBuscaPlayerVideo() {
-  const termo = document.getElementById('player-video-search').value.trim();
-  const resultsEl = document.getElementById('player-video-results');
-  resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
-  const video = await buscarPlayerVideo(termo);
-  renderPlayerResultRow(resultsEl, video, 'https://www.youtube.com/watch?v=', 'Vídeo', 'video');
+/* ----- Rádio: busca de verdade (Radio Browser, igual TuneIn) + favoritas -----
+   Antes era preciso colar URL de stream manualmente — agora busca por nome
+   na Radio Browser (banco aberto e gratuito de rádios do mundo todo, com
+   CORS liberado pra uso direto no navegador), e ⭐ favorita pra acesso rápido. */
+const playerRadioAudio = document.getElementById('player-radio-audio');
+
+function stopMediaForExclusivity() {
+  if (playerYtInstance && !playerIsPaused) {
+    playerYtInstance.pauseVideo();
+    playerIsPaused = true;
+    document.getElementById('player-ctrl-playpause').textContent = '▶️';
+    if (nativePlayerPip) nativePlayerPip.setPaused({ paused: true });
+  }
 }
-document.getElementById('player-video-search-btn').addEventListener('click', fazerBuscaPlayerVideo);
-document.getElementById('player-video-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerVideo(); });
+function stopRadioForExclusivity() {
+  if (!playerRadioAudio.paused) playerRadioAudio.pause();
+}
 
-function renderPlayerRadioList() {
-  const fs = getFeatureState('player', 'radio');
-  const estacoes = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
-  fs.fields.estacoes = estacoes;
-  const listEl = document.getElementById('player-radio-list');
-  listEl.innerHTML = '';
-  if (estacoes.length === 0) {
-    listEl.innerHTML = `<div class="hint">Nenhuma rádio adicionada ainda.</div>`;
+function playRadioStation(est) {
+  stopMediaForExclusivity();
+  stopPlayerProgressLoop();
+  playerActiveTab = 'radio';
+  const url = est.url_resolved || est.url;
+  if (!url) return;
+  playerRadioAudio.src = url;
+  playerRadioAudio.play().catch((e) => console.error('radio play:', e));
+  setPlayerNowPlaying(est.name || est.nome, `📻 Rádio${est.country ? ' · ' + est.country : ''}`);
+  document.getElementById('player-now-playing').style.display = 'block';
+  // Rádio não tem capa nem vídeo — mostra um ícone simples no lugar da capa.
+  document.getElementById('player-cover-img').src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#222"/><text x="50" y="62" font-size="46" text-anchor="middle">📻</text></svg>');
+  document.getElementById('player-cover-img').style.display = 'block';
+  document.getElementById('player-yt-container').style.display = 'none';
+  document.getElementById('player-cover-wrap').style.aspectRatio = '1/1';
+  document.getElementById('player-ctrl-prev').style.display = 'none';
+  document.getElementById('player-ctrl-next').style.display = 'none';
+  document.getElementById('player-ctrl-video-toggle').style.display = 'none';
+  document.getElementById('player-progress-row').style.display = 'none';
+  document.getElementById('player-ctrl-playpause').textContent = '⏸';
+  // Rádio não tem vídeo pra mostrar no PiP — desliga o gatilho de PiP
+  // enquanto ela toca (background de áudio puro ainda não é garantido, é
+  // a mesma limitação de motor de áudio nativo que falta pro Rádio hoje).
+  if (nativePlayerPip) nativePlayerPip.setActive({ active: false });
+}
+
+async function buscarRadios(termo) {
+  if (!termo) return [];
+  try {
+    const resp = await fetch(`https://api.radio-browser.info/json/stations/search?name=${encodeURIComponent(termo)}&limit=15&hidebroken=true&order=clickcount&reverse=true`);
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch (e) { console.error('radio search:', e); return []; }
+}
+
+function renderPlayerRadioResultRow(est) {
+  const row = document.createElement('div');
+  row.className = 'alarm-item';
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.textContent = '▶️';
+  playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
+  playBtn.addEventListener('click', () => playRadioStation(est));
+  const span = document.createElement('span');
+  span.className = 'time';
+  span.style.flex = '1';
+  span.textContent = `${est.name || est.nome}${est.country ? ' · ' + est.country : ''}`;
+  row.appendChild(playBtn);
+  row.appendChild(span);
+  return row;
+}
+
+function renderPlayerRadioResults(estacoes) {
+  const container = document.getElementById('player-radio-results');
+  container.innerHTML = '';
+  if (!estacoes.length) {
+    container.innerHTML = `<div class="hint">Nenhuma rádio encontrada.</div>`;
     return;
   }
   estacoes.forEach((est) => {
-    const row = document.createElement('div');
-    row.className = 'alarm-item';
-    const playBtn = document.createElement('button');
-    playBtn.type = 'button';
-    playBtn.textContent = '▶️';
-    playBtn.style.cssText = 'background: var(--c-green); width: 30px; height: 30px; border-radius: 50%; padding: 0; flex-shrink: 0;';
-    playBtn.addEventListener('click', () => {
-      tocarNoNavegador(est.url);
-      setPlayerNowPlaying(est.nome, 'Rádio');
-    });
-    const span = document.createElement('span');
-    span.className = 'time';
-    span.style.flex = '1';
-    span.textContent = est.nome;
+    const row = renderPlayerRadioResultRow(est);
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.textContent = '⭐';
+    favBtn.addEventListener('click', () => addRadioFavorito(est));
+    row.appendChild(favBtn);
+    container.appendChild(row);
+  });
+}
+
+function addRadioFavorito(est) {
+  const fs = getFeatureState('player', 'radio');
+  const favoritos = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
+  fs.fields.estacoes = favoritos;
+  const url = est.url_resolved || est.url;
+  if (favoritos.some((f) => f.url === url)) return;
+  favoritos.push({ nome: est.name || est.nome, url, country: est.country });
+  saveState();
+  renderPlayerRadioFavoritos();
+}
+
+function renderPlayerRadioFavoritos() {
+  const fs = getFeatureState('player', 'radio');
+  const favoritos = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
+  fs.fields.estacoes = favoritos;
+  const listEl = document.getElementById('player-radio-favoritos');
+  listEl.innerHTML = '';
+  if (favoritos.length === 0) {
+    listEl.innerHTML = `<div class="hint">Nenhuma rádio favoritada ainda — busque abaixo e toque em ⭐.</div>`;
+    return;
+  }
+  favoritos.forEach((est) => {
+    const row = renderPlayerRadioResultRow(est);
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', () => {
-      const idx = estacoes.indexOf(est);
-      if (idx !== -1) estacoes.splice(idx, 1);
+      const idx = favoritos.indexOf(est);
+      if (idx !== -1) favoritos.splice(idx, 1);
       saveState();
-      renderPlayerRadioList();
+      renderPlayerRadioFavoritos();
     });
-    row.appendChild(playBtn);
-    row.appendChild(span);
     row.appendChild(delBtn);
     listEl.appendChild(row);
   });
 }
-document.getElementById('player-radio-add-btn').addEventListener('click', () => {
-  const nomeInput = document.getElementById('player-radio-nome');
-  const urlInput = document.getElementById('player-radio-url');
-  const nome = nomeInput.value.trim();
-  const url = urlInput.value.trim();
-  if (!nome || !url) return;
-  const fs = getFeatureState('player', 'radio');
-  fs.fields.estacoes.push({ nome, url });
-  saveState();
-  nomeInput.value = '';
-  urlInput.value = '';
-  renderPlayerRadioList();
+
+document.getElementById('player-radio-search-btn').addEventListener('click', async () => {
+  const termo = document.getElementById('player-radio-search').value.trim();
+  const resultsEl = document.getElementById('player-radio-results');
+  resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
+  renderPlayerRadioResults(await buscarRadios(termo));
+});
+document.getElementById('player-radio-search').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') document.getElementById('player-radio-search-btn').click();
 });
 
 // showSave=false na tela de "Salvos" (não tem porque salvar de novo o que já
