@@ -1,0 +1,49 @@
+name: Avisar atualização no Discord
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - version.json
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ler versão e montar mensagem
+        id: info
+        run: |
+          VERSION=$(node -p "require('./version.json').versionName")
+          NOTES=$(node -p "require('./version.json').notes")
+          {
+            echo "version=$VERSION"
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Postar no Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          VERSION: ${{ steps.info.outputs.version }}
+          NOTES: ${{ steps.info.outputs.notes }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL não configurado — pulando aviso."
+            exit 0
+          fi
+          PAYLOAD=$(node -e "
+            const notes = process.env.NOTES;
+            const version = process.env.VERSION;
+            const content = [
+              '🚀 **Nova atualização do SonorHub: v' + version + '**',
+              notes,
+              '',
+              '📲 Baixe pelo app: https://facincanitech.github.io/SonorHub/downloads/SonorHub.apk',
+              '🌐 Se você usa pelo navegador, não precisa fazer nada — já atualiza sozinho.',
+            ].join('\n');
+            console.log(JSON.stringify({ content }));
+          ")
+          curl -sf -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
