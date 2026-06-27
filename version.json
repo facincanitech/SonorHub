@@ -1,4 +1,4 @@
 {
-  "versionName": "4.17",
-  "notes": "Corrigido: recorte do PiP deslocado (faltava offset da status bar)."
+  "versionName": "4.18",
+  "notes": "PiP refeito: tela cheia da capa/vídeo em vez de recorte por coordenadas."
 }

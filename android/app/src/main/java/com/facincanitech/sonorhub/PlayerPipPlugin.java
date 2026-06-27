@@ -53,6 +53,18 @@ public class PlayerPipPlugin extends Plugin {
         notifyListeners("pipControl", data);
     }
 
+    // Avisa o JS pra entrar/sair do "modo visual de PiP" (esconder tudo,
+    // deixar só a capa/vídeo na tela) — ver MainActivity.tryEnterPip().
+    public static void emitPipVisualModeIfActive(boolean entering) {
+        if (activeInstance != null) activeInstance.emitPipVisualMode(entering);
+    }
+
+    private void emitPipVisualMode(boolean entering) {
+        JSObject data = new JSObject();
+        data.put("entering", entering);
+        notifyListeners("pipVisualMode", data);
+    }
+
     // JS chama isso quando começa/para de tocar algo no Player — controla se
     // minimizar o app entra em PiP ou não (não queremos PiP fora da tela do
     // Player, só quando tem mídia rolando).

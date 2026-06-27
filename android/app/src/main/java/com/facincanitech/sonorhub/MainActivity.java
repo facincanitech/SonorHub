@@ -91,24 +91,35 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         tryEnterPip();
     }
 
+    // Em vez de tentar recortar coordenadas certas pro PiP (não deu certo de
+    // forma confiável em todo aparelho/tela), avisa o JS pra esconder tudo e
+    // deixar só a capa/vídeo ocupando a tela inteira ANTES de entrar em PiP —
+    // assim o Android só "fotografa" o que já está sozinho ali. O delay
+    // pequeno dá tempo do JS aplicar a mudança de CSS antes da captura.
     private void tryEnterPip() {
         if (!PlayerPipPlugin.isPlaybackActive() || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        try {
-            enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
-        } catch (Exception e) {
-            android.util.Log.e("InfoHubPip", "Falha ao entrar em PiP: " + e.getMessage(), e);
-        }
+        PlayerPipPlugin.emitPipVisualModeIfActive(true);
+        new android.os.Handler(getMainLooper()).postDelayed(() -> {
+            try {
+                enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
+            } catch (Exception e) {
+                android.util.Log.e("InfoHubPip", "Falha ao entrar em PiP: " + e.getMessage(), e);
+            }
+        }, 120);
     }
 
-    // PiP foi fechado (usuário arrastou pro X) enquanto a mídia ainda devia
-    // tocar — quem decide "ainda devia tocar" é o JS via setActive(); aqui só
-    // avisamos que saiu do PiP pra começar o Foreground Service com a
-    // notificação, se for o caso.
+    // PiP foi fechado (usuário arrastou pro X, ou voltou pro app normal)
+    // — avisa o JS pra desfazer o "modo visual de PiP" e mostrar a tela
+    // normal de novo. Se foi fechado de propósito enquanto a mídia ainda
+    // devia tocar, também sobe o Foreground Service com a notificação.
     @Override
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-        if (!isInPictureInPictureMode && PlayerPipPlugin.isPlaybackActive()) {
-            PlayerForegroundService.start(this);
+        if (!isInPictureInPictureMode) {
+            PlayerPipPlugin.emitPipVisualModeIfActive(false);
+            if (PlayerPipPlugin.isPlaybackActive()) {
+                PlayerForegroundService.start(this);
+            }
         }
     }
 
