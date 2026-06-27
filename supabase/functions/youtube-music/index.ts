@@ -16,15 +16,24 @@ const CORS_HEADERS = {
 };
 
 const SUPABASE_URL = 'https://xpscjwcqgdldwtmbbzua.supabase.co';
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12h — busca repetida nesse período não gasta cota do YouTube
+
+// TTLs diferentes por tipo: busca por nome (artista/álbum/playlist) e
+// playlist/vídeo isolado quase não mudam de conteúdo (uma playlist de
+// "anos 90" não ganha vídeo novo do nada) — guarda bem mais tempo. Canal
+// é o único que precisa ficar curto, já que a ideia ali é mostrar o
+// upload mais recente do artista.
+const CACHE_TTL_SEARCH_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias — busca por nome
+const CACHE_TTL_CHANNEL_MS = 12 * 60 * 60 * 1000; // 12h — vídeos recentes do canal
+const CACHE_TTL_PLAYLIST_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias — conteúdo de playlist/álbum raramente muda
+const CACHE_TTL_VIDEO_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias — metadado de 1 vídeo específico é praticamente fixo
 
 // Cache simples na tabela youtube_cache (ver schema.sql) — uma busca por
 // "michael jackson" feita por uma pessoa hoje responde de graça pra
-// qualquer outra pessoa que buscar o mesmo nos próximos 12h. Falha
+// qualquer outra pessoa que buscar o mesmo dentro do prazo. Falha
 // silenciosa de propósito (sem SUPABASE_SERVICE_ROLE_KEY ou erro de rede,
 // só ignora o cache e segue pra API normal) — cache é otimização, não pode
 // quebrar a busca se o banco estiver fora.
-async function getCached(key: string): Promise<any | null> {
+async function getCached(key: string, ttlMs: number): Promise<any | null> {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!serviceRoleKey) return null;
   try {
@@ -36,7 +45,7 @@ async function getCached(key: string): Promise<any | null> {
     const row = Array.isArray(rows) && rows[0];
     if (!row) return null;
     const age = Date.now() - new Date(row.created_at).getTime();
-    return age < CACHE_TTL_MS ? row.response : null;
+    return age < ttlMs ? row.response : null;
   } catch (_e) {
     return null;
   }
@@ -100,6 +109,17 @@ function mapPlaylistItem(it: any) {
   };
 }
 
+// Item de search.list com type=playlist tem o playlistId dentro de
+// id.playlistId — diferente do playlists.list (mapPlaylistItem acima), onde
+// it.id já É o playlistId direto.
+function mapPlaylistSearchItem(it: any) {
+  return {
+    playlistId: it.id.playlistId,
+    title: it.snippet.title,
+    thumbnail: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url,
+  };
+}
+
 // O YouTube devolve erro (ex: cota diária excedida) num corpo JSON com
 // "error", sem nenhum "items" — antes a gente só fazia `resp.items || []` e
 // isso virava silenciosamente "nada encontrado", escondendo o motivo real
@@ -110,26 +130,39 @@ function apiErrorMessage(resp: any): string | null {
 
 async function buscarArtistas(apiKey: string, termo: string) {
   const params = new URLSearchParams({
-    part: 'snippet', q: termo, type: 'channel', order: 'relevance', maxResults: '8', key: apiKey,
+    part: 'snippet', q: termo, type: 'channel', order: 'relevance', maxResults: '15', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
   return { items: (resp.items || []).map(mapChannelItem), apiError: apiErrorMessage(resp) };
 }
 
+// order:'date' aqui é só pra desempatar a relevância dos resultados da BUSCA
+// em si (o termo digitado), não tem relação com o quão recente é o canal —
+// quem quiser os uploads mais novos de um artista específico usa o card dele
+// (buscarConteudoDoCanal), que aí sim é ordenado por data de upload real.
 async function buscarVideos(apiKey: string, termo: string) {
   const params = new URLSearchParams({
-    part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '15', key: apiKey,
+    part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '50', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
   return { items: (resp.items || []).map(mapVideoItem), apiError: apiErrorMessage(resp) };
 }
 
+async function buscarPlaylistsPorNome(apiKey: string, termo: string) {
+  const params = new URLSearchParams({
+    part: 'snippet', q: termo, type: 'playlist', order: 'relevance', maxResults: '25', key: apiKey,
+  });
+  const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
+  return { items: (resp.items || []).map(mapPlaylistSearchItem), apiError: apiErrorMessage(resp) };
+}
+
 async function buscarMisto(apiKey: string, termo: string) {
-  const [a, v] = await Promise.all([
+  const [a, v, p] = await Promise.all([
     buscarArtistas(apiKey, termo),
     buscarVideos(apiKey, termo),
+    buscarPlaylistsPorNome(apiKey, termo),
   ]);
-  return { artists: a.items, videos: v.items, apiError: a.apiError || v.apiError };
+  return { artists: a.items, videos: v.items, playlists: p.items, apiError: a.apiError || v.apiError || p.apiError };
 }
 
 // search.list por channelId tem atraso de indexação real (o canal pode ter
@@ -178,7 +211,7 @@ async function buscarVideoPorId(apiKey: string, videoId: string) {
 // As playlists públicas do canal são a aproximação mais próxima de "álbuns"
 // que a API pública do YouTube expõe (não tem endpoint de álbum de verdade).
 async function listarPlaylistsDoCanal(apiKey: string, channelId: string) {
-  const params = new URLSearchParams({ part: 'snippet', channelId, maxResults: '20', key: apiKey });
+  const params = new URLSearchParams({ part: 'snippet', channelId, maxResults: '50', key: apiKey });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/playlists?${params}`).then((r) => r.json());
   return (resp.items || []).map(mapPlaylistItem);
 }
@@ -209,7 +242,7 @@ Deno.serve(async (req: Request) => {
   try {
     if (videoId) {
       const cacheKey = `video:${videoId}`;
-      const cached = await getCached(cacheKey);
+      const cached = await getCached(cacheKey, CACHE_TTL_VIDEO_MS);
       if (cached) return Response.json(cached, { headers: CORS_HEADERS });
 
       const { video, apiError } = await buscarVideoPorId(apiKey, videoId);
@@ -220,7 +253,7 @@ Deno.serve(async (req: Request) => {
 
     if (playlistId) {
       const cacheKey = `playlist:${playlistId}`;
-      const cached = await getCached(cacheKey);
+      const cached = await getCached(cacheKey, CACHE_TTL_PLAYLIST_MS);
       if (cached) return Response.json(cached, { headers: CORS_HEADERS });
 
       const videos = await listarVideosDaPlaylist(apiKey, playlistId, 50);
@@ -231,7 +264,7 @@ Deno.serve(async (req: Request) => {
 
     if (channelId) {
       const cacheKey = `channel:${channelId}`;
-      const cached = await getCached(cacheKey);
+      const cached = await getCached(cacheKey, CACHE_TTL_CHANNEL_MS);
       if (cached) return Response.json(cached, { headers: CORS_HEADERS });
 
       const { videos, playlists } = await buscarConteudoDoCanal(apiKey, channelId);
@@ -248,15 +281,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const cacheKey = `name:${name.toLowerCase()}`;
-    const cached = await getCached(cacheKey);
+    const cached = await getCached(cacheKey, CACHE_TTL_SEARCH_MS);
     if (cached) return Response.json(cached, { headers: CORS_HEADERS });
 
-    const { artists, videos, apiError } = await buscarMisto(apiKey, name);
+    const { artists, videos, playlists, apiError } = await buscarMisto(apiKey, name);
     const result = {
-      artists, videos, playlists: [],
-      error: (artists.length || videos.length) ? null : (apiError ? `Erro do YouTube: ${apiError}` : `Nada encontrado pra "${name}".`),
+      artists, videos, playlists,
+      error: (artists.length || videos.length || playlists.length) ? null : (apiError ? `Erro do YouTube: ${apiError}` : `Nada encontrado pra "${name}".`),
     };
-    if (artists.length || videos.length) await setCached(cacheKey, result);
+    if (artists.length || videos.length || playlists.length) await setCached(cacheKey, result);
     return Response.json(result, { headers: CORS_HEADERS });
   } catch (e) {
     return Response.json({ artists: [], videos: [], playlists: [], error: 'Erro ao consultar YouTube: ' + e.message }, { headers: CORS_HEADERS });

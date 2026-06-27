@@ -2475,8 +2475,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.31';
+const APP_VERSION = '4.32';
 const CHANGELOG = [
+  {
+    version: '4.32', date: '27/06/2026',
+    items: [
+      'Busca de música/vídeo agora mostra playlists também, numa aba separada das músicas/vídeos',
+      'Aumentado o número de resultados de artistas, músicas/vídeos e playlists na busca',
+    ],
+  },
   {
     version: '4.31', date: '27/06/2026',
     items: [
@@ -4479,10 +4486,37 @@ function buildPlayerResultRow(video, tipoLabel, tab, lista, index) {
 // Resultado misto de busca: grade de artistas (estilo "Descobertas" do YT
 // Music) + lista de músicas/vídeos que bateram direto com o termo. Clicar
 // num artista busca os vídeos daquele canal (abrirArtistaPlayerMedia).
-function renderPlayerMediaSearchResults(artists, videos, error) {
+function buildPlaylistResultRow(pl) {
+  const row = document.createElement('div');
+  row.className = 'alarm-item';
+  row.style.cursor = 'pointer';
+  if (pl.thumbnail) {
+    const thumb = document.createElement('img');
+    thumb.src = pl.thumbnail;
+    thumb.style.cssText = 'width:46px; height:46px; border-radius:6px; object-fit:cover; flex-shrink:0;';
+    row.appendChild(thumb);
+  }
+  const icon = document.createElement('span');
+  icon.textContent = '💿';
+  icon.style.cssText = 'flex-shrink:0; font-size:1.1rem;';
+  const span = document.createElement('span');
+  span.className = 'time';
+  span.style.flex = '1';
+  span.textContent = pl.title;
+  row.appendChild(icon);
+  row.appendChild(span);
+  row.addEventListener('click', () => {
+    playerCurrentArtist = null; // veio da busca direto, não de um artista — "voltar" cai na busca
+    abrirPlaylistPlayerMedia(pl);
+  });
+  return row;
+}
+
+function renderPlayerMediaSearchResults(artists, videos, playlists, error) {
+  playlists = playlists || [];
   const container = document.getElementById('player-media-results');
   container.innerHTML = '';
-  if (!artists.length && !videos.length) {
+  if (!artists.length && !videos.length && !playlists.length) {
     container.innerHTML = `<div class="hint">${error || 'Nada encontrado.'}</div>`;
     return;
   }
@@ -4506,13 +4540,52 @@ function renderPlayerMediaSearchResults(artists, videos, error) {
     });
     container.appendChild(grid);
   }
-  if (videos.length) {
-    const label = document.createElement('div');
-    label.className = 'hint';
-    label.style.margin = '4px 0 8px';
-    label.textContent = 'Músicas/vídeos';
-    container.appendChild(label);
-    videos.forEach((v, i) => container.appendChild(buildPlayerResultRow(v, 'Música/Vídeo', 'media', videos, i)));
+
+  // Músicas/vídeos e playlists em abas separadas em vez de empilhados — fica
+  // mais fácil de navegar quando os dois blocos têm bastante coisa.
+  const tabsRow = document.createElement('div');
+  tabsRow.style.cssText = 'display:flex; gap:8px; margin-bottom:10px;';
+  const listWrap = document.createElement('div');
+
+  const btnVideos = document.createElement('button');
+  btnVideos.type = 'button';
+  btnVideos.textContent = `Músicas/vídeos (${videos.length})`;
+  const btnPlaylists = document.createElement('button');
+  btnPlaylists.type = 'button';
+  btnPlaylists.textContent = `Playlists (${playlists.length})`;
+  [btnVideos, btnPlaylists].forEach((b) => {
+    b.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:1px solid var(--c-border2); background:var(--c-bg); color:var(--c-text);';
+  });
+
+  function showVideos() {
+    btnVideos.style.background = 'var(--c-green)';
+    btnPlaylists.style.background = 'var(--c-bg)';
+    listWrap.innerHTML = '';
+    if (!videos.length) {
+      listWrap.innerHTML = `<div class="hint">Nenhuma música/vídeo encontrado.</div>`;
+      return;
+    }
+    videos.forEach((v, i) => listWrap.appendChild(buildPlayerResultRow(v, 'Música/Vídeo', 'media', videos, i)));
+  }
+  function showPlaylists() {
+    btnPlaylists.style.background = 'var(--c-green)';
+    btnVideos.style.background = 'var(--c-bg)';
+    listWrap.innerHTML = '';
+    if (!playlists.length) {
+      listWrap.innerHTML = `<div class="hint">Nenhuma playlist encontrada.</div>`;
+      return;
+    }
+    playlists.forEach((pl) => listWrap.appendChild(buildPlaylistResultRow(pl)));
+  }
+  btnVideos.addEventListener('click', showVideos);
+  btnPlaylists.addEventListener('click', showPlaylists);
+  tabsRow.appendChild(btnVideos);
+  tabsRow.appendChild(btnPlaylists);
+
+  if (videos.length || playlists.length) {
+    container.appendChild(tabsRow);
+    container.appendChild(listWrap);
+    if (videos.length) showVideos(); else showPlaylists();
   }
 }
 
@@ -4912,14 +4985,16 @@ async function fazerBuscaPlayerMedia() {
   updatePlayerBodyVisibility();
   const resultsEl = document.getElementById('player-media-results');
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
-  let artists = [], videos = [], error = null;
+  let artists = [], videos = [], playlists = [], error = null;
   try {
     const resp = await callEdgeFunction('youtube-music', { name: termo });
     artists = resp.artists || [];
     videos = resp.videos || [];
+    playlists = resp.playlists || [];
     error = resp.error;
   } catch (e) { error = 'Falha ao buscar: ' + e.message; }
-  renderPlayerMediaSearchResults(artists, videos, error);
+  playerCurrentArtist = null; // busca nova do zero — não tá mais dentro de um artista
+  renderPlayerMediaSearchResults(artists, videos, playlists, error);
 }
 document.getElementById('player-media-search').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') fazerBuscaPlayerMedia(); });
 

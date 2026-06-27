@@ -1,4 +1,4 @@
 {
-  "versionName": "4.31",
-  "notes": "Corrigido: tela travada se PiP falhar; botão play/pause desincronizado."
+  "versionName": "4.32",
+  "notes": "Busca mostra playlists numa aba separada; mais resultados de artistas/músicas/playlists."
 }
