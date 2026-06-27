@@ -1,4 +1,4 @@
 {
-  "versionName": "4.22",
-  "notes": "PiP: build de diagnóstico com logs detalhados."
+  "versionName": "4.23",
+  "notes": "Corrigido: links de baixar APK indo pra localhost no app nativo."
 }
