@@ -1,4 +1,4 @@
 {
-  "versionName": "4.27",
-  "notes": "Notificação do Player visível na tela de bloqueio."
+  "versionName": "4.28",
+  "notes": "Teste: wake lock pra som continuar com tela bloqueada."
 }

@@ -2458,8 +2458,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.27';
+const APP_VERSION = '4.28';
 const CHANGELOG = [
+  {
+    version: '4.28', date: '27/06/2026',
+    items: [
+      'Teste: wake lock parcial enquanto tocar algo, pra ver se resolve o som parar com a tela bloqueada (sem pedir nada extra pro usuário)',
+    ],
+  },
   {
     version: '4.27', date: '27/06/2026',
     items: [
