@@ -1,4 +1,4 @@
 {
-  "versionName": "4.28",
-  "notes": "Teste: wake lock pra som continuar com tela bloqueada."
+  "versionName": "4.29",
+  "notes": "Corrigido: botão Baixar não funcionava dentro do app."
 }

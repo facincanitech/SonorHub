@@ -1095,7 +1095,7 @@
         direto aqui e instala manualmente (o Android vai avisar "fonte desconhecida",
         é normal pra apps fora da loja, pode confirmar a instalação).
       </div>
-      <a class="btn-connect" href="https://facincanitech.github.io/SonorHub/downloads/SonorHub.apk" download style="display:block; text-align:center; text-decoration:none; background: var(--c-accent-blue); color: var(--c-on-accent);">⬇️ Baixar SonorHub.apk</a>
+      <a id="help-download-apk-btn" class="btn-connect" href="https://facincanitech.github.io/SonorHub/downloads/SonorHub.apk" download style="display:block; text-align:center; text-decoration:none; background: var(--c-accent-blue); color: var(--c-on-accent);">⬇️ Baixar SonorHub.apk</a>
     </div>
 
     <div id="help-accordion">
@@ -1908,6 +1908,24 @@ async function tocarNoNavegador(url) {
   else window.open(url, '_blank');
 }
 
+// Link de baixar o APK: dentro do app nativo, um <a href> comum pra um
+// domínio de fora não faz nada — o WebView bloqueia essa navegação
+// silenciosamente (não é erro, só não acontece nada visível, por isso
+// parecia "quebrado"). Abrir no navegador do sistema deixa o Chrome cuidar
+// do download/instalação de verdade, como qualquer apk baixado normalmente.
+function wireApkDownloadLink(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', (ev) => {
+    if (nativeBrowser) {
+      ev.preventDefault();
+      tocarNoNavegador(el.href);
+    }
+  });
+}
+wireApkDownloadLink('update-banner-download');
+wireApkDownloadLink('help-download-apk-btn');
+
 function renderRadioStationsInput(field, fs) {
   const wrap = document.createElement('div');
   const estacoes = Array.isArray(fs.fields.estacoes) ? fs.fields.estacoes : [];
@@ -2458,8 +2476,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.28';
+const APP_VERSION = '4.29';
 const CHANGELOG = [
+  {
+    version: '4.29', date: '27/06/2026',
+    items: [
+      'Corrigido: botão "Baixar" do aviso de atualização e da Ajuda não fazia nada dentro do app — agora abre o Chrome pra baixar/instalar de verdade',
+    ],
+  },
   {
     version: '4.28', date: '27/06/2026',
     items: [
