@@ -429,8 +429,7 @@
   body.pip-active #player-now-playing-title,
   body.pip-active #player-now-playing-sub,
   body.pip-active #player-progress-row,
-  body.pip-active #player-controls-row,
-  body.pip-active #player-pip-hint {
+  body.pip-active #player-controls-row {
     display: none !important;
   }
   body.pip-active #app { padding: 0 !important; }
@@ -766,10 +765,6 @@
       <button class="player-tab-btn" id="player-tab-btn-radio" style="flex:1; background:none; color:var(--c-text); padding:10px; opacity:0.5;">📻 Rádio</button>
     </div>
 
-    <!-- Só aparece com algo tocando em tela grande, no lugar do cabeçalho/
-         abas — volta pra busca sem precisar trocar de aba. -->
-    <button id="player-back-to-search-btn" style="display:none; background:none; color: var(--c-text); font-size:1.3rem; padding:6px 0 14px; text-align:left;">←</button>
-
     <audio id="player-radio-audio" style="display:none;"></audio>
 
     <div id="player-media-searchbar" style="display:flex; gap:8px; margin-bottom: 14px;">
@@ -780,10 +775,15 @@
     </div>
 
     <div id="player-now-playing" style="display:none; margin-bottom: 16px;">
-      <div id="player-icon-row" style="display:flex; justify-content:center; align-items:center; gap:28px; margin-bottom: 10px;">
-        <button id="player-ctrl-video-toggle" style="background:none; color: var(--c-text); padding:4px; display:none;"></button>
-        <button id="player-ctrl-favorite" style="background:none; color: var(--c-text); font-size:1.4rem; padding:4px; display:none;">☆</button>
-        <button id="player-ctrl-share" style="background:none; color: var(--c-text); padding:4px; display:none;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg></button>
+      <div id="player-icon-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <!-- Só aparece com algo tocando em tela grande, no lugar do
+             cabeçalho/abas — volta pra busca sem precisar trocar de aba. -->
+        <button id="player-back-to-search-btn" style="display:none; background:none; color: var(--c-text); font-size:1.3rem; padding:4px;">←</button>
+        <div style="display:flex; align-items:center; gap:28px; margin-left:auto;">
+          <button id="player-ctrl-video-toggle" style="background:none; color: var(--c-text); padding:4px; display:none;"></button>
+          <button id="player-ctrl-favorite" style="background:none; color: var(--c-text); font-size:1.4rem; padding:4px; display:none;">☆</button>
+          <button id="player-ctrl-share" style="background:none; color: var(--c-text); padding:4px; display:none;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg></button>
+        </div>
       </div>
       <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4); pointer-events:none;">
         <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
@@ -805,7 +805,6 @@
         <button id="player-ctrl-playpause" style="background: var(--c-accent-blue); color: var(--c-on-accent); width:58px; height:58px; border-radius:50%; font-size:1.3rem;">⏸</button>
         <button id="player-ctrl-next" style="background:none; font-size:1.6rem; color:var(--c-text);">⏭</button>
       </div>
-      <div class="hint" id="player-pip-hint" style="text-align:center; margin-top:10px;">Sai do app pra ver em janelinha (PiP) sobre as outras telas.</div>
     </div>
 
     <div id="player-tab-media" class="player-tab-content">
@@ -2476,8 +2475,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.29';
+const APP_VERSION = '4.30';
 const CHANGELOG = [
+  {
+    version: '4.30', date: '27/06/2026',
+    items: [
+      'MultiSonor: a seta de voltar agora fica junto dos ícones de tela/fone/favorito/compartilhar, ganhando mais espaço de tela',
+      'Removida a dica técnica sobre PiP (não precisa o usuário saber disso)',
+    ],
+  },
   {
     version: '4.29', date: '27/06/2026',
     items: [
