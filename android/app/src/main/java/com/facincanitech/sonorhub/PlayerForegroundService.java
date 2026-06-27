@@ -96,6 +96,16 @@ public class PlayerForegroundService extends Service {
             .addAction(android.R.drawable.ic_media_pause, "Pausar", buildControlPendingIntent("playpause"))
             .addAction(android.R.drawable.ic_media_next, "Avançar", buildControlPendingIntent("next"));
 
+        // Sem isso, a notificação aparece normal mas o Android não a trata
+        // como "controle de mídia" — não mostra na tela de bloqueio nem no
+        // QuickSettings de mídia, mesmo já tendo uma MediaSession por trás.
+        builder.setStyle(
+            new Notification.MediaStyle()
+                .setMediaSession((android.media.session.MediaSession.Token) mediaSession.getSessionToken().getToken())
+                .setShowActionsInCompactView(0, 1, 2)
+        );
+        builder.setVisibility(Notification.VISIBILITY_PUBLIC);
+
         return builder.build();
     }
 
