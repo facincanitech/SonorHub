@@ -781,7 +781,7 @@
         <button id="player-ctrl-favorite" style="background:none; color: var(--c-text); font-size:1.4rem; padding:4px; display:none;">☆</button>
         <button id="player-ctrl-share" style="background:none; color: var(--c-text); padding:4px; display:none;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg></button>
       </div>
-      <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);">
+      <div id="player-cover-wrap" style="position:relative; width:100%; max-width:280px; margin:0 auto 16px; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 8px 24px -8px rgba(0,0,0,0.4); pointer-events:none;">
         <img id="player-cover-img" style="width:100%; height:100%; object-fit:cover; display:none;">
         <div id="player-yt-container" style="width:100%; height:100%; display:none;"></div>
       </div>
@@ -2415,8 +2415,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.19';
+const APP_VERSION = '4.20';
 const CHANGELOG = [
+  {
+    version: '4.20', date: '27/06/2026',
+    items: [
+      'Bloqueado clique na tela do vídeo/capa do MultiSonor (estava bugando com a interface própria do YouTube)',
+      'Corrigido: app ficava gigante/redimensionado ao voltar do PiP pro app normal',
+    ],
+  },
   {
     version: '4.19', date: '27/06/2026',
     items: [
@@ -4715,13 +4722,19 @@ if (nativePlayerPip) {
   // esconde tudo e deixa só a capa/vídeo ocupando a tela toda nesse momento.
   nativePlayerPip.addListener('pipVisualMode', (data) => {
     document.body.classList.toggle('pip-active', !!data.entering);
-    if (playerVideoVisible && playerYtInstance) {
-      requestAnimationFrame(() => {
-        const wrap = document.getElementById('player-cover-wrap');
-        const container = document.getElementById('player-yt-container');
+    // A troca de tamanho de janela (entrar/sair do PiP) pode deixar o
+    // tamanho do iframe do YouTube (ou até o layout geral) "destravado"
+    // num valor errado, calculado durante a transição. Recalcula sempre,
+    // não só quando o vídeo tá visível, e avisa o resto da página via um
+    // resize de verdade pra qualquer outro cálculo de tamanho se ajustar.
+    requestAnimationFrame(() => {
+      const wrap = document.getElementById('player-cover-wrap');
+      const container = document.getElementById('player-yt-container');
+      if (wrap && container && playerYtInstance) {
         container.style.height = `${wrap.clientHeight}px`;
-      });
-    }
+      }
+      window.dispatchEvent(new Event('resize'));
+    });
   });
 }
 

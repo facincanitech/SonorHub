@@ -120,6 +120,16 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             if (PlayerPipPlugin.isPlaybackActive()) {
                 PlayerForegroundService.start(this);
             }
+            // A troca de tamanho de janela ao voltar do PiP pode deixar o
+            // WebView com uma medida errada travada (app aparecendo "gigante").
+            // Força reconferir o tamanho de verdade da janela.
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                final android.webkit.WebView webView = getBridge().getWebView();
+                webView.post(() -> {
+                    webView.requestLayout();
+                    webView.invalidate();
+                });
+            }
         }
     }
 
