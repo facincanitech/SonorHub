@@ -2415,8 +2415,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.21';
+const APP_VERSION = '4.22';
 const CHANGELOG = [
+  {
+    version: '4.22', date: '27/06/2026',
+    items: [
+      'PiP: build de diagnóstico — logs detalhados (Logcat "InfoHubPip") pra investigar tela preta e tamanho errado ao voltar',
+      'Aumentado o tempo de espera antes de entrar em PiP (120ms → 250ms), pra dar mais chance do WebView redesenhar antes da captura',
+    ],
+  },
   {
     version: '4.21', date: '27/06/2026',
     items: [
@@ -4703,6 +4710,7 @@ if (nativePlayerPip) {
   // de recortar coordenadas (não deu certo de forma confiável), a gente
   // esconde tudo e deixa só a capa/vídeo ocupando a tela toda nesse momento.
   nativePlayerPip.addListener('pipVisualMode', (data) => {
+    console.log('[InfoHubPip] pipVisualMode evento recebido, entering=', data.entering, 'innerWidth/Height=', window.innerWidth, window.innerHeight);
     document.body.classList.toggle('pip-active', !!data.entering);
     // A troca de tamanho de janela (entrar/sair do PiP) pode deixar o
     // tamanho do iframe do YouTube (ou até o layout geral) "destravado"
@@ -4712,6 +4720,7 @@ if (nativePlayerPip) {
     requestAnimationFrame(() => {
       const wrap = document.getElementById('player-cover-wrap');
       const container = document.getElementById('player-yt-container');
+      console.log('[InfoHubPip] após rAF, cover-wrap clientWidth/Height=', wrap && wrap.clientWidth, wrap && wrap.clientHeight, 'innerWidth/Height=', window.innerWidth, window.innerHeight);
       if (wrap && container && playerYtInstance) {
         container.style.height = `${wrap.clientHeight}px`;
       }

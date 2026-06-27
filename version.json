@@ -1,4 +1,4 @@
 {
-  "versionName": "4.21",
-  "notes": "PiP: removido cálculo de coordenadas, tamanho padrão do Android."
+  "versionName": "4.22",
+  "notes": "PiP: build de diagnóstico com logs detalhados."
 }

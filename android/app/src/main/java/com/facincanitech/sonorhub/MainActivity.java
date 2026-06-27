@@ -98,14 +98,18 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     // pequeno dá tempo do JS aplicar a mudança de CSS antes da captura.
     private void tryEnterPip() {
         if (!PlayerPipPlugin.isPlaybackActive() || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        android.util.Log.d("InfoHubPip", "tryEnterPip: avisando JS (entering=true) e agendando enterPictureInPictureMode em 250ms");
         PlayerPipPlugin.emitPipVisualModeIfActive(true);
         new android.os.Handler(getMainLooper()).postDelayed(() -> {
+            android.view.View decor = getWindow().getDecorView();
+            android.util.Log.d("InfoHubPip", "Antes de entrar em PiP — decorView: " + decor.getWidth() + "x" + decor.getHeight());
             try {
                 enterPictureInPictureMode(PlayerPipPlugin.buildPipParams(this));
+                android.util.Log.d("InfoHubPip", "enterPictureInPictureMode chamado sem lançar exceção; isInPictureInPictureMode=" + isInPictureInPictureMode());
             } catch (Exception e) {
                 android.util.Log.e("InfoHubPip", "Falha ao entrar em PiP: " + e.getMessage(), e);
             }
-        }, 120);
+        }, 250);
     }
 
     // PiP foi fechado (usuário arrastou pro X, ou voltou pro app normal)
@@ -115,6 +119,10 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+        android.view.View decor = getWindow().getDecorView();
+        android.util.Log.d("InfoHubPip", "onPictureInPictureModeChanged: isInPip=" + isInPictureInPictureMode
+            + " decorView=" + decor.getWidth() + "x" + decor.getHeight()
+            + " newConfig.screenWidthDp=" + newConfig.screenWidthDp + " screenHeightDp=" + newConfig.screenHeightDp);
         if (!isInPictureInPictureMode) {
             PlayerPipPlugin.emitPipVisualModeIfActive(false);
             if (PlayerPipPlugin.isPlaybackActive()) {
@@ -126,6 +134,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             if (getBridge() != null && getBridge().getWebView() != null) {
                 final android.webkit.WebView webView = getBridge().getWebView();
                 webView.post(() -> {
+                    android.util.Log.d("InfoHubPip", "Depois de relayout — webView: " + webView.getWidth() + "x" + webView.getHeight());
                     webView.requestLayout();
                     webView.invalidate();
                 });
