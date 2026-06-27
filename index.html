@@ -770,7 +770,7 @@
     <div id="player-media-searchbar" style="display:flex; gap:8px; margin-bottom: 6px;">
       <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" enterkeyhint="search" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
     </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:0.72rem; color: var(--c-text-dim);">
+    <div id="player-yt-attribution-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:0.72rem; color: var(--c-text-dim);">
       <span>▶️ Busca e reprodução fornecidas pelo YouTube</span>
       <a href="https://facincanitech.github.io/SonorHub/privacidade.html" target="_blank" id="player-privacy-link" style="color: var(--c-accent-blue); text-decoration:underline;">Política de Privacidade</a>
     </div>
@@ -812,14 +812,20 @@
     </div>
 
     <div id="player-tab-media" class="player-tab-content">
-      <div class="hint" style="margin-bottom: 6px;">⭐ Favoritos</div>
-      <div id="player-media-favoritos" style="margin-bottom: 16px;"></div>
+      <button type="button" class="player-fav-category-btn" id="player-media-favoritos-toggle" style="display:flex; align-items:center; gap:6px; width:100%; background:none; color:var(--c-text); padding:6px 0; text-align:left;">
+        <span class="player-fav-category-arrow" style="display:inline-block; transition:transform 0.15s;">▸</span>
+        <span class="hint" style="margin:0;">⭐ Favoritos</span>
+      </button>
+      <div id="player-media-favoritos" style="display:none; margin-bottom: 16px;"></div>
       <div id="player-media-results"></div>
     </div>
 
     <div id="player-tab-radio" class="player-tab-content" style="display:none;">
-      <div class="hint" style="margin-bottom: 6px;">⭐ Favoritas</div>
-      <div id="player-radio-favoritos" style="margin-bottom: 16px;"></div>
+      <button type="button" class="player-fav-category-btn" id="player-radio-favoritos-toggle" style="display:flex; align-items:center; gap:6px; width:100%; background:none; color:var(--c-text); padding:6px 0; text-align:left;">
+        <span class="player-fav-category-arrow" style="display:inline-block; transition:transform 0.15s;">▸</span>
+        <span class="hint" style="margin:0;">⭐ Favoritas</span>
+      </button>
+      <div id="player-radio-favoritos" style="display:none; margin-bottom: 16px;"></div>
       <div id="player-radio-results"></div>
     </div>
   </section>
@@ -2480,8 +2486,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.33';
+const APP_VERSION = '4.34';
 const CHANGELOG = [
+  {
+    version: '4.34', date: '27/06/2026',
+    items: [
+      'Atribuição ao YouTube/link de privacidade some quando o player grande tá tocando — fica só na tela de busca',
+      'Favoritos do MultiSonor agora é uma categoria em cascata (recolhida por padrão)',
+    ],
+  },
   {
     version: '4.33', date: '27/06/2026',
     items: [
@@ -4433,6 +4446,21 @@ document.getElementById('player-nav-btn').addEventListener('click', () => {
 // cada aba corresponde a exatamente um tipo de player.
 const PLAYER_TABS = ['media', 'radio'];
 let playerViewTab = 'media'; // qual aba o usuário tá vendo agora
+
+// Favoritos como categoria em cascata (recolhida por padrão) em vez de uma
+// lista sempre aberta tomando espaço acima dos resultados de busca.
+function setupPlayerFavCategoryToggle(toggleId, listId) {
+  const toggle = document.getElementById(toggleId);
+  const list = document.getElementById(listId);
+  const arrow = toggle.querySelector('.player-fav-category-arrow');
+  toggle.addEventListener('click', () => {
+    const isOpen = list.style.display !== 'none';
+    list.style.display = isOpen ? 'none' : 'block';
+    arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+  });
+}
+setupPlayerFavCategoryToggle('player-media-favoritos-toggle', 'player-media-favoritos');
+setupPlayerFavCategoryToggle('player-radio-favoritos-toggle', 'player-radio-favoritos');
 let playerActiveTab = null; // qual tipo (media/radio) tá tocando (null = nada)
 let playerShowResults = false; // true = usuário apertou buscar de novo enquanto algo tocava, quer ver a lista de novo
 
@@ -4447,6 +4475,9 @@ function updatePlayerBodyVisibility() {
   });
   const showPlayer = (playerActiveTab === playerViewTab) && !playerShowResults;
   document.getElementById('player-now-playing').style.display = showPlayer ? 'block' : 'none';
+  // Atribuição ao YouTube/link de privacidade só faz sentido na tela de
+  // busca (aba Música/Vídeo) — esconde com o player grande tocando e na aba Rádio.
+  document.getElementById('player-yt-attribution-row').style.display = (playerViewTab === 'media' && !showPlayer) ? 'flex' : 'none';
   // Com o player grande ocupando a tela, o cabeçalho/abas só tomam espaço —
   // troca pela setinha de voltar (mesma função do botão físico de Voltar).
   document.getElementById('player-screen-header').style.display = showPlayer ? 'none' : 'flex';
