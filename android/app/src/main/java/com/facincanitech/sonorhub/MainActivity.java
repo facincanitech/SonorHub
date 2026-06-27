@@ -128,16 +128,18 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             if (PlayerPipPlugin.isPlaybackActive()) {
                 PlayerForegroundService.start(this);
             }
-            // A troca de tamanho de janela ao voltar do PiP pode deixar o
-            // WebView com uma medida errada travada (app aparecendo "gigante").
-            // Força reconferir o tamanho de verdade da janela.
+            // Log confirmou: nesse instante o decorView AINDA está no tamanho
+            // pequeno do PiP — o resize de verdade pro tamanho cheio acontece
+            // em paralelo, depois desse callback. Espera a animação de resize
+            // do Android terminar antes de reconferir o tamanho da WebView,
+            // senão mede o tamanho errado (pequeno) e trava isso.
             if (getBridge() != null && getBridge().getWebView() != null) {
                 final android.webkit.WebView webView = getBridge().getWebView();
-                webView.post(() -> {
-                    android.util.Log.d("InfoHubPip", "Depois de relayout — webView: " + webView.getWidth() + "x" + webView.getHeight());
+                webView.postDelayed(() -> {
+                    android.util.Log.d("InfoHubPip", "Depois do delay+relayout — webView: " + webView.getWidth() + "x" + webView.getHeight());
                     webView.requestLayout();
                     webView.invalidate();
-                });
+                }, 350);
             }
         }
     }

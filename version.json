@@ -1,4 +1,4 @@
 {
-  "versionName": "4.23",
-  "notes": "Corrigido: links de baixar APK indo pra localhost no app nativo."
+  "versionName": "4.24",
+  "notes": "Corrigido (via Logcat): tamanho gigante ao voltar do PiP."
 }

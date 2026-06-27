@@ -2415,8 +2415,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.23';
+const APP_VERSION = '4.24';
 const CHANGELOG = [
+  {
+    version: '4.24', date: '27/06/2026',
+    items: [
+      'Corrigido (achado via Logcat): app ficava gigante ao voltar do PiP porque media o tamanho da tela antes da janela do Android terminar de redimensionar — agora espera o resize de verdade acontecer primeiro',
+    ],
+  },
   {
     version: '4.23', date: '27/06/2026',
     items: [
@@ -4716,22 +4722,29 @@ if (nativePlayerPip) {
   // de recortar coordenadas (não deu certo de forma confiável), a gente
   // esconde tudo e deixa só a capa/vídeo ocupando a tela toda nesse momento.
   nativePlayerPip.addListener('pipVisualMode', (data) => {
+    // Log confirmou a causa real do "fica gigante ao voltar": no instante
+    // em que esse evento chega com entering=false, a JANELA do Android
+    // ainda está no tamanho pequeno do PiP (ex: innerWidth/Height bem
+    // pequenos) — o resize de verdade pro tamanho cheio só acontece DEPOIS,
+    // em paralelo. Se a gente restaura o layout normal e recalcula tamanhos
+    // nesse instante, calcula tudo em cima da janela errada (pequena), e o
+    // resultado fica destravado/gigante quando a janela enfim cresce.
+    // Por isso: ao SAIR do PiP, espera um tempo (a animação de resize do
+    // Android) antes de tirar o pip-active e recalcular qualquer coisa.
     console.log('[InfoHubPip] pipVisualMode evento recebido, entering=', data.entering, 'innerWidth/Height=', window.innerWidth, window.innerHeight);
-    document.body.classList.toggle('pip-active', !!data.entering);
-    // A troca de tamanho de janela (entrar/sair do PiP) pode deixar o
-    // tamanho do iframe do YouTube (ou até o layout geral) "destravado"
-    // num valor errado, calculado durante a transição. Recalcula sempre,
-    // não só quando o vídeo tá visível, e avisa o resto da página via um
-    // resize de verdade pra qualquer outro cálculo de tamanho se ajustar.
-    requestAnimationFrame(() => {
-      const wrap = document.getElementById('player-cover-wrap');
-      const container = document.getElementById('player-yt-container');
-      console.log('[InfoHubPip] após rAF, cover-wrap clientWidth/Height=', wrap && wrap.clientWidth, wrap && wrap.clientHeight, 'innerWidth/Height=', window.innerWidth, window.innerHeight);
-      if (wrap && container && playerYtInstance) {
-        container.style.height = `${wrap.clientHeight}px`;
-      }
-      window.dispatchEvent(new Event('resize'));
-    });
+    const delay = data.entering ? 0 : 350;
+    setTimeout(() => {
+      document.body.classList.toggle('pip-active', !!data.entering);
+      requestAnimationFrame(() => {
+        const wrap = document.getElementById('player-cover-wrap');
+        const container = document.getElementById('player-yt-container');
+        console.log('[InfoHubPip] após delay+rAF, cover-wrap clientWidth/Height=', wrap && wrap.clientWidth, wrap && wrap.clientHeight, 'innerWidth/Height=', window.innerWidth, window.innerHeight);
+        if (wrap && container && playerYtInstance) {
+          container.style.height = `${wrap.clientHeight}px`;
+        }
+        window.dispatchEvent(new Event('resize'));
+      });
+    }, delay);
   });
 }
 
