@@ -1,4 +1,4 @@
 {
-  "versionName": "4.20",
-  "notes": "MultiSonor: bloqueado clique no vídeo, corrigido tamanho ao voltar do PiP."
+  "versionName": "4.21",
+  "notes": "PiP: removido cálculo de coordenadas, tamanho padrão do Android."
 }

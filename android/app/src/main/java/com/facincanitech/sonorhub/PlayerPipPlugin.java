@@ -4,7 +4,6 @@ import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.util.Rational;
@@ -32,7 +31,6 @@ public class PlayerPipPlugin extends Plugin {
     private static PlayerPipPlugin activeInstance;
     private static boolean playbackActive = false;
     private static boolean isPaused = false;
-    private static Rect videoRect = null; // último retângulo (em px de tela) do vídeo, pra recortar o PiP nele
 
     @Override
     public void load() {
@@ -91,28 +89,15 @@ public class PlayerPipPlugin extends Plugin {
         call.resolve();
     }
 
-    // JS manda o retângulo (em px de tela, já multiplicado pelo devicePixelRatio)
-    // relativo ao próprio WebView — mas o setSourceRectHint do Android espera
-    // coordenadas relativas à JANELA inteira, que inclui a barra de status
-    // por cima do WebView. Sem somar esse deslocamento, o recorte saía
-    // empurrado pra baixo (pegando um pedaço do topo e outro embaixo, em vez
-    // da capa/vídeo certinho no meio).
+    // setVideoRect/sourceRectHint foi removido — 5 rodadas tentando acertar
+    // essas coordenadas (proporção, deslocamento da status bar) e a janela
+    // do PiP continuava saindo grande/errada em vez de pequena. O modo
+    // visual de tela cheia (ver pipVisualMode) já garante que só a capa/
+    // vídeo aparece; deixa o Android decidir o tamanho padrão da janela sem
+    // nenhuma dica nossa, que é o caminho mais previsível.
     @PluginMethod
     public void setVideoRect(PluginCall call) {
-        Integer left = call.getInt("left");
-        Integer top = call.getInt("top");
-        Integer right = call.getInt("right");
-        Integer bottom = call.getInt("bottom");
-        if (left != null && top != null && right != null && bottom != null && right > left && bottom > top) {
-            int[] location = {0, 0};
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().getLocationOnScreen(location);
-            }
-            videoRect = new Rect(left + location[0], top + location[1], right + location[0], bottom + location[1]);
-        } else {
-            videoRect = null;
-        }
-        call.resolve();
+        call.resolve(); // mantido só pra não quebrar quem ainda chama do JS; não faz nada
     }
 
     // Chamado pela MainActivity bem antes de entrar em PiP, pra montar os
@@ -125,22 +110,7 @@ public class PlayerPipPlugin extends Plugin {
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder.setActions(buildActions(context));
         }
-        if (videoRect != null) {
-            builder.setSourceRectHint(videoRect);
-            // O Android ignora o sourceRectHint (e cai pra recortar a Activity
-            // inteira) se a proporção declarada aqui não bater com a proporção
-            // real do retângulo — e a capa (modo só-áudio, o padrão) é quadrada
-            // (1:1), não 16:9. Usa a proporção de verdade do recorte atual.
-            int width = videoRect.width();
-            int height = videoRect.height();
-            if (width > 0 && height > 0) {
-                builder.setAspectRatio(new Rational(width, height));
-            } else {
-                builder.setAspectRatio(new Rational(16, 9));
-            }
-        } else {
-            builder.setAspectRatio(new Rational(16, 9));
-        }
+        builder.setAspectRatio(new Rational(16, 9));
         return builder.build();
     }
 

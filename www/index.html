@@ -2415,8 +2415,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.20';
+const APP_VERSION = '4.21';
 const CHANGELOG = [
+  {
+    version: '4.21', date: '27/06/2026',
+    items: [
+      'PiP: removido o cálculo de coordenadas (sourceRectHint) — estava deixando a janelinha grande/errada em vez de pequena. Agora o Android escolhe o tamanho padrão.',
+    ],
+  },
   {
     version: '4.20', date: '27/06/2026',
     items: [
@@ -4296,7 +4302,6 @@ function updatePlayerBodyVisibility() {
   });
   const showPlayer = (playerActiveTab === playerViewTab) && !playerShowResults;
   document.getElementById('player-now-playing').style.display = showPlayer ? 'block' : 'none';
-  if (showPlayer && playerActiveTab === 'media') setTimeout(updatePipVideoRect, 100);
 }
 
 function switchPlayerTab(tab) {
@@ -4487,26 +4492,10 @@ async function abrirPlaylistPlayerMedia(playlist) {
 /* ----- Player embutido de verdade (Música/Vídeo), com PiP ----- */
 const nativePlayerPip = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayerPip;
 
-// Sem isso o PiP recorta a Activity inteira (por isso só aparecia o título
-// "Player" escrito) — manda pro nativo onde a capa/vídeo tá desenhado na
-// tela normal, em px de tela real (CSS px × devicePixelRatio). Usa o
-// player-cover-wrap (não o player-yt-container) porque ele é o que fica
-// visível sempre — capa quando é só áudio, vídeo quando o 👁/🎧 liga o
-// vídeo — assim o PiP mostra a coisa certa nos dois modos.
-function updatePipVideoRect() {
-  if (!nativePlayerPip) return;
-  const el = document.getElementById('player-cover-wrap');
-  if (!el || el.offsetParent === null) return;
-  const rect = el.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  nativePlayerPip.setVideoRect({
-    left: Math.round(rect.left * dpr),
-    top: Math.round(rect.top * dpr),
-    right: Math.round(rect.right * dpr),
-    bottom: Math.round(rect.bottom * dpr),
-  });
-}
-window.addEventListener('resize', updatePipVideoRect);
+// Tentamos por 5 rodadas calcular um recorte (sourceRectHint) certo pro PiP
+// e a janela só saía errada/grande — removido. O modo visual de tela cheia
+// (ver listener de 'pipVisualMode' mais abaixo) já garante que só a capa/
+// vídeo aparece, sem precisar de nenhuma coordenada calculada aqui.
 let playerYtInstance = null;
 let playerYtApiLoadPromise = null;
 let playerCurrentLista = [];
@@ -4568,7 +4557,6 @@ function setPlayerVideoVisible(visible) {
   if (visible) {
     requestAnimationFrame(() => {
       container.style.height = `${wrap.clientHeight}px`;
-      setTimeout(updatePipVideoRect, 150);
     });
   }
 }
@@ -4592,12 +4580,6 @@ function setPlayerProgressUI(pct) {
 function startPlayerProgressLoop() {
   stopPlayerProgressLoop();
   playerProgressInterval = setInterval(() => {
-    // Recalcula o retângulo do PiP a cada tick, não só quando o player abre —
-    // a MultiSonor agora é uma aba normal que rola (não mais tela cheia
-    // fixa), então se o usuário rolar a página antes de minimizar, o
-    // retângulo calculado uma vez só ficava velho e o PiP acabava
-    // recortando a Activity inteira (cabeçalho + navbar) em vez da capa/vídeo.
-    updatePipVideoRect();
     if (playerProgressDragging) return;
     if (!playerYtInstance || typeof playerYtInstance.getCurrentTime !== 'function') return;
     const cur = playerYtInstance.getCurrentTime() || 0;
