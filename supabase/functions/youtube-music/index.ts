@@ -53,12 +53,20 @@ function mapPlaylistItem(it: any) {
   };
 }
 
+// O YouTube devolve erro (ex: cota diária excedida) num corpo JSON com
+// "error", sem nenhum "items" — antes a gente só fazia `resp.items || []` e
+// isso virava silenciosamente "nada encontrado", escondendo o motivo real
+// (já aconteceu: parecia bug de busca, era cota da API estourada).
+function apiErrorMessage(resp: any): string | null {
+  return resp?.error?.message || null;
+}
+
 async function buscarArtistas(apiKey: string, termo: string) {
   const params = new URLSearchParams({
     part: 'snippet', q: termo, type: 'channel', order: 'relevance', maxResults: '8', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
-  return (resp.items || []).map(mapChannelItem);
+  return { items: (resp.items || []).map(mapChannelItem), apiError: apiErrorMessage(resp) };
 }
 
 async function buscarVideos(apiKey: string, termo: string) {
@@ -66,15 +74,15 @@ async function buscarVideos(apiKey: string, termo: string) {
     part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '15', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
-  return (resp.items || []).map(mapVideoItem);
+  return { items: (resp.items || []).map(mapVideoItem), apiError: apiErrorMessage(resp) };
 }
 
 async function buscarMisto(apiKey: string, termo: string) {
-  const [artists, videos] = await Promise.all([
+  const [a, v] = await Promise.all([
     buscarArtistas(apiKey, termo),
     buscarVideos(apiKey, termo),
   ]);
-  return { artists, videos };
+  return { artists: a.items, videos: v.items, apiError: a.apiError || v.apiError };
 }
 
 // search.list por channelId tem atraso de indexação real (o canal pode ter
@@ -102,6 +110,24 @@ async function listarVideosDaPlaylist(apiKey: string, playlistId: string, maxRes
   return videos.map(({ _publishedAt, ...v }) => v);
 }
 
+// Usado pelo link de compartilhar (?play=<videoId>) — pega só os dados de
+// exibição de UM vídeo específico, sem precisar buscar por nome.
+async function buscarVideoPorId(apiKey: string, videoId: string) {
+  const params = new URLSearchParams({ part: 'snippet', id: videoId, key: apiKey });
+  const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`).then((r) => r.json());
+  const item = resp.items && resp.items[0];
+  if (!item) return { video: null, apiError: apiErrorMessage(resp) };
+  return {
+    video: {
+      videoId: item.id,
+      title: item.snippet.title,
+      channelTitle: item.snippet.channelTitle,
+      thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+    },
+    apiError: null,
+  };
+}
+
 // As playlists públicas do canal são a aproximação mais próxima de "álbuns"
 // que a API pública do YouTube expõe (não tem endpoint de álbum de verdade).
 async function listarPlaylistsDoCanal(apiKey: string, channelId: string) {
@@ -127,12 +153,21 @@ Deno.serve(async (req: Request) => {
   const name = (url.searchParams.get('name') || '').trim();
   const channelId = (url.searchParams.get('channelId') || '').trim();
   const playlistId = (url.searchParams.get('playlistId') || '').trim();
+  const videoId = (url.searchParams.get('videoId') || '').trim();
 
   if (!apiKey) {
     return Response.json({ artists: [], videos: [], playlists: [], error: 'Faltando chave do YouTube no servidor.' }, { headers: CORS_HEADERS });
   }
 
   try {
+    if (videoId) {
+      const { video, apiError } = await buscarVideoPorId(apiKey, videoId);
+      return Response.json({
+        video,
+        error: video ? null : (apiError ? `Erro do YouTube: ${apiError}` : 'Vídeo não encontrado.'),
+      }, { headers: CORS_HEADERS });
+    }
+
     if (playlistId) {
       const videos = await listarVideosDaPlaylist(apiKey, playlistId, 50);
       return Response.json({
@@ -153,10 +188,10 @@ Deno.serve(async (req: Request) => {
       return Response.json({ artists: [], videos: [], playlists: [], error: 'Faltando termo de busca.' }, { headers: CORS_HEADERS });
     }
 
-    const { artists, videos } = await buscarMisto(apiKey, name);
+    const { artists, videos, apiError } = await buscarMisto(apiKey, name);
     return Response.json({
       artists, videos, playlists: [],
-      error: (artists.length || videos.length) ? null : `Nada encontrado pra "${name}".`,
+      error: (artists.length || videos.length) ? null : (apiError ? `Erro do YouTube: ${apiError}` : `Nada encontrado pra "${name}".`),
     }, { headers: CORS_HEADERS });
   } catch (e) {
     return Response.json({ artists: [], videos: [], playlists: [], error: 'Erro ao consultar YouTube: ' + e.message }, { headers: CORS_HEADERS });

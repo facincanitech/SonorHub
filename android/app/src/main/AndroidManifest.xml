@@ -24,6 +24,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- App Link pro MultiSonor — link de compartilhar com ?play=
+                 abre o app instalado direto (em vez do navegador), graças ao
+                 assetlinks.json hospedado em facincanitech.github.io/.well-known/.
+                 autoVerify exige o Android confirmar essa propriedade do
+                 domínio antes de valer; sem o assetlinks.json certo, esse
+                 intent-filter simplesmente não verifica e o link cai no
+                 navegador normal (sem quebrar nada). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="facincanitech.github.io"
+                      android:pathPrefix="/SonorHub" />
+            </intent-filter>
+
         </activity>
 
         <!-- Mantém Música/Vídeo/Rádio tocando quando o PiP é fechado de

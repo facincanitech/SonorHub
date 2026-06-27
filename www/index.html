@@ -2196,6 +2196,39 @@ if (nativeApp) {
     }
     nativeApp.exitApp();
   });
+
+  // Link de compartilhar do MultiSonor (https://facincanitech.github.io/SonorHub/?play=<videoId>)
+  // — se o Android reconheceu o domínio (assetlinks.json em
+  // facincanitech.github.io/.well-known/), abre o app instalado direto em
+  // vez do navegador, e cai aqui com a URL completa pra gente extrair o
+  // videoId. Funciona tanto com o app já aberto (onNewIntent) quanto
+  // recém-aberto pelo link (cold start) — Capacitor dispara esse evento nos
+  // dois casos.
+  nativeApp.addListener('appUrlOpen', (data) => {
+    try {
+      const url = new URL(data.url);
+      const videoId = url.searchParams.get('play');
+      if (videoId) playVideoFromDeepLink(videoId);
+    } catch (e) { console.error('appUrlOpen:', e); }
+  });
+}
+
+// Versão web (PWA/site) do mesmo link — sem App Link nativo, só checa o
+// parâmetro na URL ao carregar a página.
+(() => {
+  const videoId = new URLSearchParams(location.search).get('play');
+  if (videoId) playVideoFromDeepLink(videoId);
+})();
+
+async function playVideoFromDeepLink(videoId) {
+  const navBtn = document.getElementById('player-nav-btn');
+  if (navBtn) navBtn.click(); // ativa a aba MultiSonor igual um toque normal
+  try {
+    const resp = await callEdgeFunction('youtube-music', { videoId });
+    const video = resp.video;
+    if (!video) { console.error('playVideoFromDeepLink: vídeo não encontrado', resp.error); return; }
+    playInEmbeddedPlayer(video, 'Música/Vídeo', [video], 0, 'media');
+  } catch (e) { console.error('playVideoFromDeepLink:', e); }
 }
 
 /* =========================================================================
@@ -2415,8 +2448,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.24';
+const APP_VERSION = '4.25';
 const CHANGELOG = [
+  {
+    version: '4.25', date: '27/06/2026',
+    items: [
+      'Compartilhar do MultiSonor agora usa link próprio (não mais o link direto do YouTube) — abre o app instalado direto se reconhecido, ou toca no navegador se não tiver o app',
+    ],
+  },
   {
     version: '4.24', date: '27/06/2026',
     items: [
@@ -4959,7 +4998,11 @@ function renderPlayerMediaFavoritos() {
 
 document.getElementById('player-ctrl-share').addEventListener('click', async () => {
   if (!playerCurrentVideoObj) return;
-  const link = `https://www.youtube.com/watch?v=${playerCurrentVideoObj.videoId}`;
+  // Link próprio (não o youtube.com direto) — sem app instalado cai no
+  // navegador e já toca (ver checkForUpdate/playVideoFromDeepLink); com o
+  // app instalado e o App Link verificado (assetlinks.json), abre o
+  // SonorHub direto em vez do navegador.
+  const link = `https://facincanitech.github.io/SonorHub/?play=${playerCurrentVideoObj.videoId}`;
   const attribution = `📲 Compartilhado usando o app SonorHub — ${APP_DOWNLOAD_LINK}`;
   const text = [attribution, `${playerCurrentVideoObj.title} — ${playerCurrentVideoObj.channelTitle}`].join('\n\n');
   if (nativeShare) {
