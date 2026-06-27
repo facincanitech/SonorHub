@@ -118,6 +118,13 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 android.util.Log.d("InfoHubPip", "enterPictureInPictureMode chamado sem lançar exceção; isInPictureInPictureMode=" + isInPictureInPictureMode());
             } catch (Exception e) {
                 android.util.Log.e("InfoHubPip", "Falha ao entrar em PiP: " + e.getMessage(), e);
+                // Já tínhamos avisado o JS pra preparar a tela cheia (entering=true)
+                // antes de tentar — se a entrada falhou (tela bloqueando, ou em
+                // alguns aparelhos ao abrir o gerenciador de apps), isso nunca se
+                // desfazia, e a tela ficava travada preta/cinza até forçar via
+                // Home+PiP. Desfaz na hora, já que não tem PiP de verdade pra
+                // animar a volta.
+                PlayerPipPlugin.emitPipVisualModeIfActive(false);
             }
         }, 250);
     }

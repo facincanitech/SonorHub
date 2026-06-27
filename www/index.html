@@ -2475,8 +2475,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.30';
+const APP_VERSION = '4.31';
 const CHANGELOG = [
+  {
+    version: '4.31', date: '27/06/2026',
+    items: [
+      'Corrigido: tela ficava travada preta/cinza se o PiP falhasse ao entrar (tela bloqueando, gerenciador de apps) — agora desfaz a preparação se não der',
+      'Corrigido: botão de play/pause ficava "errado" depois de o player pausar sozinho (tela bloqueada) — sincroniza com o estado real ao voltar pro app',
+    ],
+  },
   {
     version: '4.30', date: '27/06/2026',
     items: [
@@ -4792,6 +4799,26 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
 function setPlayerNowPlaying(title, sub) {
   document.getElementById('player-now-playing-title').textContent = title;
   document.getElementById('player-now-playing-sub').textContent = sub || '';
+}
+
+// O player pode pausar sozinho por fora do nosso controle (tela bloqueando,
+// gerenciador de apps) — sem isso, o botão continuava marcado como "tocando"
+// (ícone de ⏸) mesmo já pausado de verdade, e era preciso tocar 2 vezes
+// (uma pra "pausar" o que já tava pausado, outra pra realmente tocar).
+// Chamado ao voltar pro app, sincroniza com o estado real do YT player.
+function syncPlayerPlayPauseState() {
+  if (playerActiveTab !== 'media' || !playerYtInstance || typeof playerYtInstance.getPlayerState !== 'function') return;
+  const state = playerYtInstance.getPlayerState();
+  const reallyPaused = state === 2; // YT.PlayerState.PAUSED
+  if (state !== 1 && state !== 2) return; // buffering/cued/etc — não dá pra saber, não muda nada
+  if (reallyPaused !== playerIsPaused) {
+    playerIsPaused = reallyPaused;
+    document.getElementById('player-ctrl-playpause').textContent = playerIsPaused ? '▶️' : '⏸';
+    if (nativePlayerPip) nativePlayerPip.setPaused({ paused: playerIsPaused });
+  }
+}
+if (nativeApp) {
+  nativeApp.addListener('resume', () => setTimeout(syncPlayerPlayPauseState, 300));
 }
 
 function playerTogglePlayPause() {

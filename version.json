@@ -1,4 +1,4 @@
 {
-  "versionName": "4.30",
-  "notes": "MultiSonor: layout mais limpo (seta junto dos ícones, sem dica de PiP)."
+  "versionName": "4.31",
+  "notes": "Corrigido: tela travada se PiP falhar; botão play/pause desincronizado."
 }
