@@ -80,8 +80,11 @@ public class PlayerPipPlugin extends Plugin {
     }
 
     // JS manda o retângulo (em px de tela, já multiplicado pelo devicePixelRatio)
-    // de onde o vídeo está desenhado na tela normal — sem isso o PiP recorta a
-    // Activity inteira (por isso só aparecia o título "Player" escrito).
+    // relativo ao próprio WebView — mas o setSourceRectHint do Android espera
+    // coordenadas relativas à JANELA inteira, que inclui a barra de status
+    // por cima do WebView. Sem somar esse deslocamento, o recorte saía
+    // empurrado pra baixo (pegando um pedaço do topo e outro embaixo, em vez
+    // da capa/vídeo certinho no meio).
     @PluginMethod
     public void setVideoRect(PluginCall call) {
         Integer left = call.getInt("left");
@@ -89,7 +92,11 @@ public class PlayerPipPlugin extends Plugin {
         Integer right = call.getInt("right");
         Integer bottom = call.getInt("bottom");
         if (left != null && top != null && right != null && bottom != null && right > left && bottom > top) {
-            videoRect = new Rect(left, top, right, bottom);
+            int[] location = {0, 0};
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().getLocationOnScreen(location);
+            }
+            videoRect = new Rect(left + location[0], top + location[1], right + location[0], bottom + location[1]);
         } else {
             videoRect = null;
         }

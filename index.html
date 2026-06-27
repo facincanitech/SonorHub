@@ -2364,8 +2364,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.16';
+const APP_VERSION = '4.17';
 const CHANGELOG = [
+  {
+    version: '4.17', date: '26/06/2026',
+    items: [
+      'Corrigido: recorte do PiP saía deslocado (pegava um pedaço do topo e outro de baixo) — faltava somar o deslocamento da barra de status',
+    ],
+  },
   {
     version: '4.16', date: '26/06/2026',
     items: [

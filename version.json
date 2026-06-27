@@ -1,4 +1,4 @@
 {
-  "versionName": "4.16",
-  "notes": "Corrigido: PiP ignorava o recorte por mismatch de proporção."
+  "versionName": "4.17",
+  "notes": "Corrigido: recorte do PiP deslocado (faltava offset da status bar)."
 }
