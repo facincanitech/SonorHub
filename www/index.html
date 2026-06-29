@@ -2522,8 +2522,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.51';
+const APP_VERSION = '4.52';
 const CHANGELOG = [
+  {
+    version: '4.52', date: '29/06/2026',
+    items: [
+      'Música/Vídeo agora pede pra tela não apagar sozinha por inatividade enquanto tocar (vale também em PiP) — evita cair na trava de tela travada sem precisar burlar nada do YouTube',
+    ],
+  },
   {
     version: '4.51', date: '29/06/2026',
     items: [
@@ -5283,7 +5289,10 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
   setPlayerVideoVisible(false); // sempre começa só com a capa/áudio
   startPlayerProgressLoop();
-  if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
+  // keepScreenOn: vídeo do YouTube não sobrevive a tela apagar (decodificador
+  // perde a superfície) — pede pra não apagar por inatividade enquanto isso
+  // tocar. Não trava manualmente (botão de power continua funcionando normal).
+  if (nativePlayerPip) { nativePlayerPip.setActive({ active: true, keepScreenOn: true }); nativePlayerPip.setPaused({ paused: false }); }
 }
 
 function setPlayerNowPlaying(title, sub) {

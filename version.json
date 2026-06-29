@@ -1,4 +1,4 @@
 {
-  "versionName": "4.51",
-  "notes": "Notificação só pra Rádio/Audiobook agora; corrigido notificação presa após fechar o app."
+  "versionName": "4.52",
+  "notes": "Música/Vídeo agora mantém a tela acesa enquanto tocar, evitando o apagamento automático."
 }

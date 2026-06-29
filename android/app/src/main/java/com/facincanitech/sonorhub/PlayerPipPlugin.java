@@ -79,6 +79,13 @@ public class PlayerPipPlugin extends Plugin {
     public void setActive(PluginCall call) {
         playbackActive = Boolean.TRUE.equals(call.getBoolean("active", false));
         notificationCapable = playbackActive && Boolean.TRUE.equals(call.getBoolean("notificationCapable", false));
+        // Vídeo do YouTube não sobrevive ao apagar automático da tela por
+        // inatividade (mesmo limite de Surface já documentado) — pedir pra
+        // tela não apagar sozinha enquanto isso tocar evita cair nesse caso
+        // sem precisar contornar nada do YouTube. Não impede travar na mão
+        // (botão de power), só o apagamento por tempo ocioso. Funciona em
+        // tela cheia e em PiP igual, é um flag de janela, não de tela.
+        boolean keepScreenOn = playbackActive && Boolean.TRUE.equals(call.getBoolean("keepScreenOn", false));
         if (!playbackActive) isPaused = false;
         // Atualiza os parâmetros (incluindo autoEnterEnabled) na hora que a
         // mídia começa/para — o sistema precisa já ter esses parâmetros
@@ -88,6 +95,13 @@ public class PlayerPipPlugin extends Plugin {
                 getActivity().setPictureInPictureParams(buildPipParams(getActivity()));
             } catch (Exception e) {
                 // aparelho sem suporte — ignora
+            }
+        }
+        if (getActivity() != null) {
+            if (keepScreenOn) {
+                getActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }
         }
         call.resolve();
