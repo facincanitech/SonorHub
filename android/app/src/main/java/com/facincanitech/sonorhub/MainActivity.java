@@ -30,6 +30,20 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         }
     };
 
+    // ACTION_SCREEN_OFF só pode ser recebido via registerReceiver em código —
+    // não é permitido declarar no Manifest, nem em versões recentes do
+    // Android (é um broadcast protegido do sistema). Avisa o JS pra abrir o
+    // YouTube Music (que tem reprodução em segundo plano de graça, diferente
+    // do player embutido do YouTube comum que usamos) bem na hora que a tela
+    // física desliga, antes do nosso vídeo morrer de qualquer jeito.
+    private boolean screenOffReceiverRegistered = false;
+    private final BroadcastReceiver screenOffReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            PlayerPipPlugin.emitScreenOffIfActive();
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(BriefingAlarmPlugin.class);
@@ -48,6 +62,14 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             registerReceiver(pipControlReceiver, filter);
         }
         pipReceiverRegistered = true;
+
+        IntentFilter screenOffFilter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenOffReceiver, screenOffFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(screenOffReceiver, screenOffFilter);
+        }
+        screenOffReceiverRegistered = true;
     }
 
     @Override
@@ -72,6 +94,10 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         if (pipReceiverRegistered) {
             unregisterReceiver(pipControlReceiver);
             pipReceiverRegistered = false;
+        }
+        if (screenOffReceiverRegistered) {
+            unregisterReceiver(screenOffReceiver);
+            screenOffReceiverRegistered = false;
         }
     }
 

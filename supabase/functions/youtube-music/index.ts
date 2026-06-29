@@ -140,6 +140,36 @@ function friendlyErrorMessage(apiError: string): string {
   return 'Não foi possível buscar agora. Tenta de novo em alguns minutos.';
 }
 
+function parseDurationSeconds(iso: string): number {
+  const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return Infinity; // formato não reconhecido — não filtra, mais seguro que esconder à toa
+  const h = parseInt(m[1] || '0', 10);
+  const min = parseInt(m[2] || '0', 10);
+  const s = parseInt(m[3] || '0', 10);
+  return h * 3600 + min * 60 + s;
+}
+
+// YouTube não expõe uma flag oficial "isShort" na API — duração de até 60s
+// é a heurística padrão (Shorts são, por definição, vídeos de até 1 minuto).
+// Custa 1 chamada extra de videos.list (barata, ~1 unidade) por busca, não
+// por vídeo — pega todas as durações de uma vez.
+async function removerShorts(apiKey: string, videos: any[]): Promise<any[]> {
+  const ids = videos.map((v) => v.videoId).filter(Boolean).join(',');
+  if (!ids) return videos;
+  try {
+    const params = new URLSearchParams({ part: 'contentDetails', id: ids, key: apiKey });
+    const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`).then((r) => r.json());
+    const durations = new Map<string, number>();
+    (resp.items || []).forEach((it: any) => durations.set(it.id, parseDurationSeconds(it.contentDetails?.duration || '')));
+    return videos.filter((v) => {
+      const dur = durations.get(v.videoId);
+      return dur === undefined || dur > 60;
+    });
+  } catch (_e) {
+    return videos; // falha na checagem não pode quebrar a busca — mostra tudo
+  }
+}
+
 async function buscarArtistas(apiKey: string, termo: string) {
   const params = new URLSearchParams({
     part: 'snippet', q: termo, type: 'channel', order: 'relevance', maxResults: '15', key: apiKey,
@@ -157,7 +187,8 @@ async function buscarVideos(apiKey: string, termo: string) {
     part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '50', key: apiKey,
   });
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
-  return { items: (resp.items || []).map(mapVideoItem), apiError: apiErrorMessage(resp) };
+  const items = await removerShorts(apiKey, (resp.items || []).map(mapVideoItem));
+  return { items, apiError: apiErrorMessage(resp) };
 }
 
 async function buscarPlaylistsPorNome(apiKey: string, termo: string) {
@@ -199,7 +230,8 @@ async function listarVideosDaPlaylist(apiKey: string, playlistId: string, maxRes
   // pra canal (vídeos do artista) e pra playlist/álbum (faixas), já que os
   // dois usam essa mesma função.
   videos.sort((a, b) => new Date(b._publishedAt).getTime() - new Date(a._publishedAt).getTime());
-  return videos.map(({ _publishedAt, ...v }) => v);
+  const semData = videos.map(({ _publishedAt, ...v }) => v);
+  return removerShorts(apiKey, semData);
 }
 
 // Usado pelo link de compartilhar (?play=<videoId>) — pega só os dados de

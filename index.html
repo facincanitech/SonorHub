@@ -2522,8 +2522,22 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.46';
+const APP_VERSION = '4.48';
 const CHANGELOG = [
+  {
+    version: '4.48', date: '28/06/2026',
+    items: [
+      'Busca de música/vídeo agora esconde Shorts (vídeos de até 1 minuto) automaticamente',
+      'A troca pro YouTube Music ao travar a tela só acontece no modo "música/capa" — no modo vídeo de verdade, o PiP cuida da troca de app e aceita parar ao travar',
+      'Audiobook agora também tem controle na notificação/tela de bloqueio',
+    ],
+  },
+  {
+    version: '4.47', date: '28/06/2026',
+    items: [
+      'Música/vídeo do MultiSonor: quando a tela trava, abre automático no YouTube Music (se instalado) pra continuar tocando em segundo plano — o player embutido não sobrevive à tela bloqueada',
+    ],
+  },
   {
     version: '4.46', date: '28/06/2026',
     items: [
@@ -4659,6 +4673,9 @@ let audiobookChunkIndex = 0;
 let audiobookFileKey = null; // nome+tamanho do PDF, pra lembrar a posição entre seleções
 let audiobookIsPlaying = false;
 let audiobookIsPaused = false;
+// Diferencia do playerActiveTab (media/radio) — audiobook não é uma aba do
+// player de mídia, mas usa o mesmo canal de notificação/PiP control.
+let audiobookIsActiveSource = false;
 
 // Mesmo mecanismo de salvar usado pelos favoritos do MultiSonor
 // (getFeatureState + saveState, tudo dentro do mesmo state local) — em vez
@@ -4758,15 +4775,18 @@ function audiobookSpeakCurrentChunk() {
 
 function audiobookTogglePlayPause() {
   if (!audiobookChunks.length) return;
+  audiobookIsActiveSource = true;
   if (audiobookIsPlaying) {
     speechSynthesis.cancel();
     audiobookIsPlaying = false;
     audiobookIsPaused = true;
     document.getElementById('audiobook-ctrl-playpause').textContent = '▶️';
+    if (nativePlayerPip) nativePlayerPip.setPaused({ paused: true });
   } else {
     audiobookIsPlaying = true;
     audiobookIsPaused = false;
     document.getElementById('audiobook-ctrl-playpause').textContent = '⏸';
+    if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
     audiobookSpeakCurrentChunk();
   }
 }
@@ -5231,6 +5251,7 @@ playerProgressBarEl.addEventListener('pointercancel', () => { playerProgressDrag
 
 async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   stopRadioForExclusivity(); // só um player toca por vez — Música/Vídeo e Rádio se excluem
+  if (audiobookIsActiveSource) { speechSynthesis.cancel(); audiobookIsPlaying = false; audiobookIsActiveSource = false; }
   playerCurrentLista = lista || [video];
   playerCurrentIndex = index || 0;
   playerCurrentTipoLabel = tipoLabel;
@@ -5331,10 +5352,37 @@ document.getElementById('player-ctrl-playpause').addEventListener('click', playe
 document.getElementById('player-ctrl-prev').addEventListener('click', () => playerSkip(-1));
 document.getElementById('player-ctrl-next').addEventListener('click', () => playerSkip(1));
 
+// A tela física desligando mata o player de vídeo embutido do YouTube de
+// qualquer jeito (decodificador de vídeo precisa de superfície de tela —
+// sem solução sem violar Termos do YouTube, já confirmado e documentado).
+// O YouTube Music tem reprodução em segundo plano de graça — manda pra lá
+// automaticamente nesse instante, antes do nosso vídeo morrer sozinho.
+// Só faz sentido no modo "música" (capa, sem vídeo visível) — quem está
+// vendo o vídeo de verdade (modo 📺) escolheu isso de propósito, e a
+// maioria desse conteúdo (vlog, tutorial etc.) nem existe no catálogo do
+// YouTube Music mesmo; aí só aceita que para ao travar a tela, com PiP
+// cuidando da troca de app normalmente. Rádio/Audiobook não precisam
+// disso, já sobrevivem (áudio puro).
+if (nativePlayerPip) {
+  nativePlayerPip.addListener('screenOff', () => {
+    if (playerActiveTab === 'media' && !playerVideoVisible && playerCurrentVideoObj && !playerIsPaused) {
+      tocarNoNavegador(`https://music.youtube.com/watch?v=${playerCurrentVideoObj.videoId}`);
+    }
+  });
+}
+
 // Controles que vieram da janelinha PiP ou da notificação (bandeja) —
-// chegam aqui pelo mesmo evento, não importa de onde vieram.
+// chegam aqui pelo mesmo evento, não importa de onde vieram. Audiobook usa
+// o mesmo canal (não é uma aba do playerActiveTab como média/rádio), então
+// checa esse caso primeiro.
 if (nativePlayerPip) {
   nativePlayerPip.addListener('pipControl', (data) => {
+    if (audiobookIsActiveSource) {
+      if (data.control === 'previous') audiobookSkipPage(-1);
+      else if (data.control === 'next') audiobookSkipPage(1);
+      else if (data.control === 'playpause') audiobookTogglePlayPause();
+      return;
+    }
     if (data.control === 'previous') playerSkip(-1);
     else if (data.control === 'next') playerSkip(1);
     else if (data.control === 'playpause') playerTogglePlayPause();
@@ -5456,6 +5504,7 @@ function toggleRadioFavorito(est) {
 function playRadioStation(est) {
   stopMediaForExclusivity();
   stopPlayerProgressLoop();
+  if (audiobookIsActiveSource) { speechSynthesis.cancel(); audiobookIsPlaying = false; audiobookIsActiveSource = false; }
   playerActiveTab = 'radio';
   playerViewTab = 'radio';
   playerShowResults = false;
