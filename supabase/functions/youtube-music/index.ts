@@ -182,10 +182,16 @@ async function buscarArtistas(apiKey: string, termo: string) {
 // em si (o termo digitado), não tem relação com o quão recente é o canal —
 // quem quiser os uploads mais novos de um artista específico usa o card dele
 // (buscarConteudoDoCanal), que aí sim é ordenado por data de upload real.
-async function buscarVideos(apiKey: string, termo: string) {
+//
+// videoCategoryId=10 ("Music", categoria oficial do YouTube) quando o modo
+// é "musica" — deixa o resultado mais provável de existir de verdade no
+// YouTube Music depois (usado pra trocar pra lá quando a tela trava), em
+// vez de misturar vlog/tutorial junto. Modo "video" não filtra, busca tudo.
+async function buscarVideos(apiKey: string, termo: string, modo: string) {
   const params = new URLSearchParams({
     part: 'snippet', q: termo, type: 'video', order: 'date', maxResults: '50', key: apiKey,
   });
+  if (modo === 'musica') params.set('videoCategoryId', '10');
   const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`).then((r) => r.json());
   const items = await removerShorts(apiKey, (resp.items || []).map(mapVideoItem));
   return { items, apiError: apiErrorMessage(resp) };
@@ -199,10 +205,10 @@ async function buscarPlaylistsPorNome(apiKey: string, termo: string) {
   return { items: (resp.items || []).map(mapPlaylistSearchItem), apiError: apiErrorMessage(resp) };
 }
 
-async function buscarMisto(apiKey: string, termo: string) {
+async function buscarMisto(apiKey: string, termo: string, modo: string) {
   const [a, v, p] = await Promise.all([
     buscarArtistas(apiKey, termo),
-    buscarVideos(apiKey, termo),
+    buscarVideos(apiKey, termo, modo),
     buscarPlaylistsPorNome(apiKey, termo),
   ]);
   return { artists: a.items, videos: v.items, playlists: p.items, apiError: a.apiError || v.apiError || p.apiError };
@@ -275,6 +281,7 @@ Deno.serve(async (req: Request) => {
   const apiKey = Deno.env.get('YOUTUBE_API_KEY');
   const url = new URL(req.url);
   const name = (url.searchParams.get('name') || '').trim();
+  const modo = (url.searchParams.get('modo') || 'musica').trim();
   const channelId = (url.searchParams.get('channelId') || '').trim();
   const playlistId = (url.searchParams.get('playlistId') || '').trim();
   const videoId = (url.searchParams.get('videoId') || '').trim();
@@ -324,11 +331,11 @@ Deno.serve(async (req: Request) => {
       return Response.json({ artists: [], videos: [], playlists: [], error: 'Faltando termo de busca.' }, { headers: CORS_HEADERS });
     }
 
-    const cacheKey = `name:${name.toLowerCase()}`;
+    const cacheKey = `name:${modo}:${name.toLowerCase()}`;
     const cached = await getCached(cacheKey, CACHE_TTL_SEARCH_MS);
     if (cached) return Response.json(cached, { headers: CORS_HEADERS });
 
-    const { artists, videos, playlists, apiError } = await buscarMisto(apiKey, name);
+    const { artists, videos, playlists, apiError } = await buscarMisto(apiKey, name, modo);
     const result = {
       artists, videos, playlists,
       error: (artists.length || videos.length || playlists.length) ? null : (apiError ? friendlyErrorMessage(apiError) : `Nada encontrado pra "${name}".`),
