@@ -713,8 +713,7 @@
           <span>🧭 GPS auditivo minimalista</span><span class="chev">›</span>
         </div>
         <div id="gps-subcategories" style="display:none;">
-          <div class="desc">Navegação por voz: digite o destino, ative e o app narra cada manobra com tela de seta + distância + ETA.</div>
-          <button id="gps-category-card">Abrir GPS auditivo</button>
+          <div class="desc" style="opacity: 0.6;">🚧 Em breve — pausado por enquanto (custo da API de rotas do Google ficou alto pro uso real; buscando alternativa de código aberto).</div>
         </div>
       </div>
 
@@ -2529,8 +2528,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.53';
+const APP_VERSION = '4.54';
 const CHANGELOG = [
+  {
+    version: '4.54', date: '29/06/2026',
+    items: [
+      'GPS auditivo marcado como "Em breve" no Premium — pausado até achar alternativa de rotas sem custo',
+    ],
+  },
   {
     version: '4.53', date: '29/06/2026',
     items: [
@@ -6677,7 +6682,12 @@ function backFromGpsScreen() {
   hideNavOverlay();
 }
 
-document.getElementById('gps-category-card').addEventListener('click', openGpsScreen);
+// Card "Abrir GPS auditivo" removido (recurso pausado, "Em breve") — guarda
+// com checagem de null em vez de excluir tudo que depende de openGpsScreen,
+// já que a tela em si fica pronta pra religar quando a alternativa de rotas
+// sem custo aparecer.
+const gpsCategoryCardEl = document.getElementById('gps-category-card');
+if (gpsCategoryCardEl) gpsCategoryCardEl.addEventListener('click', openGpsScreen);
 document.getElementById('nav-back-btn').addEventListener('click', backFromGpsScreen);
 
 function updateNavDisplay({ streetText, maneuver, distMeters, remainingMeters, totalMeters, totalDurationSec, speedMs }) {
