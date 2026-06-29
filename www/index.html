@@ -842,8 +842,15 @@
     </div>
 
     <div id="player-tab-audiobook" class="player-tab-content" style="display:none;">
+      <div id="audiobook-continue-wrap" style="display:none; margin-bottom:14px;">
+        <button type="button" id="audiobook-continue-btn" class="btn-connect" style="width:100%; background: var(--c-green); color: var(--c-on-accent);">▶️ Continuar de onde parei</button>
+      </div>
       <input type="file" id="audiobook-file-input" accept="application/pdf" style="display:none;">
-      <button type="button" id="audiobook-pick-btn" class="btn-connect" style="margin-bottom:14px;">📂 Selecionar PDF</button>
+      <button type="button" id="audiobook-pick-btn" class="btn-connect" style="margin-bottom:10px;">📂 Selecionar PDF</button>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <input type="text" id="audiobook-drive-input" placeholder="Ou cola um link do Google Drive" enterkeyhint="done" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
+        <button type="button" id="audiobook-drive-btn" class="btn-connect" style="flex-shrink:0;">🔗 Usar</button>
+      </div>
       <div id="audiobook-status" class="hint"></div>
       <div id="audiobook-reader" style="display:none;">
         <div id="audiobook-title" style="font-weight:600; margin-bottom:6px;"></div>
@@ -2522,8 +2529,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.52';
+const APP_VERSION = '4.53';
 const CHANGELOG = [
+  {
+    version: '4.53', date: '29/06/2026',
+    items: [
+      'Audiobook agora aceita colar um link do Google Drive, além de selecionar arquivo do celular',
+      'PDF do Google Drive ganha botão "Continuar de onde parei" — não precisa colar o link de novo',
+    ],
+  },
   {
     version: '4.52', date: '29/06/2026',
     items: [
@@ -4576,6 +4590,7 @@ document.getElementById('player-nav-btn').addEventListener('click', () => {
   renderPlayerRadioFavoritos();
   renderPlayerMediaFavoritos();
   renderPlayerPlaylistFavoritos();
+  renderAudiobookContinueButton();
   switchPlayerTab(playerActiveTab || 'media');
 });
 
@@ -4703,11 +4718,72 @@ function audiobookSavePosition() {
   saveState();
 }
 
+// Lembra o último PDF do Google Drive usado (URL é estável, dá pra
+// recarregar sozinho) — pra arquivo local do celular isso não é possível
+// (o navegador não deixa reabrir um arquivo sem o usuário selecionar de
+// novo, é restrição de segurança, não dá pra contornar).
+function audiobookGetLastDrive() {
+  return getFeatureState('player', 'audiobook').fields.lastDrive || null;
+}
+function audiobookSetLastDrive(fileId) {
+  getFeatureState('player', 'audiobook').fields.lastDrive = fileId;
+  saveState();
+}
+function renderAudiobookContinueButton() {
+  const wrap = document.getElementById('audiobook-continue-wrap');
+  const last = audiobookGetLastDrive();
+  if (!last) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const positions = audiobookSavedPositions();
+  const idx = positions[`drive:${last}`];
+  const page = (typeof idx === 'number' && audiobookChunks[idx]) ? audiobookChunks[idx].page : null;
+  document.getElementById('audiobook-continue-btn').textContent =
+    page ? `▶️ Continuar de onde parei (pág. ${page})` : '▶️ Continuar de onde parei';
+}
+document.getElementById('audiobook-continue-btn').addEventListener('click', () => {
+  const last = audiobookGetLastDrive();
+  if (last) carregarAudiobookDoGoogleDrive(last);
+});
+
 function audiobookUpdateProgress() {
   if (!audiobookChunks.length) return;
   const page = audiobookChunks[audiobookChunkIndex].page;
   const totalPages = audiobookChunks[audiobookChunks.length - 1].page;
   document.getElementById('audiobook-progress').textContent = `Página ${page} de ${totalPages}`;
+}
+
+// Extrai texto de um PDF já carregado pelo pdf.js e monta a leitura — usado
+// tanto pra arquivo local quanto pra link do Google Drive, só muda de onde
+// o PDF veio antes de chegar aqui.
+async function processAudiobookPdf(pdf, displayName, fileKey, statusEl) {
+  const chunks = [];
+  let totalChars = 0;
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    const pageText = content.items.map((it) => it.str).join(' ').replace(/\s+/g, ' ').trim();
+    totalChars += pageText.length;
+    if (pageText) splitTextIntoChunks(pageText, 500).forEach((text) => chunks.push({ text, page: pageNum }));
+  }
+
+  // PDF formado só por imagem (escaneado/foto) não tem texto extraível —
+  // avisa isso claramente em vez de simplesmente não funcionar, porque
+  // pra quem não entende a diferença parece só "bug" sem explicação.
+  if (totalChars < 20) {
+    statusEl.textContent = 'Este PDF não contém texto, é formado por imagem — impossibilitando a leitura.';
+    return;
+  }
+
+  audiobookChunks = chunks;
+  audiobookFileKey = fileKey;
+  const savedIndex = audiobookSavedPositions()[audiobookFileKey];
+  audiobookChunkIndex = (typeof savedIndex === 'number' && savedIndex < chunks.length) ? savedIndex : 0;
+
+  statusEl.textContent = '';
+  document.getElementById('audiobook-title').textContent = displayName;
+  document.getElementById('audiobook-reader').style.display = 'block';
+  audiobookUpdateProgress();
+  document.getElementById('audiobook-ctrl-playpause').textContent = '▶️';
 }
 
 async function handleAudiobookFileSelected(file) {
@@ -4722,34 +4798,7 @@ async function handleAudiobookFileSelected(file) {
     const pdfjsLib = await loadPdfjsLib();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const chunks = [];
-    let totalChars = 0;
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((it) => it.str).join(' ').replace(/\s+/g, ' ').trim();
-      totalChars += pageText.length;
-      if (pageText) splitTextIntoChunks(pageText, 500).forEach((text) => chunks.push({ text, page: pageNum }));
-    }
-
-    // PDF formado só por imagem (escaneado/foto) não tem texto extraível —
-    // avisa isso claramente em vez de simplesmente não funcionar, porque
-    // pra quem não entende a diferença parece só "bug" sem explicação.
-    if (totalChars < 20) {
-      statusEl.textContent = 'Este PDF não contém texto, é formado por imagem — impossibilitando a leitura.';
-      return;
-    }
-
-    audiobookChunks = chunks;
-    audiobookFileKey = `${file.name}:${file.size}`;
-    const savedIndex = audiobookSavedPositions()[audiobookFileKey];
-    audiobookChunkIndex = (typeof savedIndex === 'number' && savedIndex < chunks.length) ? savedIndex : 0;
-
-    statusEl.textContent = '';
-    document.getElementById('audiobook-title').textContent = file.name;
-    document.getElementById('audiobook-reader').style.display = 'block';
-    audiobookUpdateProgress();
-    document.getElementById('audiobook-ctrl-playpause').textContent = '▶️';
+    await processAudiobookPdf(pdf, file.name, `${file.name}:${file.size}`, statusEl);
   } catch (e) {
     console.error('Erro ao ler PDF:', e);
     statusEl.textContent = 'Não foi possível ler esse PDF — tenta outro arquivo.';
@@ -4763,6 +4812,54 @@ document.getElementById('audiobook-file-input').addEventListener('change', (ev) 
   const file = ev.target.files && ev.target.files[0];
   if (file) handleAudiobookFileSelected(file);
 });
+
+// Aceita os formatos comuns de link do Drive: /file/d/ID/view, ?id=ID,
+// ou o ID já "pelado" se a pessoa colar só ele.
+function extrairGoogleDriveFileId(link) {
+  const m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/) || link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if (m) return m[1];
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(link.trim())) return link.trim();
+  return null;
+}
+
+async function carregarAudiobookDoGoogleDrive(fileId) {
+  const statusEl = document.getElementById('audiobook-status');
+  document.getElementById('audiobook-reader').style.display = 'none';
+  statusEl.textContent = 'Carregando do Google Drive...';
+  speechSynthesis.cancel();
+  audiobookIsPlaying = false;
+  audiobookIsPaused = false;
+
+  const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  try {
+    const pdfjsLib = await loadPdfjsLib();
+    const pdf = await pdfjsLib.getDocument({ url: directUrl }).promise;
+    await processAudiobookPdf(pdf, 'PDF do Google Drive', `drive:${fileId}`, statusEl);
+    audiobookSetLastDrive(fileId);
+    renderAudiobookContinueButton();
+  } catch (e) {
+    console.error('Erro ao ler PDF do Google Drive:', e);
+    // Causa mais comum: arquivo não compartilhado como "Qualquer pessoa com
+    // o link", ou o Drive serviu a página de aviso de vírus (arquivo grande)
+    // em vez do PDF puro — nos dois casos pdf.js falha ao interpretar.
+    statusEl.textContent = 'Não consegui abrir esse PDF do Google Drive. Confere se o arquivo está compartilhado como "Qualquer pessoa com o link", ou baixa e seleciona o arquivo direto.';
+  }
+}
+
+function handleAudiobookGoogleDriveLink() {
+  const input = document.getElementById('audiobook-drive-input');
+  const link = input.value.trim();
+  if (!link) return;
+  const fileId = extrairGoogleDriveFileId(link);
+  if (!fileId) {
+    document.getElementById('audiobook-status').textContent = 'Não consegui achar o ID do arquivo nesse link — confere se é um link de compartilhamento do Google Drive.';
+    return;
+  }
+  carregarAudiobookDoGoogleDrive(fileId);
+  input.value = '';
+}
+document.getElementById('audiobook-drive-btn').addEventListener('click', handleAudiobookGoogleDriveLink);
+document.getElementById('audiobook-drive-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') handleAudiobookGoogleDriveLink(); });
 
 function audiobookSpeakCurrentChunk() {
   if (!audiobookChunks.length) return;
