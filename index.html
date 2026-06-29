@@ -739,6 +739,45 @@
         </div>
       </div>
 
+      <div class="premium-feature">
+        <div class="title" id="audiobook-premium-toggle" style="cursor:pointer; justify-content: space-between;">
+          <span>📚 Biblioteca de Audiobooks</span><span class="chev">›</span>
+        </div>
+        <div id="audiobook-premium-subcategories" style="display:none;">
+          <div class="desc">Versão completa do Audiobook: guarda vários livros com capa (gerada da própria 1ª página do PDF), busca por nome e continua de onde parou em cada um. No MultiSonor grátis só dá pra ter 1 livro de cada vez, sem capa nem busca.</div>
+          <input type="text" id="audiobook-premium-search" placeholder="🔎 Buscar na sua biblioteca" style="width:100%; margin-bottom:10px; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
+          <input type="file" id="audiobook-premium-file-input" accept="application/pdf" style="display:none;">
+          <button type="button" id="audiobook-premium-pick-btn" style="margin-bottom:10px;">📂 Adicionar PDF do celular</button>
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <input type="text" id="audiobook-premium-drive-input" placeholder="Ou cola um link do Google Drive" enterkeyhint="done" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
+            <button type="button" id="audiobook-premium-drive-btn" style="flex-shrink:0;">🔗 Adicionar</button>
+          </div>
+          <div id="audiobook-premium-status" class="hint"></div>
+          <div id="audiobook-premium-shelf" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px;"></div>
+
+          <div id="audiobook-premium-reader" style="display:none;">
+            <button type="button" id="audiobook-premium-back-btn" style="margin-bottom:12px; background: var(--c-surface); color: var(--c-text);">← Voltar pra estante</button>
+            <img id="audiobook-premium-cover-img" style="width:110px; height:150px; object-fit:cover; display:block; margin:0 auto 10px; border-radius:8px; background:#222;">
+            <div id="audiobook-premium-title" style="font-weight:600; text-align:center; margin-bottom:6px;"></div>
+            <div id="audiobook-premium-progress" class="hint" style="text-align:center; margin-bottom:14px;"></div>
+            <div style="display:flex; gap:8px; margin-bottom:14px;">
+              <select id="audiobook-premium-rate" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius:8px; padding:8px;">
+                <option value="0.8">0.8x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
+            </div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:26px;">
+              <button id="audiobook-premium-ctrl-prev" style="background:none; font-size:1.6rem; color:var(--c-text);">⏮</button>
+              <button id="audiobook-premium-ctrl-playpause" style="background: var(--c-accent-blue); color: var(--c-on-accent); width:58px; height:58px; border-radius:50%; font-size:1.3rem;">▶️</button>
+              <button id="audiobook-premium-ctrl-next" style="background:none; font-size:1.6rem; color:var(--c-text);">⏭</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -2528,8 +2567,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.54';
+const APP_VERSION = '4.55';
 const CHANGELOG = [
+  {
+    version: '4.55', date: '29/06/2026',
+    items: [
+      'Novo no Premium: 📚 Biblioteca de Audiobooks — vários livros salvos com capa (gerada da própria 1ª página), busca por nome e continua de onde parou em cada um',
+    ],
+  },
   {
     version: '4.54', date: '29/06/2026',
     items: [
@@ -4922,6 +4967,268 @@ document.getElementById('audiobook-ctrl-playpause').addEventListener('click', au
 document.getElementById('audiobook-ctrl-prev').addEventListener('click', () => audiobookSkipPage(-1));
 document.getElementById('audiobook-ctrl-next').addEventListener('click', () => audiobookSkipPage(1));
 
+/* =========================================================================
+   PREMIUM: Biblioteca de Audiobooks — versão completa (capa, vários livros,
+   busca). Reaproveita loadPdfjsLib/splitTextIntoChunks/extrairGoogleDriveFileId
+   do Audiobook grátis, mas com estado próprio (premiumAudiobook*) pra não
+   misturar com o leitor de 1-livro-só do MultiSonor.
+   ========================================================================= */
+function getAudiobookShelf() {
+  const fs = getFeatureState('player', 'audiobookShelf');
+  if (!Array.isArray(fs.fields.books)) fs.fields.books = [];
+  return fs.fields.books;
+}
+
+let premiumAudiobookChunks = [];
+let premiumAudiobookChunkIndex = 0;
+let premiumAudiobookBookId = null;
+let premiumAudiobookIsPlaying = false;
+let premiumAudiobookIsPaused = false;
+
+function renderAudiobookShelf(filter) {
+  const shelf = document.getElementById('audiobook-premium-shelf');
+  const books = getAudiobookShelf();
+  const term = (filter || '').toLowerCase();
+  const filtered = books.filter((b) => b.title.toLowerCase().includes(term));
+  shelf.innerHTML = '';
+  if (!filtered.length) {
+    shelf.innerHTML = `<div class="hint">${books.length ? 'Nenhum livro encontrado.' : 'Sua biblioteca está vazia — adiciona um PDF ou link do Drive acima.'}</div>`;
+    return;
+  }
+  filtered.forEach((book) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'width:100px; cursor:pointer; text-align:center;';
+    const pct = book.totalPages ? Math.min(100, Math.round(((book.lastPage || 1) / book.totalPages) * 100)) : 0;
+    const img = document.createElement('img');
+    img.src = book.coverDataUrl || '';
+    img.style.cssText = 'width:90px; height:120px; object-fit:cover; border-radius:6px; background:#222; box-shadow:0 4px 10px -4px rgba(0,0,0,0.4);';
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:0.72rem; margin-top:6px; line-height:1.2;';
+    titleEl.textContent = book.title;
+    const pctEl = document.createElement('div');
+    pctEl.className = 'hint';
+    pctEl.style.fontSize = '0.65rem';
+    pctEl.textContent = `${pct}%`;
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕ remover';
+    delBtn.style.cssText = 'display:block; margin:4px auto 0; font-size:0.65rem; background:none; color:var(--c-text-dim); padding:2px;';
+    delBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const idx = books.indexOf(book);
+      if (idx !== -1) books.splice(idx, 1);
+      saveState();
+      renderAudiobookShelf(document.getElementById('audiobook-premium-search').value);
+    });
+    card.appendChild(img);
+    card.appendChild(titleEl);
+    card.appendChild(pctEl);
+    card.appendChild(delBtn);
+    card.addEventListener('click', () => openPremiumAudiobook(book));
+    shelf.appendChild(card);
+  });
+}
+document.getElementById('audiobook-premium-search').addEventListener('input', (ev) => renderAudiobookShelf(ev.target.value));
+
+async function renderPdfFirstPageCover(pdf) {
+  try {
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 0.5 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch (e) {
+    console.error('Erro ao gerar capa do PDF:', e);
+    return null;
+  }
+}
+
+function extractPdfChunks(pdf) {
+  return (async () => {
+    const chunks = [];
+    let totalChars = 0;
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((it) => it.str).join(' ').replace(/\s+/g, ' ').trim();
+      totalChars += pageText.length;
+      if (pageText) splitTextIntoChunks(pageText, 500).forEach((text) => chunks.push({ text, page: pageNum }));
+    }
+    return { chunks, totalChars };
+  })();
+}
+
+// Abre a leitura de um PDF já carregado pelo pdf.js — se o livro ainda não
+// está na estante, adiciona primeiro (com capa da 1ª página). Se já existe
+// (mesmo fileKey — é assim que "continuar" um arquivo local funciona, já
+// que não dá pra reabrir um arquivo sozinho: a pessoa seleciona de novo e
+// isso aqui detecta que já é o mesmo livro e só retoma, em vez de duplicar).
+async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
+  const statusEl = document.getElementById('audiobook-premium-status');
+  const books = getAudiobookShelf();
+  let book = books.find((b) => b.fileKey === fileKey);
+  const { chunks, totalChars } = await extractPdfChunks(pdf);
+
+  if (totalChars < 20) {
+    statusEl.textContent = 'Este PDF não contém texto, é formado por imagem — impossibilitando a leitura.';
+    return;
+  }
+
+  if (!book) {
+    const coverDataUrl = await renderPdfFirstPageCover(pdf);
+    book = { id: `${Date.now()}`, title, fileKey, source, driveFileId: source === 'drive' ? fileKey.replace('drive:', '') : null, coverDataUrl, totalPages: pdf.numPages, lastPage: 1 };
+    books.unshift(book);
+    saveState();
+  }
+
+  premiumAudiobookChunks = chunks;
+  premiumAudiobookBookId = book.id;
+  const idx = chunks.findIndex((c) => c.page === (book.lastPage || 1));
+  premiumAudiobookChunkIndex = idx !== -1 ? idx : 0;
+  speechSynthesis.cancel();
+  premiumAudiobookIsPlaying = false;
+  premiumAudiobookIsPaused = false;
+
+  statusEl.textContent = '';
+  document.getElementById('audiobook-premium-cover-img').src = book.coverDataUrl || '';
+  document.getElementById('audiobook-premium-title').textContent = book.title;
+  document.getElementById('audiobook-premium-shelf').style.display = 'none';
+  document.getElementById('audiobook-premium-reader').style.display = 'block';
+  document.getElementById('audiobook-premium-ctrl-playpause').textContent = '▶️';
+  updatePremiumAudiobookProgress();
+}
+
+async function openPremiumAudiobook(book) {
+  const statusEl = document.getElementById('audiobook-premium-status');
+  if (book.source === 'local') {
+    statusEl.textContent = `"${book.title}" foi adicionado de um arquivo do celular — seleciona o mesmo arquivo de novo pra continuar de onde parou.`;
+    document.getElementById('audiobook-premium-file-input').click();
+    return;
+  }
+  statusEl.textContent = `Abrindo "${book.title}"...`;
+  try {
+    const pdfjsLib = await loadPdfjsLib();
+    const pdf = await pdfjsLib.getDocument({ url: `https://drive.google.com/uc?export=download&id=${book.driveFileId}` }).promise;
+    await openOrAddPremiumAudiobook(pdf, book.title, book.fileKey, 'drive');
+  } catch (e) {
+    console.error('Erro ao abrir livro do Drive:', e);
+    statusEl.textContent = 'Não consegui abrir esse livro do Google Drive agora.';
+  }
+}
+
+document.getElementById('audiobook-premium-pick-btn').addEventListener('click', () => {
+  document.getElementById('audiobook-premium-file-input').click();
+});
+document.getElementById('audiobook-premium-file-input').addEventListener('change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('audiobook-premium-status');
+  statusEl.textContent = `Lendo "${file.name}"...`;
+  try {
+    const pdfjsLib = await loadPdfjsLib();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    await openOrAddPremiumAudiobook(pdf, file.name, `${file.name}:${file.size}`, 'local');
+  } catch (e) {
+    console.error('Erro ao ler PDF:', e);
+    statusEl.textContent = 'Não foi possível ler esse PDF — tenta outro arquivo.';
+  }
+  ev.target.value = '';
+});
+
+document.getElementById('audiobook-premium-drive-btn').addEventListener('click', async () => {
+  const input = document.getElementById('audiobook-premium-drive-input');
+  const link = input.value.trim();
+  if (!link) return;
+  const statusEl = document.getElementById('audiobook-premium-status');
+  const fileId = extrairGoogleDriveFileId(link);
+  if (!fileId) {
+    statusEl.textContent = 'Não consegui achar o ID do arquivo nesse link — confere se é um link de compartilhamento do Google Drive.';
+    return;
+  }
+  statusEl.textContent = 'Carregando do Google Drive...';
+  try {
+    const pdfjsLib = await loadPdfjsLib();
+    const pdf = await pdfjsLib.getDocument({ url: `https://drive.google.com/uc?export=download&id=${fileId}` }).promise;
+    await openOrAddPremiumAudiobook(pdf, 'Livro do Google Drive', `drive:${fileId}`, 'drive');
+    input.value = '';
+  } catch (e) {
+    console.error('Erro ao ler PDF do Google Drive:', e);
+    statusEl.textContent = 'Não consegui abrir esse PDF do Google Drive. Confere se está compartilhado como "Qualquer pessoa com o link", ou baixa e adiciona o arquivo direto.';
+  }
+});
+
+document.getElementById('audiobook-premium-back-btn').addEventListener('click', () => {
+  speechSynthesis.cancel();
+  premiumAudiobookIsPlaying = false;
+  document.getElementById('audiobook-premium-reader').style.display = 'none';
+  document.getElementById('audiobook-premium-shelf').style.display = 'flex';
+  renderAudiobookShelf(document.getElementById('audiobook-premium-search').value);
+});
+
+function updatePremiumAudiobookProgress() {
+  if (!premiumAudiobookChunks.length) return;
+  const page = premiumAudiobookChunks[premiumAudiobookChunkIndex].page;
+  const totalPages = premiumAudiobookChunks[premiumAudiobookChunks.length - 1].page;
+  document.getElementById('audiobook-premium-progress').textContent = `Página ${page} de ${totalPages}`;
+  const books = getAudiobookShelf();
+  const book = books.find((b) => b.id === premiumAudiobookBookId);
+  if (book) { book.lastPage = page; saveState(); }
+}
+
+function premiumAudiobookSpeakCurrentChunk() {
+  if (!premiumAudiobookChunks.length) return;
+  const chunk = premiumAudiobookChunks[premiumAudiobookChunkIndex];
+  const utter = new SpeechSynthesisUtterance(chunk.text);
+  utter.lang = 'pt-BR';
+  utter.rate = parseFloat(document.getElementById('audiobook-premium-rate').value) || 1;
+  utter.onend = () => {
+    if (!premiumAudiobookIsPlaying || premiumAudiobookIsPaused) return;
+    if (premiumAudiobookChunkIndex < premiumAudiobookChunks.length - 1) {
+      premiumAudiobookChunkIndex++;
+      updatePremiumAudiobookProgress();
+      premiumAudiobookSpeakCurrentChunk();
+    } else {
+      premiumAudiobookIsPlaying = false;
+      document.getElementById('audiobook-premium-ctrl-playpause').textContent = '▶️';
+    }
+  };
+  speechSynthesis.speak(utter);
+}
+
+function premiumAudiobookTogglePlayPause() {
+  if (!premiumAudiobookChunks.length) return;
+  if (premiumAudiobookIsPlaying) {
+    speechSynthesis.cancel();
+    premiumAudiobookIsPlaying = false;
+    premiumAudiobookIsPaused = true;
+    document.getElementById('audiobook-premium-ctrl-playpause').textContent = '▶️';
+  } else {
+    premiumAudiobookIsPlaying = true;
+    premiumAudiobookIsPaused = false;
+    document.getElementById('audiobook-premium-ctrl-playpause').textContent = '⏸';
+    premiumAudiobookSpeakCurrentChunk();
+  }
+}
+
+function premiumAudiobookSkipPage(direction) {
+  if (!premiumAudiobookChunks.length) return;
+  const currentPage = premiumAudiobookChunks[premiumAudiobookChunkIndex].page;
+  const targetPage = currentPage + direction;
+  const idx = premiumAudiobookChunks.findIndex((c) => c.page === targetPage);
+  if (idx === -1) return;
+  speechSynthesis.cancel();
+  premiumAudiobookChunkIndex = idx;
+  updatePremiumAudiobookProgress();
+  if (premiumAudiobookIsPlaying) premiumAudiobookSpeakCurrentChunk();
+}
+
+document.getElementById('audiobook-premium-ctrl-playpause').addEventListener('click', premiumAudiobookTogglePlayPause);
+document.getElementById('audiobook-premium-ctrl-prev').addEventListener('click', () => premiumAudiobookSkipPage(-1));
+document.getElementById('audiobook-premium-ctrl-next').addEventListener('click', () => premiumAudiobookSkipPage(1));
+
 function buildPlayerResultRow(video, tipoLabel, tab, lista, index) {
   const row = document.createElement('div');
   row.className = 'alarm-item';
@@ -7004,6 +7311,13 @@ document.getElementById('gps-toggle').addEventListener('click', () => {
 document.getElementById('drive-backup-toggle').addEventListener('click', () => {
   const el = document.getElementById('drive-backup-subcategories');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('audiobook-premium-toggle').addEventListener('click', () => {
+  const el = document.getElementById('audiobook-premium-subcategories');
+  const wasOpen = el.style.display !== 'none';
+  el.style.display = wasOpen ? 'none' : 'block';
+  if (!wasOpen) renderAudiobookShelf('');
 });
 
 /* =========================================================================
