@@ -773,10 +773,6 @@
 
     <audio id="player-radio-audio" style="display:none;"></audio>
 
-    <div id="player-media-mode-row" style="display:flex; gap:8px; margin-bottom:10px;">
-      <button type="button" class="player-media-mode-btn" id="player-media-mode-musica" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--c-border2); background:var(--c-green); color:var(--c-on-accent);">🎧 Música</button>
-      <button type="button" class="player-media-mode-btn" id="player-media-mode-video" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--c-border2); background:var(--c-bg); color:var(--c-text);">📺 Vídeo</button>
-    </div>
     <div id="player-media-searchbar" style="display:flex; gap:8px; margin-bottom: 6px;">
       <input type="text" id="player-media-search" placeholder="Buscar artista, música ou vídeo" enterkeyhint="search" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
     </div>
@@ -2526,15 +2522,8 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.49';
+const APP_VERSION = '4.48';
 const CHANGELOG = [
-  {
-    version: '4.49', date: '28/06/2026',
-    items: [
-      'A escolha entre 🎧 Música e 📺 Vídeo agora é feita ANTES de buscar (botão acima da busca), não mais trocando depois dentro do player',
-      'Busca em modo Música filtra pela categoria oficial de música do YouTube, deixando a troca pro YouTube Music (ao travar a tela) mais confiável',
-    ],
-  },
   {
     version: '4.48', date: '28/06/2026',
     items: [
@@ -4584,22 +4573,6 @@ document.getElementById('player-nav-btn').addEventListener('click', () => {
 const PLAYER_TABS = ['media', 'radio', 'audiobook'];
 let playerViewTab = 'media'; // qual aba o usuário tá vendo agora
 
-// Decidido ANTES de buscar (não mais depois, dentro do player) — "Música"
-// pede pro YouTube filtrar pela categoria oficial de música (videoCategoryId
-// 10), o que deixa a busca mais confiável pra realmente existir no YouTube
-// Music depois (ver screenOff abaixo), em vez de tentar advinhar isso só na
-// hora de tocar. "Vídeo" busca sem esse filtro (vlog, clipe, qualquer coisa).
-let playerMediaSearchMode = 'musica';
-function setPlayerMediaSearchMode(mode) {
-  playerMediaSearchMode = mode;
-  document.getElementById('player-media-mode-musica').style.background = mode === 'musica' ? 'var(--c-green)' : 'var(--c-bg)';
-  document.getElementById('player-media-mode-musica').style.color = mode === 'musica' ? 'var(--c-on-accent)' : 'var(--c-text)';
-  document.getElementById('player-media-mode-video').style.background = mode === 'video' ? 'var(--c-green)' : 'var(--c-bg)';
-  document.getElementById('player-media-mode-video').style.color = mode === 'video' ? 'var(--c-on-accent)' : 'var(--c-text)';
-}
-document.getElementById('player-media-mode-musica').addEventListener('click', () => setPlayerMediaSearchMode('musica'));
-document.getElementById('player-media-mode-video').addEventListener('click', () => setPlayerMediaSearchMode('video'));
-
 // Favoritos como categoria em cascata (recolhida por padrão) em vez de uma
 // lista sempre aberta tomando espaço acima dos resultados de busca.
 function setupPlayerFavCategoryToggle(toggleId, listId) {
@@ -4632,7 +4605,6 @@ function updatePlayerBodyVisibility() {
   // Atribuição ao YouTube/link de privacidade só faz sentido na tela de
   // busca (aba Música/Vídeo) — esconde com o player grande tocando e na aba Rádio.
   document.getElementById('player-yt-attribution-row').style.display = (playerViewTab === 'media' && !showPlayer) ? 'flex' : 'none';
-  document.getElementById('player-media-mode-row').style.display = (playerViewTab === 'media' && !showPlayer) ? 'flex' : 'none';
   // Com o player grande ocupando a tela, o cabeçalho/abas só tomam espaço —
   // troca pela setinha de voltar (mesma função do botão físico de Voltar).
   document.getElementById('player-screen-header').style.display = showPlayer ? 'none' : 'flex';
@@ -5293,9 +5265,7 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   document.getElementById('player-yt-container').style.display = 'block'; // precisa estar visível pra criar o iframe certo
   document.getElementById('player-ctrl-prev').style.display = '';
   document.getElementById('player-ctrl-next').style.display = '';
-  // O modo (capa/música ou vídeo) agora é decidido na busca, não trocado
-  // depois aqui dentro — esconde o botão de alternar, que não existe mais.
-  document.getElementById('player-ctrl-video-toggle').style.display = 'none';
+  document.getElementById('player-ctrl-video-toggle').style.display = 'flex';
   document.getElementById('player-ctrl-favorite').style.display = 'flex';
   document.getElementById('player-ctrl-share').style.display = 'flex';
   updatePlayerFavoriteIcon();
@@ -5305,9 +5275,7 @@ async function playInEmbeddedPlayer(video, tipoLabel, lista, index, tab) {
   player.playVideo();
   playerIsPaused = false;
   document.getElementById('player-ctrl-playpause').textContent = '⏸';
-  // Modo decidido na busca (botão 🎧/📺 acima da busca), não mais trocável
-  // depois aqui — música sempre capa, vídeo sempre o vídeo de verdade.
-  setPlayerVideoVisible(playerMediaSearchMode === 'video');
+  setPlayerVideoVisible(false); // sempre começa só com a capa/áudio
   startPlayerProgressLoop();
   if (nativePlayerPip) { nativePlayerPip.setActive({ active: true }); nativePlayerPip.setPaused({ paused: false }); }
 }
@@ -5389,15 +5357,15 @@ document.getElementById('player-ctrl-next').addEventListener('click', () => play
 // sem solução sem violar Termos do YouTube, já confirmado e documentado).
 // O YouTube Music tem reprodução em segundo plano de graça — manda pra lá
 // automaticamente nesse instante, antes do nosso vídeo morrer sozinho.
-// Só faz sentido pra busca feita em modo 🎧 Música (filtrada pela categoria
-// oficial de música do YouTube, mais provável de existir no YT Music) —
-// busca em modo 📺 Vídeo (vlog, tutorial etc.) geralmente nem existe no
-// catálogo do YT Music; aí só aceita que para ao travar a tela, com PiP
+// Só faz sentido no modo "música" (capa, sem vídeo visível) — quem está
+// vendo o vídeo de verdade (modo 📺) escolheu isso de propósito, e a
+// maioria desse conteúdo (vlog, tutorial etc.) nem existe no catálogo do
+// YouTube Music mesmo; aí só aceita que para ao travar a tela, com PiP
 // cuidando da troca de app normalmente. Rádio/Audiobook não precisam
 // disso, já sobrevivem (áudio puro).
 if (nativePlayerPip) {
   nativePlayerPip.addListener('screenOff', () => {
-    if (playerActiveTab === 'media' && playerMediaSearchMode === 'musica' && playerCurrentVideoObj && !playerIsPaused) {
+    if (playerActiveTab === 'media' && !playerVideoVisible && playerCurrentVideoObj && !playerIsPaused) {
       tocarNoNavegador(`https://music.youtube.com/watch?v=${playerCurrentVideoObj.videoId}`);
     }
   });
@@ -5477,7 +5445,7 @@ async function fazerBuscaPlayerMedia() {
   resultsEl.innerHTML = `<div class="hint">Buscando...</div>`;
   let artists = [], videos = [], playlists = [], error = null;
   try {
-    const resp = await callEdgeFunction('youtube-music', { name: termo, modo: playerMediaSearchMode });
+    const resp = await callEdgeFunction('youtube-music', { name: termo });
     artists = resp.artists || [];
     videos = resp.videos || [];
     playlists = resp.playlists || [];
