@@ -1,4 +1,4 @@
 {
-  "versionName": "4.59",
-  "notes": "Corrigido crash ao tocar música — FLAG_KEEP_SCREEN_ON na thread errada."
+  "versionName": "4.60",
+  "notes": "Audiobook: capa do PDF nos tiles da busca + nome real no player."
 }

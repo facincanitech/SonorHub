@@ -2584,8 +2584,14 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.59';
+const APP_VERSION = '4.60';
 const CHANGELOG = [
+  {
+    version: '4.60', date: '30/06/2026',
+    items: [
+      'Audiobook grátis: capa do PDF aparece nos tiles da busca de pasta (thumbnail do Drive), e o nome do arquivo substitui "PDF do Google Drive" no player',
+    ],
+  },
   {
     version: '4.59', date: '30/06/2026',
     items: [
@@ -4954,17 +4960,23 @@ function renderGoogleDrivePdfPicker(containerEl, files, onPick) {
   containerEl.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;';
   files.forEach((f) => {
     const tile = document.createElement('div');
-    tile.style.cssText = 'flex:0 0 calc(33% - 6px); background: var(--c-surface); border-radius:8px; padding:10px 8px; cursor:pointer; text-align:center; font-size:0.75rem; overflow:hidden;';
+    tile.style.cssText = 'flex:0 0 calc(33% - 6px); background: var(--c-surface); border-radius:8px; padding:0; cursor:pointer; text-align:center; font-size:0.75rem; overflow:hidden;';
     tile.title = f.name;
-    // Nome truncado — mostra só os primeiros ~25 chars pra caber no tile
-    const shortName = f.name.length > 28 ? f.name.slice(0, 26) + '…' : f.name;
-    tile.innerHTML = `<div style="font-size:1.4rem; margin-bottom:4px;">📄</div><div style="line-height:1.3;">${shortName}</div>`;
+    const shortName = f.name.replace(/\.pdf$/i, '').slice(0, 26) + (f.name.length > 26 ? '…' : '');
+    // Thumbnail do Drive — funciona pra arquivos públicos sem precisar
+    // baixar o PDF inteiro (img src bypassa CORS, é só um GET normal).
+    tile.innerHTML = `
+      <img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w200-h200" loading="lazy"
+           onerror="this.style.display='none'"
+           style="width:100%; height:90px; object-fit:cover; display:block; border-radius:8px 8px 0 0;">
+      <div style="padding:6px 4px; line-height:1.3;">${shortName}</div>
+    `;
     tile.addEventListener('click', () => onPick(f));
     containerEl.appendChild(tile);
   });
 }
 
-async function carregarAudiobookDoGoogleDrive(fileId) {
+async function carregarAudiobookDoGoogleDrive(fileId, displayName) {
   const statusEl = document.getElementById('audiobook-status');
   document.getElementById('audiobook-reader').style.display = 'none';
   statusEl.textContent = 'Carregando do Google Drive...';
@@ -4975,7 +4987,7 @@ async function carregarAudiobookDoGoogleDrive(fileId) {
   try {
     const pdfjsLib = await loadPdfjsLib();
     const pdf = await pdfjsLib.getDocument({ url: driveFileProxyUrl(fileId), ...driveProxyHeaders }).promise;
-    await processAudiobookPdf(pdf, 'PDF do Google Drive', `drive:${fileId}`, statusEl);
+    await processAudiobookPdf(pdf, displayName || 'PDF do Google Drive', `drive:${fileId}`, statusEl);
     audiobookSetLastDrive(fileId);
     renderAudiobookContinueButton();
   } catch (e) {
@@ -5001,7 +5013,7 @@ async function handleAudiobookGoogleDriveFolder(folderId) {
     statusEl.textContent = `${resp.files.length} PDF(s) encontrados — escolhe um:`;
     renderGoogleDrivePdfPicker(listEl, resp.files, (f) => {
       listEl.style.display = 'none';
-      carregarAudiobookDoGoogleDrive(f.id);
+      carregarAudiobookDoGoogleDrive(f.id, f.name.replace(/\.pdf$/i, ''));
     });
   } catch (e) {
     console.error('Erro ao buscar PDFs da pasta:', e);
