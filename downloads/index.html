@@ -29,8 +29,17 @@
       margin: 0 auto 16px;
     }
     h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
-    .tagline { font-size: 0.9rem; color: #9aa0a6; margin-bottom: 10px; line-height: 1.5; }
-    .version { font-size: 11px; color: #4e545c; margin-bottom: 32px; }
+    .tagline { font-size: 0.9rem; color: #9aa0a6; margin-bottom: 14px; line-height: 1.5; }
+    .version {
+      display: inline-block;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      color: #9aa0a6;
+      background: #1a1d24;
+      border: 0.5px solid #2a2d35;
+      border-radius: 20px;
+      padding: 4px 12px;
+      margin-bottom: 28px;
+    }
 
     .card {
       background: #1a1d24;
@@ -102,7 +111,7 @@
   <div class="icon">🎵</div>
   <h1>SonorHub</h1>
   <p class="tagline">Música · Rádio · Audiobook · Místico<br>Seu dia em áudio.</p>
-  <p class="version" id="version-text"></p>
+  <p class="version" id="version-text" style="display:none;"></p>
 
   <!-- Card: instalar no Android -->
   <div class="card">
@@ -140,7 +149,11 @@
     fetch('../version.json')
       .then((r) => r.json())
       .then((d) => {
-        if (d.versionName) document.getElementById('version-text').textContent = `v${d.versionName}`;
+        if (d.versionName) {
+          const el = document.getElementById('version-text');
+          el.textContent = `v${d.versionName}`;
+          el.style.display = 'inline-block';
+        }
       })
       .catch(() => {});
   </script>

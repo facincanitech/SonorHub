@@ -529,7 +529,7 @@
         <button class="icon-btn" id="saved-header-btn">💾</button>
         <button class="icon-btn more-menu-btn">⋯</button>
         <div class="item-action-menu more-menu-panel">
-          <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+
           <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
           <button type="button" class="item-action-menu-opt" data-action="tema">🎨 Tema</button>
           <button type="button" class="item-action-menu-opt" data-action="contato">✉️ Contato</button>
@@ -641,7 +641,7 @@
           <button class="icon-btn" data-action="voice">🎤</button>
           <button class="icon-btn more-menu-btn">⋯</button>
           <div class="item-action-menu more-menu-panel">
-            <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+  
             <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
             <button type="button" class="item-action-menu-opt" data-action="tema">🎨 Tema</button>
             <button type="button" class="item-action-menu-opt" data-action="contato">✉️ Contato</button>
@@ -666,7 +666,7 @@
           <button class="icon-btn" data-action="voice">🎤</button>
           <button class="icon-btn more-menu-btn">⋯</button>
           <div class="item-action-menu more-menu-panel">
-            <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+  
             <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
             <button type="button" class="item-action-menu-opt" data-action="tema">🎨 Tema</button>
             <button type="button" class="item-action-menu-opt" data-action="contato">✉️ Contato</button>
@@ -712,7 +712,7 @@
           <button class="icon-btn" data-action="voice">🎤</button>
           <button class="icon-btn more-menu-btn">⋯</button>
           <div class="item-action-menu more-menu-panel">
-            <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+  
             <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
             <button type="button" class="item-action-menu-opt" data-action="tema">🎨 Tema</button>
             <button type="button" class="item-action-menu-opt" data-action="contato">✉️ Contato</button>
@@ -856,7 +856,7 @@
         <button class="icon-btn" data-action="voice">🎤</button>
         <button class="icon-btn more-menu-btn">⋯</button>
         <div class="item-action-menu more-menu-panel">
-          <button type="button" class="item-action-menu-opt" data-action="help">❓ Ajuda</button>
+
           <button type="button" class="item-action-menu-opt" data-action="gear">⚙️ Configurações</button>
           <button type="button" class="item-action-menu-opt" data-action="tema">🎨 Tema</button>
           <button type="button" class="item-action-menu-opt" data-action="contato">✉️ Contato</button>
@@ -2636,7 +2636,7 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.65';
+const APP_VERSION = '4.66';
 const CHANGELOG = [
   {
     version: '4.62', date: '30/06/2026',
@@ -3417,24 +3417,7 @@ document.getElementById('changelog-close-btn').addEventListener('click', () => {
   document.getElementById('changelog-overlay').classList.remove('open');
 });
 
-const helpOverlay = document.getElementById('help-overlay');
-document.querySelectorAll('[data-action="help"]').forEach(btn => {
-  btn.addEventListener('click', () => helpOverlay.classList.add('open'));
-});
-document.getElementById('help-close-btn').addEventListener('click', () => {
-  helpOverlay.classList.remove('open');
-  localStorage.setItem('infohub_onboarded', '1');
-});
-
-document.querySelectorAll('.help-section-header').forEach(header => {
-  header.addEventListener('click', () => {
-    header.parentElement.classList.toggle('open');
-  });
-});
-
-if (!localStorage.getItem('infohub_onboarded')) {
-  helpOverlay.classList.add('open');
-}
+localStorage.setItem('infohub_onboarded', '1'); // ajuda removida — marca como visto pra não abrir no primeiro acesso
 
 document.querySelectorAll('.account-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -8779,7 +8762,7 @@ const VOICE_QA = [
       'pra que serve esse app', 'pra que serve o app', 'pra que serve isso', 'pra que serve esse aplicativo',
       'o que é esse app', 'o que é o app', 'o que é o sonorhub', 'o que é esse aplicativo',
     ],
-    response: 'Esse app lê seu briefing diário em voz alta, e-mail, agenda, clima, notícias, financeiro e mais, e ainda responde perguntas simples por voz, sem usar IA. Pra ver tudo que dá pra configurar, toca no ícone de ajuda, o ponto de interrogação, no topo da tela.',
+    response: 'Esse app lê seu briefing diário em voz alta, e-mail, agenda, clima, notícias, financeiro e mais, e ainda responde perguntas simples por voz, sem usar IA. Pra configurar o que você quer ouvir, toca na aba Guia.',
   },
   {
     triggers: ['obrigado', 'obrigada', 'valeu'],
