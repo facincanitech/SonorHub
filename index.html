@@ -757,10 +757,20 @@
           <div id="audiobook-premium-shelf" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px;"></div>
 
           <div id="audiobook-premium-reader" style="display:none;">
-            <button type="button" id="audiobook-premium-back-btn" style="margin-bottom:12px; background: var(--c-surface); color: var(--c-text);">← Voltar pra estante</button>
-            <img id="audiobook-premium-cover-img" style="width:110px; height:150px; object-fit:cover; display:block; margin:0 auto 10px; border-radius:8px; background:#222;">
-            <div id="audiobook-premium-title" style="font-weight:600; text-align:center; margin-bottom:6px;"></div>
-            <div id="audiobook-premium-progress" class="hint" style="text-align:center; margin-bottom:14px;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <button type="button" id="audiobook-premium-back-btn" style="background: var(--c-surface); color: var(--c-text);">← Estante</button>
+              <div>
+                <div id="audiobook-premium-title" style="font-weight:600; font-size:0.9rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+                <div id="audiobook-premium-progress" class="hint" style="font-size:0.75rem;"></div>
+              </div>
+            </div>
+            <!-- Página atual renderizada — Kindle-style -->
+            <div style="position:relative; margin-bottom:12px; border-radius:8px; overflow:hidden; background: var(--c-surface); box-shadow:0 4px 16px -4px rgba(0,0,0,0.4);">
+              <canvas id="audiobook-premium-page-canvas" style="width:100%; display:block;"></canvas>
+              <!-- Toque nos lados pra virar página -->
+              <div id="audiobook-premium-tap-prev" style="position:absolute; left:0; top:0; width:35%; height:100%; cursor:pointer; opacity:0;"></div>
+              <div id="audiobook-premium-tap-next" style="position:absolute; right:0; top:0; width:35%; height:100%; cursor:pointer; opacity:0;"></div>
+            </div>
             <div style="display:flex; gap:8px; margin-bottom:14px;">
               <select id="audiobook-premium-rate" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius:8px; padding:8px;">
                 <option value="0.8">0.8x</option>
@@ -881,18 +891,23 @@
     </div>
 
     <div id="player-tab-audiobook" class="player-tab-content" style="display:none;">
-      <div id="audiobook-continue-wrap" style="display:none; margin-bottom:14px;">
-        <button type="button" id="audiobook-continue-btn" class="btn-connect" style="width:100%; background: var(--c-green); color: var(--c-on-accent);">▶️ Continuar de onde parei</button>
+      <!-- Área de seleção — esconde quando o leitor está aberto -->
+      <div id="audiobook-input-area">
+        <div id="audiobook-continue-wrap" style="display:none; margin-bottom:14px;">
+          <button type="button" id="audiobook-continue-btn" class="btn-connect" style="width:100%; background: var(--c-green); color: var(--c-on-accent);">▶️ Continuar de onde parei</button>
+          <div id="audiobook-continue-info" class="hint" style="text-align:center; margin-top:4px;"></div>
+        </div>
+        <input type="file" id="audiobook-file-input" accept="application/pdf" style="display:none;">
+        <button type="button" id="audiobook-pick-btn" class="btn-connect" style="margin-bottom:10px;">📂 Selecionar PDF do celular</button>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <input type="text" id="audiobook-drive-input" placeholder="Ou cola link do Google Drive (arquivo ou pasta)" enterkeyhint="done" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
+          <button type="button" id="audiobook-drive-btn" class="btn-connect" style="flex-shrink:0;">🔗 Usar</button>
+        </div>
+        <div id="audiobook-status" class="hint"></div>
+        <div id="audiobook-drive-folder-list" style="display:none; margin-bottom:14px;"></div>
       </div>
-      <input type="file" id="audiobook-file-input" accept="application/pdf" style="display:none;">
-      <button type="button" id="audiobook-pick-btn" class="btn-connect" style="margin-bottom:10px;">📂 Selecionar PDF</button>
-      <div style="display:flex; gap:8px; margin-bottom:14px;">
-        <input type="text" id="audiobook-drive-input" placeholder="Ou cola um link do Google Drive" enterkeyhint="done" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
-        <button type="button" id="audiobook-drive-btn" class="btn-connect" style="flex-shrink:0;">🔗 Usar</button>
-      </div>
-      <div id="audiobook-status" class="hint"></div>
-      <div id="audiobook-drive-folder-list" style="display:none; margin-bottom:14px;"></div>
       <div id="audiobook-reader" style="display:none;">
+        <button type="button" id="audiobook-close-btn" style="margin-bottom:8px; background: var(--c-surface); color: var(--c-text-dim); font-size:0.8rem; padding:6px 10px;">← Escolher outro PDF</button>
         <div id="audiobook-title" style="font-weight:600; margin-bottom:6px;"></div>
         <div id="audiobook-progress" class="hint" style="margin-bottom:14px;"></div>
         <div style="display:flex; gap:8px; margin-bottom:14px;">
@@ -2569,8 +2584,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.57';
+const APP_VERSION = '4.58';
 const CHANGELOG = [
+  {
+    version: '4.58', date: '29/06/2026',
+    items: [
+      'Premium: Audiobook agora renderiza a página atual (estilo Kindle), toca nas laterais da página pra virar',
+      'Audiobook grátis: UI reorganizada — esconde os controles de seleção enquanto está lendo, PDF da pasta aparece em grade horizontal de 3 colunas',
+    ],
+  },
   {
     version: '4.57', date: '29/06/2026',
     items: [
@@ -4793,16 +4815,34 @@ function audiobookSetLastDrive(fileId) {
   getFeatureState('player', 'audiobook').fields.lastDrive = fileId;
   saveState();
 }
+function audiobookShowInputArea() {
+  document.getElementById('audiobook-input-area').style.display = 'block';
+  document.getElementById('audiobook-reader').style.display = 'none';
+}
+function audiobookShowReader() {
+  document.getElementById('audiobook-input-area').style.display = 'none';
+  document.getElementById('audiobook-reader').style.display = 'block';
+}
+document.getElementById('audiobook-close-btn').addEventListener('click', () => {
+  speechSynthesis.cancel();
+  audiobookIsPlaying = false;
+  audiobookShowInputArea();
+  renderAudiobookContinueButton();
+});
+
 function renderAudiobookContinueButton() {
   const wrap = document.getElementById('audiobook-continue-wrap');
   const last = audiobookGetLastDrive();
   if (!last) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   const positions = audiobookSavedPositions();
-  const idx = positions[`drive:${last}`];
-  const page = (typeof idx === 'number' && audiobookChunks[idx]) ? audiobookChunks[idx].page : null;
-  document.getElementById('audiobook-continue-btn').textContent =
-    page ? `▶️ Continuar de onde parei (pág. ${page})` : '▶️ Continuar de onde parei';
+  const savedIdx = positions[`drive:${last}`];
+  // Tenta pegar a página do chunk salvo — só funciona se o livro já foi
+  // carregado nessa sessão (audiobookChunks populado). Caso contrário,
+  // mostra só o texto genérico sem número de página.
+  const page = (typeof savedIdx === 'number' && audiobookChunks[savedIdx]) ? audiobookChunks[savedIdx].page : savedIdx || null;
+  document.getElementById('audiobook-continue-btn').textContent = '▶️ Continuar de onde parei';
+  document.getElementById('audiobook-continue-info').textContent = page ? `Última posição: página ${page}` : '';
 }
 document.getElementById('audiobook-continue-btn').addEventListener('click', () => {
   const last = audiobookGetLastDrive();
@@ -4845,7 +4885,7 @@ async function processAudiobookPdf(pdf, displayName, fileKey, statusEl) {
 
   statusEl.textContent = '';
   document.getElementById('audiobook-title').textContent = displayName;
-  document.getElementById('audiobook-reader').style.display = 'block';
+  audiobookShowReader();
   audiobookUpdateProgress();
   document.getElementById('audiobook-ctrl-playpause').textContent = '▶️';
 }
@@ -4901,22 +4941,20 @@ function extrairGoogleDriveFolderId(link) {
   return m ? m[1] : null;
 }
 
-// Linha clicável de PDF encontrado numa pasta do Drive — usado tanto no
-// Audiobook grátis quanto na Biblioteca Premium.
+// Grid horizontal de PDFs encontrados numa pasta do Drive — 3 por linha,
+// nome truncado, fácil de tocar. Usado no Audiobook grátis e Premium.
 function renderGoogleDrivePdfPicker(containerEl, files, onPick) {
   containerEl.innerHTML = '';
-  containerEl.style.display = 'block';
+  containerEl.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;';
   files.forEach((f) => {
-    const row = document.createElement('div');
-    row.className = 'alarm-item';
-    row.style.cursor = 'pointer';
-    const span = document.createElement('span');
-    span.className = 'time';
-    span.style.flex = '1';
-    span.textContent = f.name;
-    row.appendChild(span);
-    row.addEventListener('click', () => onPick(f));
-    containerEl.appendChild(row);
+    const tile = document.createElement('div');
+    tile.style.cssText = 'flex:0 0 calc(33% - 6px); background: var(--c-surface); border-radius:8px; padding:10px 8px; cursor:pointer; text-align:center; font-size:0.75rem; overflow:hidden;';
+    tile.title = f.name;
+    // Nome truncado — mostra só os primeiros ~25 chars pra caber no tile
+    const shortName = f.name.length > 28 ? f.name.slice(0, 26) + '…' : f.name;
+    tile.innerHTML = `<div style="font-size:1.4rem; margin-bottom:4px;">📄</div><div style="line-height:1.3;">${shortName}</div>`;
+    tile.addEventListener('click', () => onPick(f));
+    containerEl.appendChild(tile);
   });
 }
 
@@ -5055,6 +5093,27 @@ let premiumAudiobookChunkIndex = 0;
 let premiumAudiobookBookId = null;
 let premiumAudiobookIsPlaying = false;
 let premiumAudiobookIsPaused = false;
+let premiumAudiobookPdf = null; // pdf.js document object — pra renderizar páginas (Kindle-style)
+let premiumAudiobookRendering = false; // evita renderizações simultâneas
+
+async function renderPremiumAudiobookCurrentPage() {
+  if (!premiumAudiobookPdf || !premiumAudiobookChunks.length) return;
+  if (premiumAudiobookRendering) return;
+  premiumAudiobookRendering = true;
+  const pageNum = premiumAudiobookChunks[premiumAudiobookChunkIndex].page;
+  try {
+    const canvas = document.getElementById('audiobook-premium-page-canvas');
+    const page = await premiumAudiobookPdf.getPage(pageNum);
+    const containerWidth = canvas.parentElement.clientWidth || 300;
+    const viewport = page.getViewport({ scale: containerWidth / page.getViewport({ scale: 1 }).width });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  } catch (e) {
+    console.error('Erro ao renderizar página:', e);
+  }
+  premiumAudiobookRendering = false;
+}
 
 function renderAudiobookShelf(filter) {
   const shelf = document.getElementById('audiobook-premium-shelf');
@@ -5156,6 +5215,7 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
 
   premiumAudiobookChunks = chunks;
   premiumAudiobookBookId = book.id;
+  premiumAudiobookPdf = pdf; // guarda pra renderizar páginas (Kindle-style)
   const idx = chunks.findIndex((c) => c.page === (book.lastPage || 1));
   premiumAudiobookChunkIndex = idx !== -1 ? idx : 0;
   speechSynthesis.cancel();
@@ -5163,13 +5223,16 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
   premiumAudiobookIsPaused = false;
 
   statusEl.textContent = '';
-  document.getElementById('audiobook-premium-cover-img').src = book.coverDataUrl || '';
   document.getElementById('audiobook-premium-title').textContent = book.title;
   document.getElementById('audiobook-premium-shelf').style.display = 'none';
   document.getElementById('audiobook-premium-reader').style.display = 'block';
   document.getElementById('audiobook-premium-ctrl-playpause').textContent = '▶️';
   updatePremiumAudiobookProgress();
 }
+
+// Toque nas laterais da página pra virar (igual Kindle)
+document.getElementById('audiobook-premium-tap-prev').addEventListener('click', () => premiumAudiobookSkipPage(-1));
+document.getElementById('audiobook-premium-tap-next').addEventListener('click', () => premiumAudiobookSkipPage(1));
 
 async function openPremiumAudiobook(book) {
   const statusEl = document.getElementById('audiobook-premium-status');
@@ -5275,6 +5338,7 @@ function updatePremiumAudiobookProgress() {
   const books = getAudiobookShelf();
   const book = books.find((b) => b.id === premiumAudiobookBookId);
   if (book) { book.lastPage = page; saveState(); }
+  renderPremiumAudiobookCurrentPage(); // Kindle: atualiza a página visual
 }
 
 function premiumAudiobookSpeakCurrentChunk() {

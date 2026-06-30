@@ -1,4 +1,4 @@
 {
-  "versionName": "4.57",
-  "notes": "PDF do Drive agora abre pelo servidor (proxy), sem depender do link direto instável."
+  "versionName": "4.58",
+  "notes": "Premium Audiobook Kindle: renderiza página atual. Free: UI reorganizada, grade de PDFs."
 }
