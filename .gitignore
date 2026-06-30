@@ -17,3 +17,13 @@ fazer.json
 
 # Funções Supabase — coladas manualmente no dashboard, não fazem parte do deploy pelo git
 supabase/functions/
+
+# www/ é 100% gerado pelo "npm run sync" — copia index.html, voz/, icones/, pdfjs/ pro www/
+# e depois roda "npx cap copy android". Não precisa versionar duplicata gerada.
+www/
+
+# vozes/ — pasta de rascunho de áudio local, não é asset do app
+vozes/
+
+# Dados de sessão do Claude Code (editor AI)
+.claude/
