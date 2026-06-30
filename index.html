@@ -267,6 +267,11 @@
   .price-card .price { font-size: 2rem; font-weight: 700; color: var(--c-yellow); }
   .price-card .price span { font-size: 0.9rem; color: var(--c-text-dim); font-weight: 400; }
   .premium-feature { background: var(--c-surface); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .premium-nav-btn { display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; background: var(--c-surface); border-radius:14px; padding:16px; margin-bottom:10px; font-size:1rem; font-weight:600; color:var(--c-text); }
+  .premium-nav-btn:hover { background: var(--c-surface-hover); }
+  .premium-nav-btn .pnb-label { display:flex; align-items:center; gap:10px; }
+  .premium-nav-btn .pnb-badge { font-size:0.7rem; background: var(--c-border2); color:var(--c-text-dim); border-radius:4px; padding:2px 6px; }
+  #premium-feature-screen .overlay-inner { max-width:420px; margin:0 auto; padding:18px 16px 90px; }
   .premium-feature .title { font-weight: 600; font-size: 0.98rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .premium-feature .desc { color: var(--c-text-dim); font-size: 0.82rem; margin-bottom: 10px; }
   .premium-feature input {
@@ -708,49 +713,56 @@
       </div>
       <div class="sub">Assinatura ativa.</div>
 
-      <div class="premium-feature">
-        <div class="title" id="gps-toggle" style="cursor:pointer; justify-content: space-between;">
-          <span>🧭 GPS auditivo minimalista</span><span class="chev">›</span>
-        </div>
-        <div id="gps-subcategories" style="display:none;">
-          <div class="desc" style="opacity: 0.6;">🚧 Em breve — pausado por enquanto (custo da API de rotas do Google ficou alto pro uso real; buscando alternativa de código aberto).</div>
-        </div>
+      <button class="premium-nav-btn" data-premium-screen="gps">
+        <span class="pnb-label">🧭 GPS auditivo minimalista</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span class="pnb-badge">Em breve</span><span class="chev">›</span></span>
+      </button>
+      <button class="premium-nav-btn" data-premium-screen="drive-backup">
+        <span class="pnb-label">📤 Salvar fotos na nuvem</span><span class="chev">›</span>
+      </button>
+      <button class="premium-nav-btn" data-premium-screen="rastreio">
+        <span class="pnb-label">📦 Rastreio de encomenda</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span class="pnb-badge">Em breve</span><span class="chev">›</span></span>
+      </button>
+      <button class="premium-nav-btn" data-premium-screen="audiobook-premium">
+        <span class="pnb-label">📚 Biblioteca de Audiobooks</span><span class="chev">›</span>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- ============ TELAS PREMIUM (abre como tela cheia ao clicar no card) ============ -->
+  <div class="overlay" id="premium-feature-screen">
+    <div class="overlay-inner">
+      <div class="overlay-header">
+        <button class="back-btn" id="premium-feature-back">←</button>
+        <h2 id="premium-feature-title"></h2>
       </div>
 
-      <div class="premium-feature">
-        <div class="title" id="drive-backup-toggle" style="cursor:pointer; justify-content: space-between;">
-          <span>📤 Salvar fotos na nuvem</span><span class="chev">›</span>
-        </div>
-        <div id="drive-backup-subcategories" style="display:none;">
-          <div class="desc">Escolhe as fotos/vídeos do celular e o app envia direto pro seu Google Drive, numa pasta "SonorHub Backup". Precisa estar com o Google conectado em ⚙️ Central de Contas.</div>
-          <input type="file" id="drive-backup-input" accept="image/*,video/*" multiple style="display:none;">
-          <button id="drive-backup-btn">Escolher fotos/vídeos</button>
-          <button id="drive-view-btn" style="margin-top: 8px; background: var(--c-surface); color: var(--c-text);">📂 Ver/gerenciar o que já tá salvo</button>
-          <div class="result" id="drive-backup-result"></div>
-        </div>
+      <div id="premium-screen-gps" style="display:none;">
+        <div class="desc" style="opacity: 0.6;">🚧 Em breve — pausado por enquanto (custo da API de rotas do Google ficou alto pro uso real; buscando alternativa de código aberto).</div>
       </div>
 
-      <div class="premium-feature">
-        <div class="title" id="rastreio-toggle" style="cursor:pointer; justify-content: space-between;">
-          <span>📦 Rastreio de encomenda</span><span class="chev">›</span>
-        </div>
-        <div id="rastreio-subcategories" style="display:none;">
-          <div class="desc" style="opacity: 0.6;">🚧 Em breve.</div>
-        </div>
+      <div id="premium-screen-drive-backup" style="display:none;">
+        <div class="desc">Escolhe as fotos/vídeos do celular e o app envia direto pro seu Google Drive, numa pasta "SonorHub Backup". Precisa estar com o Google conectado em ⚙️ Central de Contas.</div>
+        <input type="file" id="drive-backup-input" accept="image/*,video/*" multiple style="display:none;">
+        <button id="drive-backup-btn">Escolher fotos/vídeos</button>
+        <button id="drive-view-btn" style="margin-top: 8px; background: var(--c-surface); color: var(--c-text);">📂 Ver/gerenciar o que já tá salvo</button>
+        <div class="result" id="drive-backup-result"></div>
       </div>
 
-      <div class="premium-feature">
-        <div class="title" id="audiobook-premium-toggle" style="cursor:pointer; justify-content: space-between;">
-          <span>📚 Biblioteca de Audiobooks</span><span class="chev">›</span>
-        </div>
-        <div id="audiobook-premium-subcategories" style="display:none;">
+      <div id="premium-screen-rastreio" style="display:none;">
+        <div class="desc" style="opacity: 0.6;">🚧 Em breve.</div>
+      </div>
+
+      <div id="premium-screen-audiobook-premium" style="display:none;">
           <div class="desc">Versão completa do Audiobook: guarda vários livros com capa (gerada da própria 1ª página do PDF), busca por nome e continua de onde parou em cada um. No MultiSonor grátis só dá pra ter 1 livro de cada vez, sem capa nem busca.</div>
           <input type="text" id="audiobook-premium-search" placeholder="🔎 Buscar na sua biblioteca" style="width:100%; margin-bottom:10px; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
           <input type="file" id="audiobook-premium-file-input" accept="application/pdf" style="display:none;">
           <button type="button" id="audiobook-premium-pick-btn" style="margin-bottom:10px;">📂 Adicionar PDF do celular</button>
           <div style="display:flex; gap:8px; margin-bottom:14px;">
             <input type="text" id="audiobook-premium-drive-input" placeholder="Ou cola um link do Google Drive" enterkeyhint="done" style="flex:1; background: var(--c-bg); border: 1px solid var(--c-border2); color: var(--c-text); border-radius: 8px; padding: 9px 10px;">
-            <button type="button" id="audiobook-premium-drive-btn" style="flex-shrink:0;">🔗 Adicionar</button>
+            <button type="button" id="audiobook-premium-drive-btn" style="flex-shrink:0; font-size:0.85rem; padding:9px 12px;">🔗</button>
           </div>
           <div id="audiobook-premium-status" class="hint"></div>
           <div id="audiobook-premium-drive-folder-list" style="display:none; margin-bottom:14px;"></div>
@@ -785,12 +797,10 @@
               <button id="audiobook-premium-ctrl-playpause" style="background: var(--c-accent-blue); color: var(--c-on-accent); width:58px; height:58px; border-radius:50%; font-size:1.3rem;">▶️</button>
               <button id="audiobook-premium-ctrl-next" style="background:none; font-size:1.6rem; color:var(--c-text);">⏭</button>
             </div>
-          </div>
         </div>
       </div>
-
     </div>
-  </section>
+  </div>
 
   <!-- ============ TAB: MULTISONOR (Música/Vídeo/Rádio) ============
        Era uma tela cheia separada (.nav-overlay) que cobria até o navbar de
@@ -2584,8 +2594,15 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.61';
+const APP_VERSION = '4.62';
 const CHANGELOG = [
+  {
+    version: '4.62', date: '30/06/2026',
+    items: [
+      'Premium: cada categoria agora abre em tela própria (GPS, Fotos, Rastreio, Audiobooks)',
+      'Audiobook: PDFs da pasta aparecem 20 por vez com paginação (busca de até 1000 arquivos)',
+    ],
+  },
   {
     version: '4.61', date: '30/06/2026',
     items: [
@@ -4961,17 +4978,39 @@ function extrairGoogleDriveFolderId(link) {
 
 // Grid horizontal de PDFs encontrados numa pasta do Drive — 3 por linha,
 // nome truncado, fácil de tocar. Usado no Audiobook grátis e Premium.
-function renderGoogleDrivePdfPicker(containerEl, files, onPick) {
-  containerEl.innerHTML = '';
-  containerEl.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;';
+const DRIVE_PICKER_PAGE_SIZE = 20;
+
+function renderGoogleDrivePdfPicker(containerEl, files, onPick, page) {
   const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }));
-  sorted.forEach((f) => {
+  const currentPage = page || 0;
+  const totalPages = Math.ceil(sorted.length / DRIVE_PICKER_PAGE_SIZE);
+  const slice = sorted.slice(currentPage * DRIVE_PICKER_PAGE_SIZE, (currentPage + 1) * DRIVE_PICKER_PAGE_SIZE);
+
+  containerEl.innerHTML = '';
+  containerEl.style.cssText = 'display:block; margin-bottom:14px;';
+
+  // Paginação no topo se houver mais de 1 página
+  if (totalPages > 1) {
+    const nav = document.createElement('div');
+    nav.style.cssText = 'display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:0.8rem;';
+    nav.innerHTML = `
+      <button type="button" style="background: var(--c-surface); color: var(--c-text); padding:6px 10px; border-radius:6px;" ${currentPage === 0 ? 'disabled style="opacity:0.4"' : ''}>‹ Anterior</button>
+      <span class="hint">${currentPage + 1} de ${totalPages} (${sorted.length} PDFs)</span>
+      <button type="button" style="background: var(--c-surface); color: var(--c-text); padding:6px 10px; border-radius:6px;" ${currentPage >= totalPages - 1 ? 'disabled style="opacity:0.4"' : ''}>Próxima ›</button>
+    `;
+    const [prevBtn, , nextBtn] = nav.querySelectorAll('button');
+    prevBtn.addEventListener('click', () => renderGoogleDrivePdfPicker(containerEl, files, onPick, currentPage - 1));
+    nextBtn.addEventListener('click', () => renderGoogleDrivePdfPicker(containerEl, files, onPick, currentPage + 1));
+    containerEl.appendChild(nav);
+  }
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';
+  slice.forEach((f) => {
     const tile = document.createElement('div');
     tile.style.cssText = 'flex:0 0 calc(33% - 6px); background: var(--c-surface); border-radius:8px; padding:0; cursor:pointer; text-align:center; font-size:0.75rem; overflow:hidden;';
     tile.title = f.name;
-    const shortName = f.name.replace(/\.pdf$/i, '').slice(0, 26) + (f.name.length > 26 ? '…' : '');
-    // Thumbnail do Drive — funciona pra arquivos públicos sem precisar
-    // baixar o PDF inteiro (img src bypassa CORS, é só um GET normal).
+    const shortName = f.name.replace(/\.pdf$/i, '').slice(0, 26) + (f.name.replace(/\.pdf$/i,'').length > 26 ? '…' : '');
     tile.innerHTML = `
       <img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w200-h200" loading="lazy"
            onerror="this.style.display='none'"
@@ -4979,8 +5018,9 @@ function renderGoogleDrivePdfPicker(containerEl, files, onPick) {
       <div style="padding:6px 4px; line-height:1.3;">${shortName}</div>
     `;
     tile.addEventListener('click', () => onPick(f));
-    containerEl.appendChild(tile);
+    grid.appendChild(tile);
   });
+  containerEl.appendChild(grid);
 }
 
 async function carregarAudiobookDoGoogleDrive(fileId, displayName) {
@@ -7486,28 +7526,30 @@ document.getElementById('gps-start-btn').addEventListener('click', () => {
 });
 
 /* =========================================================================
-   PREMIUM, Rastreio de encomenda (Mercado Livre / E-mail)
+   PREMIUM — Navegação de telas (cada categoria abre tela cheia)
    ========================================================================= */
-document.getElementById('rastreio-toggle').addEventListener('click', () => {
-  const el = document.getElementById('rastreio-subcategories');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+const PREMIUM_SCREEN_TITLES = {
+  'gps': '🧭 GPS auditivo',
+  'drive-backup': '📤 Salvar fotos na nuvem',
+  'rastreio': '📦 Rastreio de encomenda',
+  'audiobook-premium': '📚 Biblioteca de Audiobooks',
+};
+
+function openPremiumScreen(featureId) {
+  document.querySelectorAll('#premium-feature-screen [id^="premium-screen-"]').forEach((s) => s.style.display = 'none');
+  const screen = document.getElementById(`premium-screen-${featureId}`);
+  if (screen) screen.style.display = 'block';
+  document.getElementById('premium-feature-title').textContent = PREMIUM_SCREEN_TITLES[featureId] || '';
+  document.getElementById('premium-feature-screen').classList.add('open');
+  if (featureId === 'audiobook-premium') renderAudiobookShelf('');
+}
+
+document.querySelectorAll('.premium-nav-btn[data-premium-screen]').forEach((btn) => {
+  btn.addEventListener('click', () => openPremiumScreen(btn.dataset.premiumScreen));
 });
 
-document.getElementById('gps-toggle').addEventListener('click', () => {
-  const el = document.getElementById('gps-subcategories');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-});
-
-document.getElementById('drive-backup-toggle').addEventListener('click', () => {
-  const el = document.getElementById('drive-backup-subcategories');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-});
-
-document.getElementById('audiobook-premium-toggle').addEventListener('click', () => {
-  const el = document.getElementById('audiobook-premium-subcategories');
-  const wasOpen = el.style.display !== 'none';
-  el.style.display = wasOpen ? 'none' : 'block';
-  if (!wasOpen) renderAudiobookShelf('');
+document.getElementById('premium-feature-back').addEventListener('click', () => {
+  document.getElementById('premium-feature-screen').classList.remove('open');
 });
 
 /* =========================================================================

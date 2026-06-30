@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
     const params = new URLSearchParams({
       q: `'${folderId}' in parents and mimeType='application/pdf' and trashed=false`,
       fields: 'files(id,name,size)',
-      pageSize: '200',
+      pageSize: '1000',
       key: apiKey,
     });
     const resp = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`).then((r) => r.json());
