@@ -541,7 +541,7 @@
       <span id="update-banner-text" style="font-size: 0.85rem; flex: 1;"></span>
       <div style="display:flex; gap:6px; flex-shrink:0;">
         <button id="update-banner-dismiss" style="background: transparent; border: 1px solid var(--c-on-accent); color: var(--c-on-accent); padding: 6px 10px; font-size: 0.78rem;">Agora não</button>
-        <a id="update-banner-download" href="https://facincanitech.github.io/SonorHub/downloads/SonorHub.apk" download style="background: var(--c-on-accent); color: var(--c-accent-blue); padding: 6px 10px; font-size: 0.78rem; border-radius: 6px; text-decoration: none; font-weight: 600;">Baixar</a>
+        <button id="update-banner-download" type="button" style="background: var(--c-on-accent); color: var(--c-accent-blue); padding: 6px 10px; font-size: 0.78rem; border-radius: 6px; font-weight: 600; border:none; cursor:pointer;">Baixar</button>
       </div>
     </div>
 
@@ -2082,7 +2082,10 @@ function wireApkDownloadLink(id) {
     }
   });
 }
-wireApkDownloadLink('update-banner-download');
+// update-banner-download virou <button>, então usa listener direto em vez de wireApkDownloadLink
+document.getElementById('update-banner-download').addEventListener('click', () => {
+  tocarNoNavegador('https://facincanitech.github.io/SonorHub/downloads/SonorHub.apk');
+});
 wireApkDownloadLink('help-download-apk-btn');
 wireApkDownloadLink('player-privacy-link');
 
@@ -2636,7 +2639,7 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.66';
+const APP_VERSION = '4.67';
 const CHANGELOG = [
   {
     version: '4.62', date: '30/06/2026',
