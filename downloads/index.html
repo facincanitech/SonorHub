@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f1115">
+  <title>SonorHub — Baixar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, system-ui, 'Segoe UI', sans-serif;
+      background: #0f1115;
+      color: #e8e8e8;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px 40px;
+      text-align: center;
+    }
+    .icon {
+      width: 76px; height: 76px;
+      border-radius: 18px;
+      background: #1a1d24;
+      border: 0.5px solid #2a2d35;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      margin: 0 auto 16px;
+    }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+    .tagline { font-size: 0.9rem; color: #9aa0a6; margin-bottom: 10px; line-height: 1.5; }
+    .version { font-size: 11px; color: #4e545c; margin-bottom: 32px; }
+
+    .card {
+      background: #1a1d24;
+      border: 0.5px solid #2a2d35;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #9aa0a6;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .btn-main {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #e8e8e8;
+      color: #0f1115;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .btn-main:active { opacity: 0.85; }
+    .install-hint {
+      font-size: 11px;
+      color: #6f7480;
+      line-height: 1.5;
+    }
+    .btn-web {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: transparent;
+      color: #e8e8e8;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: 1px solid #2a2d35;
+      width: 100%;
+    }
+    .uses-row {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 4px;
+    }
+    .use-item {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .use-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .use-text { font-size: 13px; color: #c8ccd4; line-height: 1.4; }
+    .use-text b { color: #e8e8e8; }
+
+    footer {
+      font-size: 11px; color: #4e545c;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="icon">🎵</div>
+  <h1>SonorHub</h1>
+  <p class="tagline">Música · Rádio · Audiobook · Místico<br>Seu dia em áudio.</p>
+  <p class="version" id="version-text"></p>
+
+  <!-- Card: instalar no Android -->
+  <div class="card">
+    <div class="card-title">📱 Instalar no Android</div>
+    <a class="btn-main" href="SonorHub.apk" download="SonorHub.apk">
+      ⬇ Baixar SonorHub.apk
+    </a>
+    <p class="install-hint">
+      Abra o arquivo baixado e toque em <b>Instalar</b>.
+      Se aparecer um aviso, habilite <b>Instalar apps desconhecidos</b> nas configurações do celular.
+    </p>
+  </div>
+
+  <!-- Card: usar no navegador -->
+  <div class="card">
+    <div class="card-title">🌐 Usar pelo navegador</div>
+    <div class="uses-row" style="margin-bottom:14px;">
+      <div class="use-item">
+        <span class="use-icon">📱</span>
+        <span class="use-text"><b>Celular</b> — funciona direto no Chrome ou Safari, sem precisar instalar nada.</span>
+      </div>
+      <div class="use-item">
+        <span class="use-icon">💻</span>
+        <span class="use-text"><b>PC / Mac</b> — abre no navegador igual qualquer site. Ideal pra ouvir sem tirar o celular do bolso.</span>
+      </div>
+    </div>
+    <a class="btn-web" href="https://facincanitech.github.io/SonorHub/" target="_blank">
+      🔗 Abrir SonorHub no navegador
+    </a>
+  </div>
+
+  <footer>2026 · FacincaniTech</footer>
+
+  <script>
+    fetch('../version.json')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.versionName) document.getElementById('version-text').textContent = `v${d.versionName}`;
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>

@@ -602,6 +602,14 @@
       </div>
     </div>
 
+    <button type="button" id="download-app-row" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--c-surface); border-radius:10px; margin-bottom:14px; cursor:pointer; border:none; text-align:left;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1rem; flex-shrink:0;">📲</span>
+        <span style="font-size:13px; color:var(--c-text);">Baixar / compartilhar o app</span>
+      </div>
+      <span style="font-size:0.85rem; color:var(--c-text-dim);">›</span>
+    </button>
+
     <div class="briefing-wrap">
       <div id="briefing-label">Configure suas categorias na aba Guia</div>
       <div id="briefing-sub"></div>
@@ -2628,7 +2636,7 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.64';
+const APP_VERSION = '4.65';
 const CHANGELOG = [
   {
     version: '4.62', date: '30/06/2026',
@@ -8452,6 +8460,10 @@ document.getElementById('saved-header-btn').addEventListener('click', () => {
 document.getElementById('saved-close-btn').addEventListener('click', () => {
   document.getElementById('saved-overlay').classList.remove('open');
 });
+document.getElementById('download-app-row').addEventListener('click', () => {
+  tocarNoNavegador('https://facincanitech.github.io/SonorHub/downloads/');
+});
+
 document.querySelectorAll('.md-bento-tile').forEach((tile) => {
   tile.addEventListener('click', () => {
     const detail = document.getElementById(BENTO_TILE_DETAIL_IDS[tile.id]);
