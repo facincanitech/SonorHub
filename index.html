@@ -515,6 +515,9 @@
   }
   .nav-mic-btn.listening { background: var(--c-green); }
   .nav-mic-btn.mic-continuous { background: var(--md-voice); box-shadow: 0 0 0 6px rgba(255,255,255,0.08); }
+  /* Audiobook word-by-word TTS highlight */
+  .ab-word { border-radius: 2px; }
+  .ab-word-active { background: var(--ab-accent, #b08d57); color: var(--ab-bg, #f6f1e7); border-radius: 2px; padding: 0 1px; }
 </style>
 </head>
 <body>
@@ -817,12 +820,20 @@
 
           <!-- Progresso -->
           <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
               <span id="audiobook-premium-progress" style="font-size:11px; color:var(--ab-text-dim,#9b937f);"></span>
-              <span id="audiobook-premium-pct" style="font-size:11px; color:var(--ab-text-dim,#9b937f);"></span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span id="audiobook-premium-pct" style="font-size:11px; color:var(--ab-text-dim,#9b937f);"></span>
+                <button id="ab-goto-page-btn" type="button" style="background:none; border:none; font-size:10px; color:var(--ab-text-dim,#9b937f); padding:2px 4px; cursor:pointer; border-radius:4px; border:1px solid var(--ab-border,#e3dac6);">ir pra pág.</button>
+              </div>
             </div>
             <div style="height:2px; background:var(--ab-border,#e3dac6); border-radius:2px; overflow:hidden;">
               <div id="audiobook-premium-progress-bar" style="height:100%; width:0%; background:var(--ab-accent,#b08d57); border-radius:2px; transition:width 0.3s;"></div>
+            </div>
+            <div id="ab-goto-page-wrap" style="display:none; margin-top:8px; display:none; align-items:center; gap:6px;">
+              <input id="ab-goto-page-input" type="number" min="1" placeholder="nº da pág." style="width:90px; border-radius:8px; border:1px solid var(--ab-border,#e3dac6); background:var(--ab-bg,#f6f1e7); color:var(--ab-text,#2b2620); font-size:13px; padding:5px 8px;">
+              <button id="ab-goto-page-ok" type="button" style="border-radius:8px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; border:none;">Ir</button>
+              <button id="ab-goto-page-cancel" type="button" style="background:none; border:none; font-size:11px; color:var(--ab-text-dim,#9b937f); padding:4px; cursor:pointer;">✕</button>
             </div>
           </div>
 
@@ -1600,6 +1611,15 @@
   <div>
     <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Velocidade: <span id="ab-rate-label">1x</span></div>
     <input id="audiobook-premium-rate" type="range" min="0.5" max="2" step="0.1" value="1" style="width:100%;">
+  </div>
+
+  <div>
+    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Tamanho da fonte</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="ab-font-minus" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:0.95rem; cursor:pointer; border:none;">A−</button>
+      <span id="ab-font-label" style="min-width:36px; text-align:center; font-size:12px; color:var(--c-text);">17px</span>
+      <button id="ab-font-plus" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:0.95rem; cursor:pointer; border:none;">A+</button>
+    </div>
   </div>
 
   <div>
@@ -2711,8 +2731,18 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.72';
+const APP_VERSION = '4.73';
 const CHANGELOG = [
+  {
+    version: '4.73', date: '30/06/2026',
+    items: [
+      'Audiobook premium: highlight palavra-a-palavra sincronizado com a leitura por TTS',
+      'Audiobook premium: controle de tamanho de fonte (A− / A+) nas configurações',
+      'Audiobook premium: progresso (%) visível em cada livro na estante',
+      'Audiobook premium: seletor "ir pra pág." direto no leitor',
+      'Fix: clicar num livro local da estante agora mostra mensagem clara ao invés de abrir picker em silêncio',
+    ],
+  },
   {
     version: '4.72', date: '30/06/2026',
     notes: 'Header Meu Dia → SonorHub com tagline. Botão "Baixar/Compartilhar" subiu pro topo (abaixo do header). Overlay in-app no lugar de nova aba do browser, com download APK, atalho PWA e compartilhar link.',
@@ -5294,6 +5324,7 @@ let premiumAudiobookChunks = [];
 let premiumAudiobookChunkIndex = 0;
 let premiumAudiobookBookId = null;
 let premiumAudiobookIsPlaying = false;
+let premiumAudiobookFontSize = 17;
 let premiumAudiobookIsPaused = false;
 let premiumAudiobookPdf = null; // pdf.js document object — pra renderizar páginas (Kindle-style)
 let premiumAudiobookRendering = false; // evita renderizações simultâneas
@@ -5382,9 +5413,14 @@ function renderAudiobookShelf(filter) {
     titleEl.style.cssText = 'font-size:0.68rem; line-height:1.25; color:var(--c-text); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;';
     titleEl.textContent = book.title;
 
+    const pctLabel = document.createElement('div');
+    pctLabel.style.cssText = 'font-size:0.6rem; color:var(--c-text-dim); margin-top:3px;';
+    pctLabel.textContent = pct > 0 ? (done ? '✓ Concluído' : `${pct}%`) : '';
+
     card.appendChild(coverWrap);
     card.appendChild(progressTrack);
     card.appendChild(titleEl);
+    card.appendChild(pctLabel);
     card.addEventListener('click', () => openPremiumAudiobook(book));
     shelf.appendChild(card);
   });
@@ -5477,6 +5513,9 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
   if (statusPlayer) statusPlayer.textContent = 'Pronto para ler';
   abSetTheme(state.abTheme || 'sepia');
   abSetNarrator(state.abNarrator || 'vagner');
+  premiumAudiobookFontSize = state.abFontSize || 17;
+  const abTextView = document.getElementById('audiobook-premium-text-view');
+  if (abTextView) abTextView.style.fontSize = `${premiumAudiobookFontSize}px`;
   updatePremiumAudiobookProgress();
 }
 
@@ -5487,7 +5526,9 @@ document.getElementById('audiobook-premium-tap-next').addEventListener('click', 
 async function openPremiumAudiobook(book) {
   const statusEl = document.getElementById('audiobook-premium-status');
   if (book.source === 'local') {
-    statusEl.textContent = `"${book.title}" foi adicionado de um arquivo do celular — seleciona o mesmo arquivo de novo pra continuar de onde parou.`;
+    const addPanel = document.getElementById('audiobook-premium-add-panel');
+    if (addPanel) addPanel.style.display = 'block';
+    statusEl.textContent = `Seleciona o arquivo "${book.title}" pra continuar de onde parou (pág. ${book.lastPage || 1}).`;
     document.getElementById('audiobook-premium-file-input').click();
     return;
   }
@@ -5638,12 +5679,29 @@ function renderPremiumAudiobookTextPage() {
   if (tapNext) textView.appendChild(tapNext);
 
   pageChunks.forEach((chunk) => {
-    const span = document.createElement('span');
-    span.textContent = chunk.text + ' ';
     if (chunk === currentChunk && premiumAudiobookIsPlaying) {
-      span.style.cssText = 'background:#e8dcc0; color:inherit; border-radius:3px; padding:1px 0;';
+      // Render palavras como spans individuais pra highlight sincronizado com TTS
+      const tokens = chunk.text.split(/(\s+)/);
+      let charOffset = 0;
+      tokens.forEach((token) => {
+        if (!token) { return; }
+        if (/^\s+$/.test(token)) {
+          textView.appendChild(document.createTextNode(token));
+        } else {
+          const ws = document.createElement('span');
+          ws.className = 'ab-word';
+          ws.dataset.ci = String(charOffset);
+          ws.textContent = token;
+          textView.appendChild(ws);
+        }
+        charOffset += token.length;
+      });
+      textView.appendChild(document.createTextNode(' '));
+    } else {
+      const span = document.createElement('span');
+      span.textContent = chunk.text + ' ';
+      textView.appendChild(span);
     }
-    textView.appendChild(span);
   });
 }
 
@@ -5673,6 +5731,19 @@ function premiumAudiobookSpeakCurrentChunk() {
   utter.lang = 'pt-BR';
   const rateEl = document.getElementById('audiobook-premium-rate');
   utter.rate = parseFloat(rateEl ? rateEl.value : '1') || 1;
+  utter.onboundary = (ev) => {
+    if (ev.name !== 'word') return;
+    document.querySelectorAll('.ab-word-active').forEach((el) => el.classList.remove('ab-word-active'));
+    const ci = ev.charIndex;
+    const wordSpans = document.querySelectorAll('.ab-word');
+    for (const ws of wordSpans) {
+      const wci = parseInt(ws.dataset.ci, 10);
+      if (ci >= wci && ci < wci + ws.textContent.length) {
+        ws.classList.add('ab-word-active');
+        break;
+      }
+    }
+  };
   renderPremiumAudiobookTextPage(); // destaca trecho atual
   utter.onend = () => {
     if (!premiumAudiobookIsPlaying || premiumAudiobookIsPaused) return;
@@ -5782,6 +5853,9 @@ function abOpenSettings() {
   const rateEl = document.getElementById('audiobook-premium-rate');
   const labelEl = document.getElementById('ab-rate-label');
   if (rateEl && labelEl) labelEl.textContent = `${parseFloat(rateEl.value)}x`;
+  premiumAudiobookFontSize = state.abFontSize || 17;
+  const fontLbl = document.getElementById('ab-font-label');
+  if (fontLbl) fontLbl.textContent = `${premiumAudiobookFontSize}px`;
 }
 
 function abCloseSettings() {
@@ -5797,6 +5871,48 @@ document.getElementById('audiobook-premium-settings-backdrop').addEventListener(
 
 document.getElementById('ab-narrator-vagner').addEventListener('click', () => abSetNarrator('vagner'));
 document.getElementById('ab-narrator-james').addEventListener('click', () => abSetNarrator('james'));
+
+function abSetFontSize(size) {
+  premiumAudiobookFontSize = Math.max(12, Math.min(28, size));
+  const tv = document.getElementById('audiobook-premium-text-view');
+  if (tv) tv.style.fontSize = `${premiumAudiobookFontSize}px`;
+  const lbl = document.getElementById('ab-font-label');
+  if (lbl) lbl.textContent = `${premiumAudiobookFontSize}px`;
+  state.abFontSize = premiumAudiobookFontSize;
+  saveState();
+}
+document.getElementById('ab-font-minus').addEventListener('click', () => abSetFontSize(premiumAudiobookFontSize - 1));
+document.getElementById('ab-font-plus').addEventListener('click', () => abSetFontSize(premiumAudiobookFontSize + 1));
+
+// Seletor de página
+const abGotoWrap = document.getElementById('ab-goto-page-wrap');
+const abGotoInput = document.getElementById('ab-goto-page-input');
+document.getElementById('ab-goto-page-btn').addEventListener('click', () => {
+  abGotoWrap.style.display = 'flex';
+  abGotoInput.focus();
+});
+document.getElementById('ab-goto-page-cancel').addEventListener('click', () => {
+  abGotoWrap.style.display = 'none';
+  abGotoInput.value = '';
+});
+document.getElementById('ab-goto-page-ok').addEventListener('click', () => {
+  if (!premiumAudiobookChunks.length) return;
+  const target = parseInt(abGotoInput.value, 10);
+  const totalPages = premiumAudiobookChunks[premiumAudiobookChunks.length - 1].page;
+  if (!target || target < 1 || target > totalPages) return;
+  const idx = premiumAudiobookChunks.findIndex((c) => c.page === target);
+  if (idx === -1) return;
+  speechSynthesis.cancel();
+  premiumAudiobookChunkIndex = idx;
+  updatePremiumAudiobookProgress();
+  if (premiumAudiobookIsPlaying) premiumAudiobookSpeakCurrentChunk();
+  abGotoWrap.style.display = 'none';
+  abGotoInput.value = '';
+});
+abGotoInput.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') document.getElementById('ab-goto-page-ok').click();
+  if (ev.key === 'Escape') document.getElementById('ab-goto-page-cancel').click();
+});
 
 document.getElementById('ab-theme-sepia').addEventListener('click', () => abSetTheme('sepia'));
 document.getElementById('ab-theme-white').addEventListener('click', () => abSetTheme('white'));
