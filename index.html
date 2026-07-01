@@ -5511,6 +5511,7 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
 
   statusEl.textContent = '';
   document.getElementById('audiobook-premium-title').textContent = book.title;
+  abHideOverlayHeader();
   document.getElementById('audiobook-premium-shelf-view').style.display = 'none';
   document.getElementById('audiobook-premium-add-panel').style.display = 'none';
   document.getElementById('audiobook-premium-reader').style.display = 'flex';
@@ -5530,6 +5531,15 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
 document.getElementById('audiobook-premium-tap-prev').addEventListener('click', () => premiumAudiobookSkipPage(-1));
 document.getElementById('audiobook-premium-tap-next').addEventListener('click', () => premiumAudiobookSkipPage(1));
 
+function abHideOverlayHeader() {
+  const h = document.querySelector('#premium-feature-screen .overlay-header');
+  if (h) h.style.display = 'none';
+}
+function abShowOverlayHeader() {
+  const h = document.querySelector('#premium-feature-screen .overlay-header');
+  if (h) h.style.display = '';
+}
+
 async function openPremiumAudiobook(book) {
   const statusEl = document.getElementById('audiobook-premium-status');
   if (book.source === 'local') {
@@ -5539,14 +5549,40 @@ async function openPremiumAudiobook(book) {
     document.getElementById('audiobook-premium-file-input').click();
     return;
   }
-  statusEl.textContent = `Abrindo "${book.title}"...`;
+  // Mostra reader imediatamente com loading — sem ficar parado na estante
+  abHideOverlayHeader();
+  document.getElementById('audiobook-premium-title').textContent = book.title;
+  document.getElementById('audiobook-premium-shelf-view').style.display = 'none';
+  document.getElementById('audiobook-premium-add-panel').style.display = 'none';
+  document.getElementById('audiobook-premium-reader').style.display = 'flex';
+  const tv = document.getElementById('audiobook-premium-text-view');
+  const tapPrev = document.getElementById('audiobook-premium-tap-prev');
+  const tapNext = document.getElementById('audiobook-premium-tap-next');
+  if (tv) {
+    tv.innerHTML = '';
+    if (tapPrev) tv.appendChild(tapPrev);
+    if (tapNext) tv.appendChild(tapNext);
+    const msg = document.createElement('div');
+    msg.style.cssText = 'padding:24px 8px; text-align:center; color:var(--ab-text-dim,#9b937f); font-size:14px; font-family:Georgia,serif;';
+    msg.textContent = `Carregando "${book.title}"…`;
+    tv.appendChild(msg);
+  }
+  abSetTheme(state.abTheme || 'sepia');
   try {
     const pdfjsLib = await loadPdfjsLib();
     const pdf = await pdfjsLib.getDocument({ url: driveFileProxyUrl(book.driveFileId), ...driveProxyHeaders }).promise;
     await openOrAddPremiumAudiobook(pdf, book.title, book.fileKey, 'drive');
   } catch (e) {
     console.error('Erro ao abrir livro do Drive:', e);
-    statusEl.textContent = 'Não consegui abrir esse livro do Google Drive agora.';
+    if (tv) {
+      tv.innerHTML = '';
+      if (tapPrev) tv.appendChild(tapPrev);
+      if (tapNext) tv.appendChild(tapNext);
+      const errMsg = document.createElement('div');
+      errMsg.style.cssText = 'padding:24px 8px; text-align:center; color:#c0392b; font-size:14px;';
+      errMsg.textContent = 'Não consegui abrir esse livro. Tenta de novo.';
+      tv.appendChild(errMsg);
+    }
   }
 }
 
@@ -5668,6 +5704,7 @@ document.getElementById('audiobook-premium-back-btn').addEventListener('click', 
   premiumAudiobookIsPlaying = false;
   document.getElementById('audiobook-premium-reader').style.display = 'none';
   document.getElementById('audiobook-premium-shelf-view').style.display = 'block';
+  abShowOverlayHeader();
   renderAudiobookShelf(document.getElementById('audiobook-premium-search').value);
 });
 
@@ -5739,9 +5776,8 @@ function premiumAudiobookSpeakCurrentChunk() {
   const rateEl = document.getElementById('audiobook-premium-rate');
   utter.rate = parseFloat(rateEl ? rateEl.value : '1') || 1;
   utter.onboundary = (ev) => {
-    if (ev.name !== 'word') return;
-    document.querySelectorAll('.ab-word-active').forEach((el) => el.classList.remove('ab-word-active'));
     const ci = ev.charIndex;
+    if (ci == null) return;
     const wordSpans = document.querySelectorAll('.ab-word');
     for (const ws of wordSpans) {
       const wci = parseInt(ws.dataset.ci, 10);
@@ -5942,6 +5978,7 @@ document.getElementById('ab-settings-go-shelf').addEventListener('click', () => 
   premiumAudiobookIsPlaying = false;
   document.getElementById('audiobook-premium-reader').style.display = 'none';
   document.getElementById('audiobook-premium-shelf-view').style.display = 'block';
+  abShowOverlayHeader();
   renderAudiobookShelf(document.getElementById('audiobook-premium-search').value);
 });
 
