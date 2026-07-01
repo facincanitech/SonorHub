@@ -800,16 +800,16 @@
         </div>
 
         <!-- READER -->
-        <div id="audiobook-premium-reader" style="display:none;">
+        <div id="audiobook-premium-reader" style="display:none; flex-direction:column; height:calc(100dvh - 90px - env(safe-area-inset-bottom,0px));">
           <!-- Header -->
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0 14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0 10px; flex-shrink:0;">
             <button type="button" id="audiobook-premium-back-btn" style="background:none; color:var(--ab-text-dim,#9b937f); font-size:1.4rem; padding:0; line-height:1;">←</button>
             <span id="audiobook-premium-title" style="font-size:0.82rem; color:var(--ab-text-dim,#9b937f); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
             <button type="button" id="audiobook-premium-settings-btn" style="background:none; color:var(--ab-text-dim,#9b937f); font-size:1rem; padding:4px; line-height:1;">☰</button>
           </div>
 
           <!-- Texto da página atual (modo texto fluido, estilo Kindle) -->
-          <div id="audiobook-premium-text-view" style="min-height:240px; padding:18px 16px; border-radius:10px; margin-bottom:10px; background:var(--ab-bg,#f6f1e7); font-family:Georgia,serif; font-size:17px; line-height:1.85; color:var(--ab-text,#2b2620); position:relative;">
+          <div id="audiobook-premium-text-view" style="flex:1; min-height:0; overflow-y:auto; padding:18px 16px; border-radius:10px; margin-bottom:10px; background:var(--ab-bg,#f6f1e7); font-family:Georgia,serif; font-size:17px; line-height:1.85; color:var(--ab-text,#2b2620); position:relative;">
             <div id="audiobook-premium-tap-prev" style="position:absolute; left:0; top:0; width:28%; height:100%; cursor:pointer; z-index:1;"></div>
             <div id="audiobook-premium-tap-next" style="position:absolute; right:0; top:0; width:28%; height:100%; cursor:pointer; z-index:1;"></div>
           </div>
@@ -5513,7 +5513,7 @@ async function openOrAddPremiumAudiobook(pdf, title, fileKey, source) {
   document.getElementById('audiobook-premium-title').textContent = book.title;
   document.getElementById('audiobook-premium-shelf-view').style.display = 'none';
   document.getElementById('audiobook-premium-add-panel').style.display = 'none';
-  document.getElementById('audiobook-premium-reader').style.display = 'block';
+  document.getElementById('audiobook-premium-reader').style.display = 'flex';
   const ppBtn = document.getElementById('audiobook-premium-ctrl-playpause');
   if (ppBtn) ppBtn.textContent = '▶';
   const statusPlayer = document.getElementById('audiobook-premium-player-status');
