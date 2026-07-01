@@ -5087,7 +5087,7 @@ function extrairGoogleDriveFolderId(link) {
 
 // Grid horizontal de PDFs encontrados numa pasta do Drive — 3 por linha,
 // nome truncado, fácil de tocar. Usado no Audiobook grátis e Premium.
-const DRIVE_PICKER_PAGE_SIZE = 20;
+const DRIVE_PICKER_PAGE_SIZE = 50;
 
 function renderGoogleDrivePdfPicker(containerEl, files, onPick, page) {
   const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }));
