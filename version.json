@@ -1,4 +1,4 @@
 {
-  "versionName": "4.70",
-  "notes": "Fix crash de inicialização: renderAbDriveHistory/renderAbPremFolderHist envoltos em try-catch para não quebrar o init se o elemento não for encontrado."
+  "versionName": "4.71",
+  "notes": "Fix crash silencioso de init: painel de configurações do audiobook movido para antes do script, eliminando TypeError que impedia renderização das cards e inicialização geral."
 }

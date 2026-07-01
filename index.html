@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SonorHub, Seu dia em voz alta</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔊</text></svg>">
 <link rel="manifest" href="manifest.json">
@@ -66,7 +66,7 @@
     max-width: 420px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 18px 16px 90px;
+    padding: 18px 16px calc(90px + env(safe-area-inset-bottom, 0px));
     position: relative;
   }
   h1 { font-size: 1.3rem; margin: 4px 0 2px; }
@@ -96,7 +96,7 @@
     50% { box-shadow: 0 0 0 6px rgba(234,67,53,0.15); }
   }
   .voice-toast {
-    position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%) translateY(10px);
+    position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(10px);
     max-width: 380px; width: calc(100% - 32px); background: var(--c-surface); border: 1px solid var(--c-border2);
     border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; text-align: center; z-index: 200;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
@@ -104,7 +104,7 @@
   .voice-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ===== Bottom nav ===== */
-  .navbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; background: var(--c-navbar); border-top: 1px solid var(--c-border); z-index: 50; }
+  .navbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; background: var(--c-navbar); border-top: 1px solid var(--c-border); z-index: 50; padding-bottom: env(safe-area-inset-bottom, 0px); }
   .navbar-inner { display: flex; width: 100%; max-width: 420px; }
   .nav-btn { flex: 1; background: none; color: var(--c-text-faint2); padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; border-radius: 0; }
   .nav-btn .ic { font-size: 1.2rem; }
@@ -1545,6 +1545,42 @@
   </div>
 </div>
 
+<!-- PAINEL DE CONFIGURAÇÕES do Audiobook Premium (desliza da direita) — colocado
+     ANTES do <script> para que getElementById funcione no momento em que os
+     listeners são registrados; é position:fixed então não afeta o fluxo do documento. -->
+<div id="audiobook-premium-settings-panel" style="position:fixed; top:0; right:-100%; bottom:0; width:76%; max-width:280px; background:var(--c-surface); box-shadow:-8px 0 28px rgba(0,0,0,0.4); padding:20px 16px; display:flex; flex-direction:column; gap:16px; transition:right 0.25s ease; z-index:9999; overflow-y:auto;">
+  <div style="display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-size:0.9rem; font-weight:600; color:var(--c-text);">Configurações</span>
+    <button type="button" id="audiobook-premium-settings-close" style="background:none; color:var(--c-text-dim); font-size:1.3rem; padding:0; line-height:1;">✕</button>
+  </div>
+
+  <div>
+    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Narrador</div>
+    <div style="display:flex; gap:6px;">
+      <button id="ab-narrator-vagner" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:12px; cursor:pointer; border:none;">Vagner</button>
+      <button id="ab-narrator-james" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:12px; cursor:pointer; border:none;">James</button>
+    </div>
+    <div style="font-size:10px; color:var(--c-text-dim); margin-top:5px; line-height:1.4;">Preferência salva. A voz do TTS depende do Android.</div>
+  </div>
+
+  <div>
+    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Velocidade: <span id="ab-rate-label">1x</span></div>
+    <input id="audiobook-premium-rate" type="range" min="0.5" max="2" step="0.1" value="1" style="width:100%;">
+  </div>
+
+  <div>
+    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:8px;">Tema</div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button id="ab-theme-sepia" type="button" aria-label="Sépia" title="Sépia" style="width:32px; height:32px; border-radius:50%; background:#f6f1e7; padding:0; cursor:pointer;"></button>
+      <button id="ab-theme-white" type="button" aria-label="Branco" title="Branco" style="width:32px; height:32px; border-radius:50%; background:#ffffff; border:2px solid var(--c-border2); padding:0; cursor:pointer;"></button>
+      <button id="ab-theme-dark" type="button" aria-label="Escuro" title="Escuro" style="width:32px; height:32px; border-radius:50%; background:#1a1a1a; border:2px solid transparent; padding:0; cursor:pointer;"></button>
+    </div>
+  </div>
+
+  <button type="button" id="ab-settings-go-shelf" style="background:none; border:none; border-top:1px solid var(--c-border2); color:var(--c-text); font-size:13px; text-align:left; padding:12px 0 4px; display:flex; align-items:center; gap:8px; cursor:pointer;">🔖 Voltar pra estante</button>
+</div>
+<div id="audiobook-premium-settings-backdrop" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.2);"></div>
+
 <script>
 // A WebView nativa (app empacotado com Capacitor) não tem a Web Speech API —
 // sem isso, qualquer toque em speechSynthesis lançava ReferenceError e travava
@@ -2641,8 +2677,12 @@ document.getElementById('privacy-close-btn').addEventListener('click', () => {
 
 // Versão mostrada aqui precisa bater com versionName do android/app/build.gradle
 // — atualiza os dois juntos sempre que reempacotar o APK pra distribuir.
-const APP_VERSION = '4.70';
+const APP_VERSION = '4.71';
 const CHANGELOG = [
+  {
+    version: '4.71', date: '30/06/2026',
+    notes: 'Fix crash silencioso de init: painel de configurações do audiobook movido para antes do script (evita TypeError que impedia renderização das cards e init geral).',
+  },
   {
     version: '4.62', date: '30/06/2026',
     items: [
@@ -8999,39 +9039,6 @@ if (new URLSearchParams(window.location.search).get('autoplay') === '1') {
   window.addEventListener('load', () => setTimeout(() => playCircle.click(), 600));
 }
 </script>
-<!-- PAINEL DE CONFIGURAÇÕES do Audiobook Premium (desliza da direita) -->
-<div id="audiobook-premium-settings-panel" style="position:fixed; top:0; right:-100%; bottom:0; width:76%; max-width:280px; background:var(--c-surface); box-shadow:-8px 0 28px rgba(0,0,0,0.4); padding:20px 16px; display:flex; flex-direction:column; gap:16px; transition:right 0.25s ease; z-index:9999; overflow-y:auto;">
-  <div style="display:flex; align-items:center; justify-content:space-between;">
-    <span style="font-size:0.9rem; font-weight:600; color:var(--c-text);">Configurações</span>
-    <button type="button" id="audiobook-premium-settings-close" style="background:none; color:var(--c-text-dim); font-size:1.3rem; padding:0; line-height:1;">✕</button>
-  </div>
-
-  <div>
-    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Narrador</div>
-    <div style="display:flex; gap:6px;">
-      <button id="ab-narrator-vagner" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:12px; cursor:pointer; border:none;">Vagner</button>
-      <button id="ab-narrator-james" type="button" style="flex:1; border-radius:8px; padding:8px; font-size:12px; cursor:pointer; border:none;">James</button>
-    </div>
-    <div style="font-size:10px; color:var(--c-text-dim); margin-top:5px; line-height:1.4;">Preferência salva. A voz do TTS depende do Android.</div>
-  </div>
-
-  <div>
-    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:7px;">Velocidade: <span id="ab-rate-label">1x</span></div>
-    <input id="audiobook-premium-rate" type="range" min="0.5" max="2" step="0.1" value="1" style="width:100%;">
-  </div>
-
-  <div>
-    <div style="font-size:11px; color:var(--c-text-dim); margin-bottom:8px;">Tema</div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button id="ab-theme-sepia" type="button" aria-label="Sépia" title="Sépia" style="width:32px; height:32px; border-radius:50%; background:#f6f1e7; padding:0; cursor:pointer;"></button>
-      <button id="ab-theme-white" type="button" aria-label="Branco" title="Branco" style="width:32px; height:32px; border-radius:50%; background:#ffffff; border:2px solid var(--c-border2); padding:0; cursor:pointer;"></button>
-      <button id="ab-theme-dark" type="button" aria-label="Escuro" title="Escuro" style="width:32px; height:32px; border-radius:50%; background:#1a1a1a; border:2px solid transparent; padding:0; cursor:pointer;"></button>
-    </div>
-  </div>
-
-  <button type="button" id="ab-settings-go-shelf" style="background:none; border:none; border-top:1px solid var(--c-border2); color:var(--c-text); font-size:13px; text-align:left; padding:12px 0 4px; display:flex; align-items:center; gap:8px; cursor:pointer;">🔖 Voltar pra estante</button>
-</div>
-<div id="audiobook-premium-settings-backdrop" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.2);"></div>
 
 </body>
 </html>
