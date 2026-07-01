@@ -1023,7 +1023,7 @@
     <div class="overlay-header">
       <button class="back-btn" id="download-share-back">←</button>
       <div style="flex:1; min-width:0;">
-        <div style="font-weight:700; font-size:1rem;">Baixar / Compartilhar</div>
+        <div style="font-weight:700; font-size:1rem;">SonorHub <span id="dl-overlay-version" style="font-weight:400; font-size:0.75rem; color:var(--c-text-dim);"></span></div>
         <div style="font-size:0.72rem; color:var(--c-text-dim); margin-top:2px;">Briefings · Música · Rádio · Seu dia completo em áudio.</div>
       </div>
     </div>
@@ -8822,6 +8822,8 @@ document.getElementById('saved-close-btn').addEventListener('click', () => {
 const downloadShareOverlay = document.getElementById('download-share-overlay');
 document.getElementById('download-app-row').addEventListener('click', () => {
   downloadShareOverlay.classList.add('open');
+  const vEl = document.getElementById('dl-overlay-version');
+  if (vEl) vEl.textContent = `v${APP_VERSION}`;
 });
 document.getElementById('download-share-back').addEventListener('click', () => {
   downloadShareOverlay.classList.remove('open');
